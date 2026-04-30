@@ -20,6 +20,9 @@ attacks). Functionality always succeeds — only the **timing** is modeled.
   - `validatedPagesPerProcess` — per-PID cache of 4 KiB-aligned pages
   - `pendingValidationPages` / `pendingValidationUIDs` — in-flight tracking
   - `waitingForPage` — instructions coalesced behind an in-flight request
+  - `revalidatedUIDs` — UIDs of accesses that completed validation but
+    were re-queued for a RAW hazard; consumed by `consumeRevalidatedUID`
+    on replay so the cache-hit counter does not double-count them.
   - `validationResponseEvent` — `EventFunctionWrapper`
 - Implementation: [src/hwacc/llvm_interface.cc](../../src/hwacc/llvm_interface.cc)
   - `ActiveFunction::launchRead` — checkpoint for read-side validation
@@ -73,14 +76,30 @@ and visualised by [tools/experiment_monitor.py](../../tools/experiment_monitor.p
   to page size must touch `isPageValidated`, `isPageValidationPending`,
   `sendValidationRequest`, `processValidationResponse`, and
   `queueWaitingInstruction` together.
+- An access whose `[addr, addr+size)` straddles a 4 KiB boundary only
+  validates the page containing `addr`. SALAM accesses are typically
+  word/vector aligned so this is acceptable today; revisit if you add
+  coarser DMA-style accesses.
 - `validationResponseEvent` is shared — only one in-flight schedule at a
   time; new requests rely on it being rescheduled inside
   `processValidationResponse` when the head of `pendingValidations` is
   not yet ready.
 - RAW hazard re-queue logic is duplicated for the originating request and
-  for waiters; keep both paths in sync.
+  for waiters; keep both paths in sync. Both paths must call
+  `revalidatedUIDs.insert(uid)` before pushing the instruction back to
+  reservation, otherwise the eventual cache-hit replay will be counted
+  twice (once as full/coalesced latency, once as a free hit) and inflate
+  `cacheHitRate` and `totalMemAccesses`.
+- The replay path only re-checks RAW (via `writeActive`); it assumes the
+  instruction's other dynamic dependencies were already satisfied at the
+  time validation was issued. This is true under the current scheduler
+  but is fragile if the dependency model changes.
 - Stats parsing in `experiment_monitor.py` matches exact strings printed
   by `printKernelValidationStats` — update both sides together.
 - Denials currently `panic(...)`. If denial becomes a real outcome,
   cleanup of `pendingValidationPages`, `waitingForPage`, reservation
-  queue entries, and downstream consumers must be added.
+  queue entries, `revalidatedUIDs`, and downstream consumers must be
+  added.
+- Enabling validation with `kernel_validation_latency=0` is now warned
+  about at startup, but still runs the full protocol — useful for
+  control runs where you want the bookkeeping but no overhead.
