@@ -67,6 +67,15 @@ class SMMUv3DeviceInterface(ClockedObject):
     utlb_lat = Param.Cycles(1, 'Micro TLB lookup latency')
     utlb_slots = Param.Cycles(1, 'Micro TLB lookup slots')
 
+    # SALAM Option-A extension: StreamID stamped on incoming requests.
+    # Upstream gem5 expects the requestor (a PCI device behind a
+    # SMMUv3DeviceInterface) to have already set Request::streamId
+    # before the packet reaches the SMMU. SALAM's CommInterface does
+    # not do this, so we stamp it here based on a per-interface param.
+    # Index into the stream table written by salam_smmu_init.c.
+    stream_id = Param.UInt32(0,
+        'StreamID stamped on requests entering this device interface')
+
     tlb_entries = Param.Unsigned(2048, 'Main TLB size (entries)')
     tlb_assoc = Param.Unsigned(4, 'Main TLB associativity (0=full)')
     tlb_policy = Param.String('rr', 'Main TLB replacement policy')

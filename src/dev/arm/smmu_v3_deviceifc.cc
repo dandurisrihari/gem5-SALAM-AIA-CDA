@@ -78,7 +78,9 @@ SMMUv3DeviceInterface::SMMUv3DeviceInterface(
     deviceNeedsRetry(false),
     atsDeviceNeedsRetry(false),
     sendDeviceRetryEvent(*this),
-    atsSendDeviceRetryEvent(this)
+    atsSendDeviceRetryEvent(this),
+    // SALAM Option-A: per-interface StreamID stamped on requests.
+    streamId(p.stream_id)
 {}
 
 void
@@ -130,6 +132,13 @@ SMMUv3DeviceInterface::recvAtomic(PacketPtr pkt)
     DPRINTF(SMMUv3, "[a] req from %s addr=%#x size=%#x\n",
             devicePort->getPeer(), pkt->getAddr(), pkt->getSize());
 
+    // SALAM Option-A: requestor (CommInterface DMA) does not stamp
+    // StreamID. Stamp it here so smmu_v3_transl.cc:fromPacket() can
+    // index the stream table once translation is enabled. If the
+    // requestor already set a StreamID, leave it alone.
+    if (!pkt->req->hasStreamId())
+        pkt->req->setStreamId(streamId);
+
     std::string proc_name = csprintf("%s.port", name());
     SMMUTranslationProcess proc(proc_name, *smmu, *this);
     proc.beginTransaction(SMMUTranslRequest::fromPacket(pkt));
@@ -145,6 +154,10 @@ SMMUv3DeviceInterface::recvTimingReq(PacketPtr pkt)
 {
     DPRINTF(SMMUv3, "[t] req from %s addr=%#x size=%#x\n",
             devicePort->getPeer(), pkt->getAddr(), pkt->getSize());
+
+    // SALAM Option-A: see recvAtomic above.
+    if (!pkt->req->hasStreamId())
+        pkt->req->setStreamId(streamId);
 
     // @todo: We need to pay for this and not just zero it out
     pkt->headerDelay = pkt->payloadDelay = 0;

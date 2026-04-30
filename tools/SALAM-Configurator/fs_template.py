@@ -94,6 +94,22 @@ def addHWAccOptions(parser):
     parser.add_argument("--iotlb-miss-latency", action="store", type=int,
                       default=0,
                       help="""IOTLB miss / page-walk latency (ticks)""")
+    # Real SMMUv3 (Option A first pass): instantiates one SMMUv3 per
+    # AccCluster and routes the cluster's coherency bus through it on
+    # the way to the system memory bus. Static-bypass: the SMMU's TLB
+    # and walk caches are exercised, but no Linux-side stream-table
+    # programming is required because all accesses are passed through.
+    # Mutually exclusive with --enable-iommu and --enable-kernel-validation.
+    parser.add_argument("--enable-real-smmu", action="store_true",
+                      default=False,
+                      help="""Insert a real SMMUv3 in front of each """
+                           """AccCluster's outbound coherency bus.""")
+    parser.add_argument("--smmu-tlb-entries", action="store", type=int,
+                      default=2048,
+                      help="""SMMUv3 main TLB capacity (entries)""")
+    parser.add_argument("--smmu-tlb-lat", action="store", type=int,
+                      default=3,
+                      help="""SMMUv3 main TLB lookup latency (cycles)""")
 
 def cmd_line_template():
     if args.command_line and args.command_line_file:
@@ -339,6 +355,22 @@ if '--ruby' in sys.argv:
     Ruby.define_options(parser)
 
 args = parser.parse_args()
+
+# Mutual-exclusion check across the three protection-model toggles.
+# AIA-KD, the IOMMU latency model, and the real SMMUv3 instantiation
+# are alternative experiment configurations -- enabling more than one
+# at a time would produce meaningless overlapping latencies.
+_prot_modes = [
+    ('--enable-kernel-validation',
+     getattr(args, 'enable_kernel_validation', False)),
+    ('--enable-iommu', getattr(args, 'enable_iommu', False)),
+    ('--enable-real-smmu', getattr(args, 'enable_real_smmu', False)),
+]
+_active = [name for name, on in _prot_modes if on]
+if len(_active) > 1:
+    print("Error: protection-model flags are mutually exclusive: "
+          + ", ".join(_active))
+    sys.exit(1)
 
 # system under test can be any CPU
 (TestCPUClass, test_mem_mode, FutureClass) = Simulation.setCPUClass(args)

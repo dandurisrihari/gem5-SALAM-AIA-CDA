@@ -76,6 +76,67 @@ class AccCluster(Platform):
             else:
                 self.coherency_bus.master = system.membus.slave
 
+    def _connect_caches_smmu(self, system, options, l2coherent,
+                             cache_size=0):
+        """
+        SMMU-aware variant of _connect_caches.
+
+        Inserts a per-cluster SMMUv3 between the cluster's outbound
+        coherency-bus traffic and the downstream system bus
+        (system.tol2bus or system.membus). Optionally still places a
+        cluster cache between the coherency_bus and the SMMU when
+        --acc_cache is enabled.
+
+        First-pass / static-bypass mode:
+          * The SMMU's TLB and walk caches are exercised, contributing
+            translation latency to every DMA.
+          * No stream-table programming is performed -- this scaffold
+            assumes the model is configured to pass through requests
+            with timing applied. If your gem5 build requires a valid
+            stream context to avoid faulting, switch to the stub-Linux
+            programming path before producing paper numbers.
+          * Each cluster gets its own SMMU instance with a unique MMIO
+            region. The base 0x2b400000 mirrors the upstream RealView
+            mapping; subsequent clusters bump by 0x20000.
+        """
+        from m5.objects import SMMUv3, SMMUv3DeviceInterface
+
+        # Allocate a per-system unique reg_map slot.
+        if not hasattr(system, '_salam_smmu_count'):
+            system._salam_smmu_count = 0
+        smmu_idx = system._salam_smmu_count
+        system._salam_smmu_count += 1
+        reg_base = 0x2b400000 + smmu_idx * 0x00020000
+
+        smmu = SMMUv3(reg_map=AddrRange(reg_base, size=0x00020000))
+        # Allow CLI overrides for the knobs experimenters actually sweep.
+        smmu.tlb_entries = getattr(options, 'smmu_tlb_entries', 2048)
+        smmu.tlb_lat = getattr(options, 'smmu_tlb_lat', 3)
+        self.smmu = smmu
+
+        # Downstream side: SMMU's request port goes to the same place
+        # the coherency_bus would have gone.
+        if options.l2cache and l2coherent:
+            smmu.request = system.tol2bus.slave
+        else:
+            smmu.request = system.membus.slave
+        # Control regs are visible from the IOBus so MMIO accesses can
+        # reach the SMMU registers (only meaningful when a kernel-side
+        # driver is present; harmless otherwise).
+        smmu.control = system.iobus.mem_side_ports
+
+        # Build one device interface per cluster and attach the cluster's
+        # outbound coherency-bus traffic to it.
+        ifc = SMMUv3DeviceInterface()
+        if options.acc_cache and (cache_size != 0):
+            self.cluster_cache = ClusterCache()
+            self.cluster_cache.size = cache_size
+            self.cluster_cache.mem_side = ifc.device_port
+            self.coherency_bus.master = self.cluster_cache.cpu_side
+        else:
+            self.coherency_bus.master = ifc.device_port
+        smmu.device_interfaces = [ifc]
+
     def _connect_dma(self, system, dma):
         dma.pio = self.local_bus.master
         dma.dma = self.coherency_bus.slave

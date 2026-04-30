@@ -318,8 +318,26 @@ def main():
                     config_path + "fs_" + file_name + ".py")
     f = open(config_path + "fs_" + file_name + ".py", "r")
     fullSystem = f.readlines()
-    fullSystem[65] = "import " + file_name + "\n"
-    fullSystem[240] = "        " + file_name + ".makeHWAcc(args, test_sys)\n"
+    # Splice the per-benchmark import and the makeHWAcc call by locating
+    # their template anchors instead of relying on hard-coded line
+    # numbers (which break whenever fs_template.py grows new options).
+    import_idx = None
+    hwacc_idx = None
+    for i, line in enumerate(fullSystem):
+        if line.startswith("import TEMPLATE"):
+            import_idx = i
+        elif "TEMPLATE.makeHWAcc(args, test_sys)" in line:
+            hwacc_idx = i
+    if import_idx is None or hwacc_idx is None:
+        raise RuntimeError(
+            "fs_template.py is missing required anchors "
+            "('import TEMPLATE' and/or 'TEMPLATE.makeHWAcc(...)')")
+    fullSystem[import_idx] = "import " + file_name + "\n"
+    # Preserve the original indentation of the makeHWAcc call.
+    indent = fullSystem[hwacc_idx][:len(fullSystem[hwacc_idx])
+                                   - len(fullSystem[hwacc_idx].lstrip())]
+    fullSystem[hwacc_idx] = (indent + file_name +
+                             ".makeHWAcc(args, test_sys)\n")
     f = open(config_path + "fs_" + file_name + ".py", "w")
     f.writelines(fullSystem)
     # Warn if the size is greater than allowed

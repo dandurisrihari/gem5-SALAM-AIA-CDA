@@ -79,11 +79,25 @@ through `addHWAccOptions`:
 --iotlb-miss-latency=<ticks>
 ```
 
-The three experimental modes are:
-- **plain** — neither flag set. Baseline.
-- **iommu** — `--enable-iommu` plus latencies. Per-access tax forever.
+The four experimental modes are:
+- **plain** — no flags set. Baseline.
+- **iommu** — `--enable-iommu` plus latencies. Cheap analytical tax (per-
+  access IOTLB look-aside model). Per-accelerator only.
 - **aia-kd** — `--enable-kernel-validation` plus latency. First-touch tax,
   then free.
+- **real-smmu** — `--enable-real-smmu` (Option A first pass). Instantiates
+  a real `SMMUv3` per `AccCluster` between the cluster's coherency bus
+  and the system memory bus. Static-bypass (no Linux-side stream-table
+  programming). Knobs: `--smmu-tlb-entries`, `--smmu-tlb-lat`. Uses the
+  upstream gem5 SMMU model so the timing reflects walk-cache misses,
+  page-table-walk arbitration, and SMMU↔IFC link latency. The wiring
+  lives in `AccCluster._connect_caches_smmu`. Mutually exclusive with
+  the two flags above (enforced in `fs_template.py` after `parse_args`).
+  NOTE: scaffold only — needs benchmark validation runs to confirm the
+  passthrough path doesn't fault for accesses outside any programmed
+  stream table. If your tree's SMMU model requires a stream context,
+  switch to programming a single identity-mapping stream table entry
+  before producing paper numbers.
 
 Driven in bulk via [tools/run_parallel.sh](../../tools/run_parallel.sh)
 and visualised by [tools/experiment_monitor.py](../../tools/experiment_monitor.py).
