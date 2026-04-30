@@ -26,11 +26,19 @@ LLVMInterface::LLVMInterface(const LLVMInterfaceParams &p):
     clock_period = clock_period * 1000;
     dbg = comm->debug();
 
-    // Log kernel validation configuration
+    // Log kernel validation configuration. Warn loudly if the user
+    // enabled the feature but left latency at the default of 0 ticks --
+    // the protocol still runs but adds no measurable overhead, which is
+    // almost certainly a mis-configuration.
     if (enableKernelValidation) {
         DPRINTF(LLVMInterface,
                 "Kernel validation ENABLED: int=%d, lat=%llu, pid=%llu\n",
                 validationIntNum, kernelValidationLatency, processId);
+        if (kernelValidationLatency == 0) {
+            warn("%s: kernel validation enabled but "
+                 "kernel_validation_latency=0; no overhead will be "
+                 "modeled.", name());
+        }
     }
 }
 
@@ -611,23 +619,34 @@ LLVMInterface::ActiveFunction::launchRead(
         uint64_t ptrAddr = readInst->getPtrOperandValue(0);
         size_t reqSize = rdInst->getSizeInBytes();
 
-        // ============================================
-        // CHECK IF KERNEL VALIDATION IS ENABLED
-        // If enabled, check if page is already validated (cache hit)
-        // or send validation request to kernel driver (KD)
-        // ============================================
+        // ====================================================
+        // KERNEL VALIDATION (AIA -> KD) FAST-PATH FOR LOADS
+        // Three cases, evaluated in order:
+        //   (a) Cache hit  : page already validated for this PID -> 0 lat
+        //   (b) In-flight  : another access is validating this page ->
+        //                    coalesce, no extra IRQ
+        //   (c) Cold miss  : raise IRQ to KD, schedule deferred response
+        // Page granularity is 4 KiB. Accesses that straddle a page
+        // boundary only validate the first page (acceptable for SALAM
+        // accelerators which use word-aligned scalar/vector accesses).
+        // ====================================================
         if (owner->isKernelValidationEnabled()) {
-            // Check if this page is already validated (cache hit - no latency)
             if (owner->isPageValidated(ptrAddr)) {
-                // Cache hit - proceed directly without validation latency
-                owner->incrementValidationCacheHits();
+                // (a) Cache hit. Suppress the counter when this UID was
+                // just replayed out of a post-validation RAW deferral --
+                // it already paid full latency once and was counted as
+                // totalKernelValidations / validationCoalescedWaits.
+                if (!owner->consumeRevalidatedUID(readInst->getUID())) {
+                    owner->incrementValidationCacheHits();
+                }
                 if (dbg)
                     DPRINTFS(RuntimeCompute, owner,
                         "|| Cache HIT for READ: addr=0x%016lx - proceeding\n",
                         ptrAddr);
-                // Fall through to launch the read normally
+                // Fall through to launch the read normally.
             } else if (owner->isPageValidationPending(ptrAddr)) {
-                // Page validation already in progress - wait for it
+                // (b) Coalesce behind the in-flight request. Guard against
+                // double-queueing the same UID across reservation passes.
                 if (!owner->isValidationPending(readInst->getUID())) {
                     owner->queueWaitingInstruction(
                         ptrAddr, readInst, this, true, reqSize);
@@ -636,9 +655,14 @@ LLVMInterface::ActiveFunction::launchRead(
                             "|| Queuing READ for pending page validation: "
                             "addr=0x%016lx\n", ptrAddr);
                 }
+                // Returning false leaves the instruction in reservation;
+                // uidActive() will skip it next tick via
+                // isValidationPending().
                 return false;
             } else {
-                // Cache miss - need validation, send request
+                // (c) Cold miss: raise IRQ + schedule response. The
+                // instruction stays in reservation and will be re-driven
+                // from processValidationResponse() when KD replies.
                 if (dbg)
                     DPRINTFS(RuntimeCompute, owner,
                         "|| Sending kernel validation for READ: "
@@ -673,23 +697,25 @@ LLVMInterface::ActiveFunction::launchWrite(
     uint64_t ptrAddr = writeInst->getPtrOperandValue(1);
     size_t reqSize = writeInst->getOperands()->at(0).getSizeInBytes();
 
-    // ============================================
-    // CHECK IF KERNEL VALIDATION IS ENABLED
-    // If enabled, check if page is already validated (cache hit)
-    // or send validation request to kernel driver (KD)
-    // ============================================
+    // ====================================================
+    // KERNEL VALIDATION (AIA -> KD) FAST-PATH FOR STORES
+    // See launchRead() above for the three-case rationale; the store
+    // path mirrors it. Page granularity = 4 KiB.
+    // ====================================================
     if (owner->isKernelValidationEnabled()) {
-        // Check if this page is already validated (cache hit - no latency)
         if (owner->isPageValidated(ptrAddr)) {
-            // Cache hit - proceed directly without validation latency
-            owner->incrementValidationCacheHits();
+            // (a) Cache hit. Suppress counter for replays that already
+            // paid validation latency (see launchRead comment).
+            if (!owner->consumeRevalidatedUID(writeInst->getUID())) {
+                owner->incrementValidationCacheHits();
+            }
             if (dbg)
                 DPRINTFS(RuntimeCompute, owner,
                     "|| Cache HIT for WRITE: addr=0x%016lx - proceeding\n",
                     ptrAddr);
-            // Fall through to launch the write normally
+            // Fall through to launch the write normally.
         } else if (owner->isPageValidationPending(ptrAddr)) {
-            // Page validation already in progress - wait for it
+            // (b) Coalesce behind in-flight request.
             if (!owner->isValidationPending(writeInst->getUID())) {
                 owner->queueWaitingInstruction(
                     ptrAddr, writeInst, this, false, reqSize);
@@ -700,7 +726,7 @@ LLVMInterface::ActiveFunction::launchWrite(
             }
             return false;
         } else {
-            // Cache miss - need validation, send request
+            // (c) Cold miss.
             if (dbg)
                 DPRINTFS(RuntimeCompute, owner,
                     "|| Sending kernel validation for WRITE: "
@@ -1235,11 +1261,20 @@ LLVMInterface::sendValidationRequest(uint64_t addr, size_t size, bool isRead,
                                      std::shared_ptr<SALAM::Instruction> inst,
                                      ActiveFunction* func)
 {
-    // Cache miss - need to validate (incurs latency)
-    // Cache check is done in launchRead/launchWrite before calling this
+    // Cold-miss path. Caller (launchRead/launchWrite) has already
+    // verified the page is neither cached nor in flight. We:
+    //   1) mark the page as in-flight so subsequent same-page accesses
+    //      coalesce instead of issuing duplicate IRQs;
+    //   2) record a PendingValidationRequest in FIFO order, tagged with
+    //      curTick() so processValidationResponse() can compute a
+    //      per-request deadline of (requestTime + kernelValidationLatency);
+    //   3) raise the configured GIC IRQ -- a real KD would receive this
+    //      and respond; we model the response with a timer event;
+    //   4) (re)schedule the shared validationResponseEvent. Only one
+    //      schedule is outstanding at a time; processValidationResponse()
+    //      reschedules itself for the next deadline if more work remains.
     uint64_t pageAddr = addr & ~0xFFFULL;
 
-    // Mark this page as having a pending validation
     pendingValidationPages.insert(pageAddr);
 
     // Create pending validation request
@@ -1288,7 +1323,19 @@ LLVMInterface::sendValidationRequest(uint64_t addr, size_t size, bool isRead,
 void
 LLVMInterface::processValidationResponse()
 {
-    // Process pending validation requests
+    // Drain ready entries from the FIFO of pending validation requests.
+    // For each request that has reached its deadline
+    // (requestTime + kernelValidationLatency):
+    //   * call validateWithKernel() (currently always succeeds);
+    //   * insert the page into the per-PID validated cache so future
+    //     accesses become zero-latency hits;
+    //   * dispatch the originating instruction (re-checking RAW since
+    //     the world advanced while we waited);
+    //   * dispatch every coalesced waiter on the same page, accounting
+    //     their actual wait time (curTick - queueTime) as partial
+    //     latency in totalCoalescedWaitLatency.
+    // If the head request is not yet ready, reschedule for its deadline
+    // and return -- the event will fire again at the right time.
     Tick currentTick = curTick();
 
     while (!pendingValidations.empty()) {
@@ -1335,15 +1382,21 @@ LLVMInterface::processValidationResponse()
         }
 
         if (validationOK) {
-            // Proceed with the original request
-            // Check RAW hazard before launching read
+            // Validation accepted: dispatch the originating access.
+            // Note: the dependency framework already cleared this
+            // instruction's producers before we issued the validation
+            // request, so only RAW (against newer in-flight writes that
+            // appeared while we waited) needs to be re-checked here.
             if (req.isRead) {
                 uint64_t readAddr = req.inst->getPtrOperandValue(0);
                 if (req.func->writeActive(readAddr)) {
-                    // RAW hazard detected - re-add dependency and put back in reservation
+                    // RAW hazard: re-add dependency and put back into
+                    // reservation. Mark the UID as "already paid" so the
+                    // eventual cache-hit replay does not double-count.
                     auto activeWrite = req.func->getActiveWrite(readAddr);
                     req.inst->addRuntimeDependency(activeWrite);
                     activeWrite->addRuntimeUser(req.inst);
+                    revalidatedUIDs.insert(req.inst->getUID());
                     req.func->addToReservation(req.inst);
                     DPRINTF(LLVMInterface,
                             "[AIA] RAW hazard for READ at 0x%016lx - "
@@ -1389,13 +1442,16 @@ LLVMInterface::processValidationResponse()
                             waiting.addr, waitLatency);
 
                     if (waiting.isRead) {
-                        // Check RAW hazard before launching read
-                        uint64_t readAddr = waiting.inst->getPtrOperandValue(0);
+                        // RAW re-check, mirroring the originator path.
+                        uint64_t readAddr =
+                            waiting.inst->getPtrOperandValue(0);
                         if (waiting.func->writeActive(readAddr)) {
-                            // RAW hazard - re-add to reservation with dependency
-                            auto activeWrite = waiting.func->getActiveWrite(readAddr);
+                            auto activeWrite =
+                                waiting.func->getActiveWrite(readAddr);
                             waiting.inst->addRuntimeDependency(activeWrite);
                             activeWrite->addRuntimeUser(waiting.inst);
+                            // Suppress double-count on cache-hit replay.
+                            revalidatedUIDs.insert(waiting.inst->getUID());
                             waiting.func->addToReservation(waiting.inst);
                             DPRINTF(LLVMInterface,
                                     "[AIA] RAW hazard for waiting READ at "
@@ -1435,9 +1491,13 @@ LLVMInterface::processValidationResponse()
 bool
 LLVMInterface::validateWithKernel(uint64_t addr, size_t size, uint64_t pid)
 {
-    // Kernel validation - always returns true
-    // We only model the latency overhead of the validation check
-    // The actual security check is performed by the kernel driver
+    // Stub for the actual kernel-side check. We model only the latency
+    // overhead of consulting the kernel driver, not the policy itself,
+    // so this always returns true. Replacing this with a real policy
+    // (e.g. an SMID/page allow-list) requires also handling the denial
+    // path in processValidationResponse(), which today panics -- see
+    // .github/prompts/context-kernel-validation.md for the cleanup
+    // checklist.
     DPRINTF(LLVMInterface,
             "[KD] VALIDATED: addr=0x%016lx, size=%lu, pid=%llu\n",
             addr, (unsigned long)size, pid);

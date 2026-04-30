@@ -87,8 +87,18 @@ class LLVMInterface : public ComputeUnit {
     uint64_t nextValidationRequestId;
     std::set<uint64_t> pendingValidationUIDs;
 
-    // Track pages with in-flight validations to avoid duplicate requests
+    // Track pages with in-flight validations to avoid duplicate requests.
+    // Insertion happens in sendValidationRequest(); erasure happens in
+    // processValidationResponse() once the page has been cached.
     std::set<uint64_t> pendingValidationPages;
+
+    // UIDs of instructions that completed kernel validation but were sent
+    // back to the reservation queue because of a RAW hazard discovered at
+    // dispatch time. When such an instruction is re-launched it will hit
+    // the validated-pages cache and would otherwise be miscounted as a
+    // free cache hit. We consume the entry here so the cache-hit counter
+    // stays consistent with "accesses that never paid validation latency".
+    std::set<uint64_t> revalidatedUIDs;
 
     // Instructions waiting for a page validation to complete
     // Key: page address, Value: list of (inst, func, isRead) waiting
@@ -300,6 +310,15 @@ class LLVMInterface : public ComputeUnit {
         return false;
     }
     void incrementValidationCacheHits() { validationCacheHits++; }
+    // Returns true (and consumes the marker) if `uid` was just replayed
+    // from a post-validation RAW deferral. Callers in launchRead/Write use
+    // this to suppress double-counting that access as a cache hit.
+    bool consumeRevalidatedUID(uint64_t uid) {
+        auto it = revalidatedUIDs.find(uid);
+        if (it == revalidatedUIDs.end()) return false;
+        revalidatedUIDs.erase(it);
+        return true;
+    }
     void queueWaitingInstruction(uint64_t addr,
                                  std::shared_ptr<SALAM::Instruction> inst,
                                  ActiveFunction* func, bool isRead,
