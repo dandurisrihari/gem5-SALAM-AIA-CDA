@@ -1,0 +1,47 @@
+{
+    "name": "gem5-SALAM",
+    "build": {
+        "context": "..",
+        "dockerfile": "../docker/Dockerfile",
+        "args": {
+            "HOST_UID": "1000",
+            "HOST_GID": "1000",
+            "USERNAME": "developer"
+        }
+    },
+    "workspaceFolder": "/gem5-SALAM",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/gem5-SALAM,type=bind,consistency=cached",
+    "remoteUser": "developer",
+    "containerUser": "developer",
+    "updateRemoteUserUID": true,
+    "containerEnv": {
+        "M5_PATH": "/gem5-SALAM"
+    },
+    "runArgs": [
+        "--name=gem5-salam-devcontainer"
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-vscode.cpptools",
+                "ms-vscode.cpptools-extension-pack",
+                "llvm-vs-code-extensions.vscode-clangd",
+                "twxs.cmake",
+                "ms-vscode.makefile-tools",
+                "redhat.vscode-yaml",
+                "eamodio.gitlens"
+            ],
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "python.defaultInterpreterPath": "/usr/bin/python3",
+                "files.associations": {
+                    "SConstruct": "python",
+                    "SConscript": "python"
+                }
+            }
+        }
+    },
+    "postCreateCommand": "echo 'export M5_PATH=/gem5-SALAM' >> ~/.bashrc && echo 'gem5-SALAM dev container ready. Build with: scons build/ARM/gem5.opt -j$(nproc)'"
+}

@@ -50,6 +50,21 @@ scons build/ARM/gem5.debug -j`nproc`
 
 For more information regarding the binary types, and other build information refer to the gem5 build documentation [here](http://learning.gem5.org/book/part1/building.html).
 
+# Using VS Code Dev Container
+
+For the easiest setup, open the repository in VS Code with the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension installed:
+
+1. Open the repository folder in VS Code.
+2. Press `F1` and run **Dev Containers: Reopen in Container**.
+3. VS Code will build the image using `.devcontainer/devcontainer.json` (which reuses `docker/Dockerfile`) and drop you into the container at `/gem5-SALAM` with all dependencies installed.
+4. Build inside the container:
+
+    ```bash
+    scons build/ARM/gem5.opt -j$(nproc)
+    ```
+
+The workspace is bind-mounted, so edits sync between host and container. Recommended C/C++, Python, clangd, Makefile, and YAML extensions are auto-installed.
+
 # Building with docker
 
 You can use the Dockerfile in the `docker/` directory to build and run gem5-SALAM in a containerized environment with volume mounting (changes sync between host and container).
