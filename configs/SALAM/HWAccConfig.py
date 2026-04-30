@@ -9,7 +9,9 @@ import os
 
 def AccConfig(acc, bench_file, config_file, enable_kernel_validation=False,
               kernel_validation_latency=0, validation_int_num=172,
-              process_id=17):
+              process_id=17,
+              enable_iommu=False, iotlb_entries=64,
+              iotlb_hit_latency=0, iotlb_miss_latency=0):
     # Initialize LLVMInterface Objects
     acc.llvm_interface = LLVMInterface()
 
@@ -19,10 +21,25 @@ def AccConfig(acc, bench_file, config_file, enable_kernel_validation=False,
     acc.llvm_interface.validation_int_num = validation_int_num
     acc.llvm_interface.process_id = process_id
 
+    # IOMMU configuration (mutually exclusive with kernel validation)
+    acc.llvm_interface.enable_iommu = enable_iommu
+    acc.llvm_interface.iotlb_entries = iotlb_entries
+    acc.llvm_interface.iotlb_hit_latency = iotlb_hit_latency
+    acc.llvm_interface.iotlb_miss_latency = iotlb_miss_latency
+
+    if enable_kernel_validation and enable_iommu:
+        raise ValueError(
+            "AccConfig: enable_kernel_validation and enable_iommu are "
+            "mutually exclusive (pick one protection model).")
+
     if enable_kernel_validation:
         print("[HWAccConfig] Kernel validation ENABLED: "
               "latency=%d, int=%d, pid=%d" %
               (kernel_validation_latency, validation_int_num, process_id))
+    if enable_iommu:
+        print("[HWAccConfig] IOMMU ENABLED: "
+              "entries=%d, hit_lat=%d, miss_lat=%d" %
+              (iotlb_entries, iotlb_hit_latency, iotlb_miss_latency))
 
     # Benchmark path
     acc.llvm_interface.in_file = bench_file

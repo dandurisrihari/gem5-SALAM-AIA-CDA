@@ -21,7 +21,18 @@ LLVMInterface::LLVMInterface(const LLVMInterfaceParams &p):
     validationCoalescedWaits(0),
     totalCoalescedWaitLatency(0),
     validationResponseEvent(
-        [this]{ processValidationResponse(); }, name())
+        [this]{ processValidationResponse(); }, name()),
+    // ----- IOMMU model init -----
+    enableIommu(p.enable_iommu),
+    iotlbEntries(p.iotlb_entries),
+    iotlbHitLatency(p.iotlb_hit_latency),
+    iotlbMissLatency(p.iotlb_miss_latency),
+    iommuDispatchEvent(
+        [this]{ processIommuDispatch(); }, name()),
+    iommuTotalChecks(0),
+    iommuTlbHits(0),
+    iommuTlbMisses(0),
+    iommuTotalLatency(0)
 {
     clock_period = clock_period * 1000;
     dbg = comm->debug();
@@ -38,6 +49,26 @@ LLVMInterface::LLVMInterface(const LLVMInterfaceParams &p):
             warn("%s: kernel validation enabled but "
                  "kernel_validation_latency=0; no overhead will be "
                  "modeled.", name());
+        }
+    }
+
+    // The two protection models share the launchRead/launchWrite hook
+    // and represent different security mechanisms; running both at once
+    // double-counts overhead and is almost certainly a mis-configuration.
+    if (enableKernelValidation && enableIommu) {
+        panic("%s: enable_kernel_validation and enable_iommu are mutually "
+              "exclusive.", name());
+    }
+    if (enableIommu) {
+        DPRINTF(LLVMInterface,
+                "IOMMU model ENABLED: entries=%u, hit=%llu, miss=%llu\n",
+                iotlbEntries, iotlbHitLatency, iotlbMissLatency);
+        if (iotlbHitLatency == 0 && iotlbMissLatency == 0) {
+            warn("%s: IOMMU enabled but both hit and miss latencies are "
+                 "0; no overhead will be modeled.", name());
+        }
+        if (iotlbEntries == 0) {
+            warn("%s: iotlb_entries=0 -- every access will miss.", name());
         }
     }
 }
@@ -620,6 +651,31 @@ LLVMInterface::ActiveFunction::launchRead(
         size_t reqSize = rdInst->getSizeInBytes();
 
         // ====================================================
+        // IOMMU LATENCY MODEL (mutually exclusive with AIA-KD).
+        // Every access pays an IOTLB lookup; misses additionally pay
+        // a page-walk cost. Unlike AIA-KD, there is no "validated
+        // forever" cache -- evictions force fresh walks.
+        // ====================================================
+        if (owner->isIommuEnabled()) {
+            if (owner->consumeIommuClearedUID(readInst->getUID())) {
+                // RAW-deferred replay: latency was already paid; fall
+                // through to issue the memory request directly.
+            } else {
+                uint64_t page = ptrAddr & ~0xFFFULL;
+                bool hit = owner->iotlbAccess(page);
+                Tick lat = hit ? owner->iotlbHitLatency
+                               : owner->iotlbMissLatency;
+                if (dbg)
+                    DPRINTFS(RuntimeCompute, owner,
+                        "|| IOMMU READ %s: addr=0x%016lx lat=%llu\n",
+                        hit ? "HIT" : "MISS", ptrAddr, lat);
+                owner->scheduleIommuDispatch(
+                    readInst, this, /*isRead=*/true, lat, hit);
+                return false;
+            }
+        }
+
+        // ====================================================
         // KERNEL VALIDATION (AIA -> KD) FAST-PATH FOR LOADS
         // Three cases, evaluated in order:
         //   (a) Cache hit  : page already validated for this PID -> 0 lat
@@ -696,6 +752,28 @@ LLVMInterface::ActiveFunction::launchWrite(
     // Get the pointer address before creating the memory request
     uint64_t ptrAddr = writeInst->getPtrOperandValue(1);
     size_t reqSize = writeInst->getOperands()->at(0).getSizeInBytes();
+
+    // ====================================================
+    // IOMMU LATENCY MODEL (mutually exclusive with AIA-KD). See
+    // launchRead() above for rationale.
+    // ====================================================
+    if (owner->isIommuEnabled()) {
+        if (owner->consumeIommuClearedUID(writeInst->getUID())) {
+            // RAW-deferred replay: latency was already paid.
+        } else {
+            uint64_t page = ptrAddr & ~0xFFFULL;
+            bool hit = owner->iotlbAccess(page);
+            Tick lat = hit ? owner->iotlbHitLatency
+                           : owner->iotlbMissLatency;
+            if (dbg)
+                DPRINTFS(RuntimeCompute, owner,
+                    "|| IOMMU WRITE %s: addr=0x%016lx lat=%llu\n",
+                    hit ? "HIT" : "MISS", ptrAddr, lat);
+            owner->scheduleIommuDispatch(
+                writeInst, this, /*isRead=*/false, lat, hit);
+            return false;
+        }
+    }
 
     // ====================================================
     // KERNEL VALIDATION (AIA -> KD) FAST-PATH FOR STORES
@@ -1070,6 +1148,8 @@ LLVMInterface::printResults() {
 
     // Print kernel validation statistics
     printKernelValidationStats();
+    // Print IOMMU statistics (only meaningful when enable_iommu=True)
+    printIommuStats();
 }
 
 void
@@ -1564,5 +1644,152 @@ LLVMInterface::printKernelValidationStats()
     std::cout << "   Processes with cached pages:     " << validatedPagesPerProcess.size() << std::endl;
     std::cout << "   Unique pages validated (total):  " << totalUniquePages << std::endl;
     std::cout << "   Cache hit rate:                  " << cacheHitRate << "%" << std::endl;
+    std::cout << std::endl;
+}
+
+// ----- IOMMU/SMMU latency model implementation -----
+
+bool
+LLVMInterface::iotlbAccess(uint64_t pageAddr)
+{
+    // Models a fully-associative LRU IOTLB. Returns true on hit; either
+    // way the page is the new MRU. On miss, evicts the LRU entry when
+    // the cache is full. iotlb_entries=0 disables caching (every miss).
+    auto setIt = iotlbSet.find(pageAddr);
+    if (setIt != iotlbSet.end()) {
+        // Hit: move to MRU.
+        iotlbLru.remove(pageAddr);
+        iotlbLru.push_front(pageAddr);
+        return true;
+    }
+    // Miss: install, evicting LRU if necessary.
+    if (iotlbEntries > 0) {
+        if (iotlbLru.size() >= iotlbEntries) {
+            uint64_t victim = iotlbLru.back();
+            iotlbLru.pop_back();
+            iotlbSet.erase(victim);
+        }
+        iotlbLru.push_front(pageAddr);
+        iotlbSet.insert(pageAddr);
+    }
+    return false;
+}
+
+void
+LLVMInterface::scheduleIommuDispatch(
+    std::shared_ptr<SALAM::Instruction> inst,
+    ActiveFunction* func, bool isRead, Tick latency, bool isHit)
+{
+    // Append to the FIFO of pending dispatches and (re)arm the shared
+    // dispatch event for the head's deadline. Because requests arrive in
+    // monotonically nondecreasing time order, the list is automatically
+    // sorted by deadline.
+    PendingIommuDispatch d;
+    d.inst = inst;
+    d.func = func;
+    d.isRead = isRead;
+    d.deadline = curTick() + latency;
+    pendingIommuDispatches.push_back(d);
+    iommuPendingUIDs.insert(inst->getUID());
+
+    iommuTotalChecks++;
+    iommuTotalLatency += latency;
+    if (isHit) {
+        iommuTlbHits++;
+    } else {
+        iommuTlbMisses++;
+    }
+
+    if (!iommuDispatchEvent.scheduled()) {
+        schedule(iommuDispatchEvent, pendingIommuDispatches.front().deadline);
+    }
+}
+
+void
+LLVMInterface::processIommuDispatch()
+{
+    // Drain ready entries (deadline reached). For each:
+    //   * clear the in-flight UID marker;
+    //   * remove the instruction from the function's reservation queue
+    //     (the scheduler placed it there when launchRead/Write returned
+    //     false);
+    //   * re-check RAW hazards against newer in-flight writes; on hit,
+    //     mark the UID as "iommu cleared" and push back to reservation
+    //     so the eventual replay skips the IOMMU block entirely;
+    //   * otherwise issue the underlying memory request.
+    Tick now = curTick();
+    while (!pendingIommuDispatches.empty()) {
+        PendingIommuDispatch& d = pendingIommuDispatches.front();
+        if (now < d.deadline) {
+            schedule(iommuDispatchEvent, d.deadline);
+            return;
+        }
+
+        iommuPendingUIDs.erase(d.inst->getUID());
+        d.func->removeFromReservation(d.inst->getUID());
+
+        if (d.isRead) {
+            uint64_t readAddr = d.inst->getPtrOperandValue(0);
+            if (d.func->writeActive(readAddr)) {
+                auto activeWrite = d.func->getActiveWrite(readAddr);
+                d.inst->addRuntimeDependency(activeWrite);
+                activeWrite->addRuntimeUser(d.inst);
+                iommuClearedUIDs.insert(d.inst->getUID());
+                d.func->addToReservation(d.inst);
+            } else {
+                auto memReq = d.inst->createMemoryRequest();
+                auto rd_uid = d.inst->getUID();
+                d.func->readQueue.insert({rd_uid, d.inst});
+                d.func->readQueueMap.insert({memReq, rd_uid});
+                launchRead(memReq, d.func);
+            }
+        } else {
+            auto memReq = d.inst->createMemoryRequest();
+            d.func->trackWrite(memReq->getAddress(), d.inst);
+            auto wr_uid = d.inst->getUID();
+            d.func->writeQueue.insert({wr_uid, d.inst});
+            d.func->writeQueueMap.insert({memReq, wr_uid});
+            launchWrite(memReq, d.func);
+        }
+
+        pendingIommuDispatches.pop_front();
+    }
+}
+
+void
+LLVMInterface::printIommuStats()
+{
+    if (!enableIommu) return;
+
+    double totalLatUs = (double)(iommuTotalLatency) * (1e-6);
+    double avgLatUs = iommuTotalChecks > 0 ?
+        totalLatUs / iommuTotalChecks : 0.0;
+    double hitRate = iommuTotalChecks > 0 ?
+        (100.0 * iommuTlbHits / iommuTotalChecks) : 0.0;
+
+    std::cout << "   ========= IOMMU Stats =====================" << std::endl;
+    std::cout << "   IOMMU enabled:                   YES" << std::endl;
+    std::cout << "   IOTLB entries:                   "
+              << iotlbEntries << std::endl;
+    std::cout << "   Hit latency:                     "
+              << (double)(iotlbHitLatency) * (1e-6) << " us" << std::endl;
+    std::cout << "   Miss latency:                    "
+              << (double)(iotlbMissLatency) * (1e-6) << " us" << std::endl;
+    std::cout << std::endl;
+    std::cout << "   --- Access Breakdown ---" << std::endl;
+    std::cout << "   Total IOMMU checks:              "
+              << iommuTotalChecks << std::endl;
+    std::cout << "   IOTLB hits:                      "
+              << iommuTlbHits << std::endl;
+    std::cout << "   IOTLB misses (page walks):       "
+              << iommuTlbMisses << std::endl;
+    std::cout << "   IOTLB hit rate:                  "
+              << hitRate << "%" << std::endl;
+    std::cout << std::endl;
+    std::cout << "   --- Latency Breakdown ---" << std::endl;
+    std::cout << "   TOTAL IOMMU OVERHEAD:            "
+              << totalLatUs << " us" << std::endl;
+    std::cout << "   Avg latency per access:          "
+              << avgLatUs << " us" << std::endl;
     std::cout << std::endl;
 }

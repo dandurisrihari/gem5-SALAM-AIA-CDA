@@ -18,3 +18,11 @@ class LLVMInterface(ComputeUnit):
     validation_int_num = Param.Int32(172, "Interrupt number for validation")
     kernel_validation_latency = Param.Tick(0, "Kernel validation latency")
     process_id = Param.UInt64(17, "Process ID for SMID validation")
+
+    # IOMMU/SMMU latency model (mutually exclusive with kernel validation).
+    # Models per-access translation+permission cost: every memory access
+    # pays an IOTLB lookup; misses additionally pay a page-walk cost.
+    enable_iommu = Param.Bool(False, "Enable IOMMU latency model")
+    iotlb_entries = Param.UInt32(64, "IOTLB capacity (LRU)")
+    iotlb_hit_latency = Param.Tick(0, "IOTLB hit latency (ticks)")
+    iotlb_miss_latency = Param.Tick(0, "IOTLB miss latency (ticks)")

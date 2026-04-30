@@ -83,6 +83,17 @@ def addHWAccOptions(parser):
                       default=172, help="""Interrupt number for validation""")
     parser.add_argument("--process-id", action="store", type=int, default=17,
                       help="""Process ID for SMID validation""")
+    # IOMMU latency model (mutually exclusive with --enable-kernel-validation)
+    parser.add_argument("--enable-iommu", action="store_true",
+                      default=False,
+                      help="""Enable IOMMU latency model on accelerator""")
+    parser.add_argument("--iotlb-entries", action="store", type=int,
+                      default=64, help="""IOTLB capacity (LRU)""")
+    parser.add_argument("--iotlb-hit-latency", action="store", type=int,
+                      default=0, help="""IOTLB hit latency (ticks)""")
+    parser.add_argument("--iotlb-miss-latency", action="store", type=int,
+                      default=0,
+                      help="""IOTLB miss / page-walk latency (ticks)""")
 
 def cmd_line_template():
     if args.command_line and args.command_line_file:

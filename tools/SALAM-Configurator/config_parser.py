@@ -330,7 +330,16 @@ class Accelerator:
         lines.append("          validation_int_num="
                      "getattr(options, 'validation_int_num', 172),")
         lines.append("          process_id="
-                     "getattr(options, 'process_id', 17))")
+                     "getattr(options, 'process_id', 17),")
+        # IOMMU options (mutually exclusive with kernel validation)
+        lines.append("          enable_iommu="
+                     "getattr(options, 'enable_iommu', False),")
+        lines.append("          iotlb_entries="
+                     "getattr(options, 'iotlb_entries', 64),")
+        lines.append("          iotlb_hit_latency="
+                     "getattr(options, 'iotlb_hit_latency', 0),")
+        lines.append("          iotlb_miss_latency="
+                     "getattr(options, 'iotlb_miss_latency', 0))")
         lines.append("")
 
         return lines

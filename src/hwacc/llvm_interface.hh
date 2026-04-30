@@ -82,6 +82,49 @@ class LLVMInterface : public ComputeUnit {
     Tick kernelValidationLatency;
     uint64_t processId;
 
+    // ----- IOMMU/SMMU latency model -----
+    // Mutually exclusive with the AIA-KD validation cache. Models the
+    // hardware behavior of an SMMU sitting on the accelerator's port:
+    // every memory access incurs an IOTLB lookup; misses additionally
+    // pay a page-walk cost. Unlike AIA-KD, there is no "validated
+    // forever" cache -- evictions force fresh walks.
+    bool enableIommu;
+    uint32_t iotlbEntries;
+    Tick iotlbHitLatency;
+    Tick iotlbMissLatency;
+
+    // IOTLB implemented as an LRU list of page numbers (front = MRU).
+    // A parallel set is kept for O(log n) membership tests.
+    std::list<uint64_t> iotlbLru;
+    std::set<uint64_t> iotlbSet;
+
+    // Per-access pending dispatch after the modeled IOMMU latency.
+    struct PendingIommuDispatch {
+        std::shared_ptr<SALAM::Instruction> inst;
+        ActiveFunction* func;
+        bool isRead;
+        Tick deadline;
+    };
+    std::list<PendingIommuDispatch> pendingIommuDispatches;
+
+    // UIDs currently waiting for IOMMU dispatch -- treated like an
+    // in-flight memory op by uidActive() so the scheduler does not
+    // re-launch them.
+    std::set<uint64_t> iommuPendingUIDs;
+
+    // UIDs whose IOMMU latency was already paid but who were sent back
+    // to reservation due to a RAW hazard. On replay, launchRead/Write
+    // skips the IOMMU block entirely (analogue of revalidatedUIDs).
+    std::set<uint64_t> iommuClearedUIDs;
+
+    EventFunctionWrapper iommuDispatchEvent;
+
+    // Stats
+    uint64_t iommuTotalChecks;
+    uint64_t iommuTlbHits;
+    uint64_t iommuTlbMisses;
+    Tick iommuTotalLatency;
+
     // Pending validation tracking
     std::list<PendingValidationRequest> pendingValidations;
     uint64_t nextValidationRequestId;
@@ -161,7 +204,8 @@ class LLVMInterface : public ComputeUnit {
 
         inline bool uidActive(uint64_t id) {
           return computeUIDActive(id) || readUIDActive(id) || writeUIDActive(id) ||
-                 owner->isValidationPending(id);
+                 owner->isValidationPending(id) ||
+                 owner->isIommuPending(id);
         }
 
         std::map<Addr, std::shared_ptr<SALAM::Instruction>> activeWrites;
@@ -329,6 +373,27 @@ class LLVMInterface : public ComputeUnit {
     void processValidationResponse();
     bool validateWithKernel(uint64_t addr, size_t size, uint64_t pid);
     void printKernelValidationStats();
+
+    // ----- IOMMU helpers -----
+    bool isIommuEnabled() { return enableIommu; }
+    bool isIommuPending(uint64_t uid) {
+        return iommuPendingUIDs.count(uid) > 0;
+    }
+    bool consumeIommuClearedUID(uint64_t uid) {
+        auto it = iommuClearedUIDs.find(uid);
+        if (it == iommuClearedUIDs.end()) return false;
+        iommuClearedUIDs.erase(it);
+        return true;
+    }
+    // Returns true on hit; either way, updates LRU / installs the entry.
+    bool iotlbAccess(uint64_t pageAddr);
+    // Schedules `inst` for dispatch after `latency` ticks via the
+    // shared iommuDispatchEvent. `isHit` is recorded for stats.
+    void scheduleIommuDispatch(std::shared_ptr<SALAM::Instruction> inst,
+                               ActiveFunction* func, bool isRead,
+                               Tick latency, bool isHit);
+    void processIommuDispatch();
+    void printIommuStats();
 };
 
 #endif //__HWACC_LLVM_INTERFACE_HH__

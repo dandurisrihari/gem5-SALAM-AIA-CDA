@@ -1,12 +1,17 @@
-# Context: Kernel-Based Memory Validation (AIA ↔ KD)
+# Context: Kernel-Based Memory Validation (AIA ↔ KD) and IOMMU baseline
 
-Reusable background for prompts that touch the kernel-validation feature.
+Reusable background for prompts that touch the kernel-validation feature
+or the comparable IOMMU latency model that lives alongside it.
 
 ## Goal
 
 Model the latency overhead of the OS kernel validating every unique memory
 page accessed by a hardware accelerator (preventing confused-deputy
 attacks). Functionality always succeeds — only the **timing** is modeled.
+
+A second, mutually exclusive mode (`enable_iommu`) provides an IOMMU-style
+baseline so papers can compare AIA-KD vs hardware translation overhead on
+the same workload.
 
 ## Key Files
 
@@ -61,14 +66,43 @@ Forwarded by [tools/SALAM-Configurator/fs_template.py](../../tools/SALAM-Configu
 through `addHWAccOptions`:
 
 ```
+# AIA-KD mode
 --enable-kernel-validation
 --kernel-validation-latency=<ticks>
 --validation-int-num=<irq>
 --process-id=<pid>
+
+# IOMMU baseline (mutually exclusive with the above)
+--enable-iommu
+--iotlb-entries=<N>
+--iotlb-hit-latency=<ticks>
+--iotlb-miss-latency=<ticks>
 ```
+
+The three experimental modes are:
+- **plain** — neither flag set. Baseline.
+- **iommu** — `--enable-iommu` plus latencies. Per-access tax forever.
+- **aia-kd** — `--enable-kernel-validation` plus latency. First-touch tax,
+  then free.
 
 Driven in bulk via [tools/run_parallel.sh](../../tools/run_parallel.sh)
 and visualised by [tools/experiment_monitor.py](../../tools/experiment_monitor.py).
+
+## IOMMU model details
+
+- Lives in the same `LLVMInterface::ActiveFunction::launchRead/launchWrite`
+  hook points, ahead of the AIA-KD block. Mutual exclusion is enforced
+  in the constructor (`panic`) and in `AccConfig` (`raise`).
+- Fully-associative LRU IOTLB of `iotlb_entries` page numbers.
+- Hit pays `iotlb_hit_latency`; miss pays `iotlb_miss_latency` and
+  installs the entry (LRU evict if full). `iotlb_entries=0` => every
+  access misses.
+- Per-access deferral mirrors AIA: instruction returns `false`,
+  `iommuPendingUIDs` keeps it from re-launching, `iommuDispatchEvent`
+  fires at the deadline and dispatches via the same RAW-checked path.
+- RAW-deferred replays use `iommuClearedUIDs` to bypass the IOMMU block
+  and avoid double-charging latency.
+- Stats printed by `printIommuStats()` after `printKernelValidationStats()`.
 
 ## Things To Be Careful About When Modifying
 
