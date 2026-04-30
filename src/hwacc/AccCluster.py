@@ -137,6 +137,40 @@ class AccCluster(Platform):
             self.coherency_bus.master = ifc.device_port
         smmu.device_interfaces = [ifc]
 
+        # --- Optional: program a real stream table from gem5 side ---
+        # When --smmu-program-stream-table is set, materialise a valid
+        # AArch64 stage-1 identity-mapping page table in DRAM, build a
+        # matching STE + CD + linear stream table, and seed the SMMU
+        # registers so it starts up in a fully-translating mode without
+        # any guest software involvement. This is what makes ptwTimeDist
+        # and mainTLB stats actually populate during a SALAM run.
+        if getattr(options, 'smmu_program_stream_table', False):
+            import os, tempfile
+            from configs.SALAM.smmu_bootstrap import build_blob
+
+            stream_id = smmu_idx
+            # Per-cluster 1 MiB scratch slot in DRAM, well above the
+            # workload's working set (SALAM kernels load at 0x80000000
+            # and rarely exceed a few hundred MiB).
+            scratch_pa = 0xa0000000 + smmu_idx * 0x00100000
+
+            blob, strtab_base, strtab_base_cfg, cr0 = build_blob(
+                scratch_pa, [stream_id])
+
+            blob_path = os.path.join(
+                tempfile.gettempdir(),
+                f"salam_smmu_blob_{smmu_idx}.bin")
+            with open(blob_path, "wb") as fh:
+                fh.write(blob)
+
+            smmu.bootstrap_enable      = True
+            smmu.bootstrap_blob        = blob_path
+            smmu.bootstrap_blob_addr   = scratch_pa
+            smmu.init_strtab_base      = strtab_base
+            smmu.init_strtab_base_cfg  = strtab_base_cfg
+            smmu.init_cr0              = cr0
+            ifc.stream_id              = stream_id
+
     def _connect_dma(self, system, dma):
         dma.pio = self.local_bus.master
         dma.dma = self.coherency_bus.slave

@@ -110,6 +110,16 @@ def addHWAccOptions(parser):
     parser.add_argument("--smmu-tlb-lat", action="store", type=int,
                       default=3,
                       help="""SMMUv3 main TLB lookup latency (cycles)""")
+    # When set (only meaningful with --enable-real-smmu), the SMMU is
+    # bootstrapped from the gem5 side: a valid AArch64 stage-1 identity-
+    # mapping page table is materialised in DRAM and the SMMU registers
+    # are seeded so it starts up fully translating. This is what causes
+    # ptwTimeDist and mainTLB stats to actually populate during a run.
+    parser.add_argument("--smmu-program-stream-table",
+                      action="store_true", default=False,
+                      help="""Bootstrap a valid SMMUv3 stream table """
+                           """from the gem5 side (requires """
+                           """--enable-real-smmu).""")
 
 def cmd_line_template():
     if args.command_line and args.command_line_file:
@@ -370,6 +380,13 @@ _active = [name for name, on in _prot_modes if on]
 if len(_active) > 1:
     print("Error: protection-model flags are mutually exclusive: "
           + ", ".join(_active))
+    sys.exit(1)
+
+# Stream-table programming only makes sense alongside the real SMMU.
+if (getattr(args, 'smmu_program_stream_table', False)
+        and not getattr(args, 'enable_real_smmu', False)):
+    print("Error: --smmu-program-stream-table requires "
+          "--enable-real-smmu")
     sys.exit(1)
 
 # system under test can be any CPU

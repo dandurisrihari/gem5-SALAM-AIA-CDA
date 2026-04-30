@@ -178,7 +178,10 @@ class SMMUv3 : public ClockedObject
     SMMUv3(const SMMUv3Params &p);
     virtual ~SMMUv3() {}
 
+    PARAMS(SMMUv3);
+
     virtual void init() override;
+    virtual void startup() override;
 
     Tick recvAtomic(PacketPtr pkt, PortID id);
     bool recvTimingReq(PacketPtr pkt, PortID id);

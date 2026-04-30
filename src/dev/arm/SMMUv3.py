@@ -195,6 +195,25 @@ class SMMUv3(ClockedObject):
     # [7:0] (0 = SMMUv3.0) (1 = SMMUv3.1)
     smmu_aidr = Param.UInt32(0, "SMMU_AIDR register");
 
+    # SALAM Option-A bootstrap. Lets the Python config side pre-program
+    # the SMMU as if a kernel had configured it: writes a stream-table /
+    # CD / page-table blob into DRAM via the system port, and seeds the
+    # initial values of strtab_base, strtab_base_cfg, and cr0.
+    # When bootstrap_enable is False (default) all four params below are
+    # ignored and the SMMU starts with cr0=0 (bypass-by-default).
+    bootstrap_enable = Param.Bool(False,
+        'Pre-program the SMMU at startup using bootstrap_blob_*')
+    bootstrap_blob = Param.String('',
+        'Path to a binary file holding the pre-built STE/CD/PT blob')
+    bootstrap_blob_addr = Param.Addr(0,
+        'Physical address at which to load bootstrap_blob into DRAM')
+    init_strtab_base = Param.Addr(0,
+        'Initial value of SMMU_STRTAB_BASE')
+    init_strtab_base_cfg = Param.UInt32(0,
+        'Initial value of SMMU_STRTAB_BASE_CFG')
+    init_cr0 = Param.UInt32(0,
+        'Initial value of SMMU_CR0 (set CR0_SMMUEN bit to enable)')
+
     def generateDeviceTree(self, state):
         reg_addr = self.reg_map.start
         reg_size = self.reg_map.size()

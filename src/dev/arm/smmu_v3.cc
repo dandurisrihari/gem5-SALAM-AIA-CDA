@@ -38,6 +38,9 @@
 #include "dev/arm/smmu_v3.hh"
 
 #include <cstddef>
+#include <fstream>
+#include <iterator>
+#include <vector>
 #include <cstring>
 
 #include "base/bitfield.hh"
@@ -746,6 +749,58 @@ SMMUv3::init()
 
     if (controlPort.isConnected())
         controlPort.sendRangeChange();
+}
+
+void
+SMMUv3::startup()
+{
+    // SALAM Option-A: pre-program the SMMU from a blob built at config
+    // time. This lets us run real address translation with realistic
+    // TLB / walk-cache / page-table-walk behaviour without having to
+    // boot Linux or run any bare-metal init code on the CPU.
+    //
+    // We perform the writes in startup() (not init()) so that every
+    // peer SimObject has finished registering its address ranges with
+    // the membus -- functional writes via system.physProxy traverse
+    // those ranges, and a write issued during init() can race the
+    // xbar's gotAllAddrRanges check.
+    if (params().bootstrap_enable) {
+        const std::string &path = params().bootstrap_blob;
+        if (path.empty())
+            fatal("SMMUv3 %s: bootstrap_enable=True but bootstrap_blob "
+                  "is empty", name());
+
+        std::ifstream in(path, std::ios::binary);
+        if (!in)
+            fatal("SMMUv3 %s: cannot open bootstrap_blob '%s'",
+                  name(), path);
+
+        std::vector<uint8_t> bytes(
+            (std::istreambuf_iterator<char>(in)),
+            std::istreambuf_iterator<char>());
+        if (bytes.empty())
+            fatal("SMMUv3 %s: bootstrap_blob '%s' is empty",
+                  name(), path);
+
+        // Functional write straight into physmem. No timing, happens
+        // before tick 0.
+        system.physProxy.writeBlob(params().bootstrap_blob_addr,
+                                   bytes.data(), bytes.size());
+
+        // Seed SMMU registers as if a kernel driver had programmed
+        // them. cr0ack mirrors cr0 because the model treats them as
+        // immediately acknowledged in writeControl().
+        regs.strtab_base     = params().init_strtab_base;
+        regs.strtab_base_cfg = params().init_strtab_base_cfg;
+        regs.cr0  = params().init_cr0;
+        regs.cr0ack = params().init_cr0;
+
+        inform("SMMUv3 %s: bootstrapped %u bytes at PA %#x; "
+               "strtab_base=%#x cfg=%#x cr0=%#x\n",
+               name(), (unsigned)bytes.size(),
+               params().bootstrap_blob_addr,
+               regs.strtab_base, regs.strtab_base_cfg, regs.cr0);
+    }
 }
 
 SMMUv3::SMMUv3Stats::SMMUv3Stats(statistics::Group *parent)
