@@ -10,6 +10,11 @@ against hardware accelerators).
 - `context-kernel-validation.md` — Background primer on the existing
   implementation. Paste/include this when starting a new chat so the
   assistant has the right entry points.
+- `sanity-test.prompt.md` — Mandatory zero-latency sanity check after
+  any edit to the IOMMU / AIA-KD scheduling or request paths in
+  `src/hwacc/llvm_interface.{cc,hh}`. Catches event-queue perturbation
+  bugs that make protection modes look faster (or crash StreamDma)
+  than `plain`.
 - Add new task-specific prompts here as `*.prompt.md`.
 
 ## Conventions

@@ -82,7 +82,6 @@ MODES: Dict[str, ModeBuilder] = {
         # observable end-to-end. Override with `compare --aia-kd-latency`.
         "--kernel-validation-latency", str(o.get("aia_kd_latency", 8_367_000)),
     ],
-    "smmu-bypass": lambda o: ["--enable-real-smmu"],
     "smmu-iot":    lambda o: _smmu_prog(PROFILE_IOT,
                                         o.get("granule_kib", 4)),
     "smmu-mmu500": lambda o: _smmu_prog(PROFILE_MMU500,
@@ -110,7 +109,7 @@ MODES: Dict[str, ModeBuilder] = {
 # we actually want to compare side-by-side, then the real-SMMU profiles
 # kept available for deeper sweeps but not run by default.
 DEFAULT_MODES = (
-    "plain", "aia-kd", "iommu", "smmu-iot",
+    "plain", "aia-kd", "iommu", "smmu-iot", "smmu-mmu500",
 )
 
 

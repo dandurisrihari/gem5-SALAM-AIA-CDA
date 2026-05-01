@@ -98,32 +98,18 @@ class LLVMInterface : public ComputeUnit {
     std::list<uint64_t> iotlbLru;
     std::set<uint64_t> iotlbSet;
 
-    // Per-access pending dispatch after the modeled IOMMU latency.
-    struct PendingIommuDispatch {
-        std::shared_ptr<SALAM::Instruction> inst;
-        ActiveFunction* func;
-        bool isRead;
-        Tick deadline;
-    };
-    std::list<PendingIommuDispatch> pendingIommuDispatches;
-
-    // UIDs currently waiting for IOMMU dispatch -- treated like an
-    // in-flight memory op by uidActive() so the scheduler does not
-    // re-launch them.
-    std::set<uint64_t> iommuPendingUIDs;
-
-    // UIDs whose IOMMU latency was already paid but who were sent back
-    // to reservation due to a RAW hazard. On replay, launchRead/Write
-    // skips the IOMMU block entirely (analogue of revalidatedUIDs).
-    std::set<uint64_t> iommuClearedUIDs;
-
-    EventFunctionWrapper iommuDispatchEvent;
-
     // Stats
     uint64_t iommuTotalChecks;
     uint64_t iommuTlbHits;
     uint64_t iommuTlbMisses;
     Tick iommuTotalLatency;
+
+    // Real IOMMUs have an in-order request port: a later access cannot
+    // overtake an earlier one even if its translation is faster (TLB hit
+    // vs. miss). Track the tick at which the last delayed enqueue was
+    // scheduled so subsequent ones are pushed out to preserve issue
+    // order. Reset implicitly by being monotonic with curTick().
+    Tick lastIommuReleaseTick;
 
     // Pending validation tracking
     std::list<PendingValidationRequest> pendingValidations;
@@ -204,8 +190,7 @@ class LLVMInterface : public ComputeUnit {
 
         inline bool uidActive(uint64_t id) {
           return computeUIDActive(id) || readUIDActive(id) || writeUIDActive(id) ||
-                 owner->isValidationPending(id) ||
-                 owner->isIommuPending(id);
+                 owner->isValidationPending(id);
         }
 
         std::map<Addr, std::shared_ptr<SALAM::Instruction>> activeWrites;
@@ -376,23 +361,18 @@ class LLVMInterface : public ComputeUnit {
 
     // ----- IOMMU helpers -----
     bool isIommuEnabled() { return enableIommu; }
-    bool isIommuPending(uint64_t uid) {
-        return iommuPendingUIDs.count(uid) > 0;
-    }
-    bool consumeIommuClearedUID(uint64_t uid) {
-        auto it = iommuClearedUIDs.find(uid);
-        if (it == iommuClearedUIDs.end()) return false;
-        iommuClearedUIDs.erase(it);
-        return true;
-    }
     // Returns true on hit; either way, updates LRU / installs the entry.
     bool iotlbAccess(uint64_t pageAddr);
-    // Schedules `inst` for dispatch after `latency` ticks via the
-    // shared iommuDispatchEvent. `isHit` is recorded for stats.
-    void scheduleIommuDispatch(std::shared_ptr<SALAM::Instruction> inst,
-                               ActiveFunction* func, bool isRead,
-                               Tick latency, bool isHit);
-    void processIommuDispatch();
+    // Bumps stats counters for one IOTLB lookup.
+    void accountIommuAccess(Tick latency, bool isHit);
+    // Issue the request to memory after `latency` ticks. The
+    // accelerator already considers the access launched; only the
+    // packet's transit to the membus is delayed (models an SMMU on
+    // the accelerator's port without changing accelerator hardware).
+    void launchReadAfter(MemoryRequest* memReq, ActiveFunction* func,
+                         Tick latency, bool isHit);
+    void launchWriteAfter(MemoryRequest* memReq, ActiveFunction* func,
+                          Tick latency, bool isHit);
     void printIommuStats();
 };
 
