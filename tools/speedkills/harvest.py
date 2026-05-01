@@ -1,8 +1,7 @@
 """Stats / log harvesting -> summary.tsv + deltas.tsv.
 
-Mirrors the awk logic from the legacy ``run_protection_compare.sh`` so
-the output schema is unchanged. Multi-cluster aware: per-SMMU stats
-are summed across all clusters before reporting.
+AIA-CDA branch schema: only the columns relevant to plain / aia-kd /
+iommu are emitted (the SMMU-specific columns from `main` are gone).
 """
 from __future__ import annotations
 
@@ -11,82 +10,51 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, List
 
-# system.<cluster>.smmu.<stat>  -- multiple per run, one per AccCluster.
-_SMMU_RE_TMPL = r"^system\.[A-Za-z0-9_]+\.smmu\.{stat}\s+(\S+)"
-_SIM_TICKS_RE = re.compile(r"^simTicks\s+(\d+)", re.MULTILINE)
+
+_SIM_TICKS_RE   = re.compile(r"^simTicks\s+(\d+)", re.MULTILINE)
 _SIM_SECONDS_RE = re.compile(r"^simSeconds\s+([0-9.eE+-]+)", re.MULTILINE)
-_RUNTIME_RE = re.compile(r"Runtime:\s+(\S+)")
-_AIA_OVERHEAD_RE = re.compile(r"TOTAL SECURITY OVERHEAD:\s+(\S+)\s+us")
+_RUNTIME_RE     = re.compile(r"Runtime:\s+(\S+)")
+_AIA_OVERHEAD_RE   = re.compile(r"TOTAL SECURITY OVERHEAD:\s+(\S+)\s+us")
+_IOMMU_OVERHEAD_RE = re.compile(r"TOTAL IOMMU OVERHEAD:\s+(\S+)\s+us")
+_IOMMU_CHECKS_RE   = re.compile(r"Total IOMMU checks:\s+(\S+)")
 
 
 @dataclass
 class HarvestRow:
     """One row of the comparison TSV.
 
-    Primary runtime metric is ``runtime_us`` derived from ``simTicks``
-    (1 tick == 1 ps -> us = ticks / 1e6). The legacy per-cluster
-    ``Runtime:`` printed by SALAM accelerators is reported separately as
-    ``kernel_runtime_us`` because it only reflects the last cluster's
-    elapsed time, not the end-to-end simulation.
+    ``runtime_us`` is derived from ``simTicks`` (1 tick == 1 ps -> us =
+    ticks / 1e6) and is the end-to-end ground truth. The per-cluster
+    ``Runtime: N us`` printed by SALAM accelerators is reported
+    separately as ``kernel_runtime_us`` because it only reflects the
+    last cluster's elapsed time.
+
+    ``aia_kd_overhead_us`` and ``iommu_overhead_us`` are the analytical
+    overheads reported by the protection model in run.log. They are NOT
+    added to ``runtime_us`` (which is purely simulated). Effective
+    runtime under each protection model =
+    ``runtime_us`` + the matching overhead column (the analytical models
+    deliberately do not perturb simulator timing).
     """
     label: str
-    runtime_us: str = "-"           # from simTicks (end-to-end ground truth)
+    runtime_us: str = "-"
     sim_ticks: str = "-"
     sim_seconds: str = "-"
-    kernel_runtime_us: str = "-"    # last `Runtime: N us` line in run.log
-    ste_fetches: str = "-"
-    cd_fetches: str = "-"
-    ptw_samples: str = "-"
-    trans_samples: str = "-"
-    trans_mean_ps: str = "-"
+    kernel_runtime_us: str = "-"
     aia_kd_overhead_us: str = "-"
+    iommu_overhead_us: str = "-"
+    iommu_checks: str = "-"
 
     def as_tsv(self) -> str:
         return "\t".join((
             self.label, self.runtime_us, self.sim_ticks, self.sim_seconds,
-            self.kernel_runtime_us,
-            self.ste_fetches, self.cd_fetches,
-            self.ptw_samples, self.trans_samples,
-            self.trans_mean_ps, self.aia_kd_overhead_us,
+            self.kernel_runtime_us, self.aia_kd_overhead_us,
+            self.iommu_overhead_us, self.iommu_checks,
         ))
 
 
 HEADER = ("mode\truntime_us\tsim_ticks\tsim_seconds\tkernel_runtime_us"
-          "\tsteFetches\tcdFetches"
-          "\tptw_samples\ttrans_samples\ttrans_mean_ps"
-          "\taia_kd_overhead_us")
-
-
-def _smmu_re(stat: str) -> re.Pattern[str]:
-    return re.compile(_SMMU_RE_TMPL.format(stat=re.escape(stat)),
-                      re.MULTILINE)
-
-
-def _sum_smmu(stats_text: str, stat: str) -> str:
-    vals = _smmu_re(stat).findall(stats_text)
-    if not vals:
-        return "-"
-    total = sum(_to_number(v) for v in vals)
-    return _fmt_number(total)
-
-
-def _avg_smmu(stats_text: str, stat: str) -> str:
-    vals = _smmu_re(stat).findall(stats_text)
-    if not vals:
-        return "-"
-    nums = [_to_number(v) for v in vals]
-    return _fmt_number(sum(nums) / len(nums))
-
-
-def _to_number(s: str) -> float:
-    try:
-        return float(s)
-    except ValueError:
-        return 0.0
-
-
-def _fmt_number(n: float) -> str:
-    return f"{int(n)}" if n.is_integer() else f"{n:g}"
+          "\taia_kd_overhead_us\tiommu_overhead_us\tiommu_checks")
 
 
 def harvest_run(label: str, outdir: Path) -> HarvestRow:
@@ -103,22 +71,22 @@ def harvest_run(label: str, outdir: Path) -> HarvestRow:
 
     if (m := _SIM_TICKS_RE.search(stats_text)):
         row.sim_ticks = m.group(1)
-        # 1 tick = 1 ps  =>  us = ticks / 1e6.
         row.runtime_us = f"{int(m.group(1)) / 1e6:.3f}"
     if (m := _SIM_SECONDS_RE.search(stats_text)):
         row.sim_seconds = m.group(1)
-    # Last `Runtime: N us` in run.log -- per-cluster, cross-check only.
     runtimes = _RUNTIME_RE.findall(log_text)
     if runtimes:
         row.kernel_runtime_us = runtimes[-1]
-    if (m := _AIA_OVERHEAD_RE.search(log_text)):
-        row.aia_kd_overhead_us = m.group(1)
-
-    row.ste_fetches   = _sum_smmu(stats_text, "steFetches")
-    row.cd_fetches    = _sum_smmu(stats_text, "cdFetches")
-    row.ptw_samples   = _sum_smmu(stats_text, "ptwTimeDist::samples")
-    row.trans_samples = _sum_smmu(stats_text, "translationTimeDist::samples")
-    row.trans_mean_ps = _avg_smmu(stats_text, "translationTimeDist::mean")
+    # Sum overheads across all clusters (IOMMU prints once per cluster).
+    aia = [float(x) for x in _AIA_OVERHEAD_RE.findall(log_text)]
+    if aia:
+        row.aia_kd_overhead_us = f"{sum(aia):.3f}"
+    iommu = [float(x) for x in _IOMMU_OVERHEAD_RE.findall(log_text)]
+    if iommu:
+        row.iommu_overhead_us = f"{sum(iommu):.3f}"
+    checks = [int(x) for x in _IOMMU_CHECKS_RE.findall(log_text)]
+    if checks:
+        row.iommu_checks = str(sum(checks))
     return row
 
 
@@ -135,7 +103,9 @@ def write_summary(rows: Iterable[HarvestRow], path: Path) -> List[HarvestRow]:
 def write_deltas(rows: List[HarvestRow], path: Path) -> None:
     """Compute Δticks / Δ% vs the row labelled 'plain' (if present).
 
-    Uses ``simTicks`` as the runtime ground truth (1 tick == 1 ps).
+    Uses ``simTicks`` as the runtime ground truth (1 tick == 1 ps). For
+    analytical protection modes also reports the *effective* delta
+    including the overhead column.
     """
     plain = next((r for r in rows if r.label == "plain"), None)
     if plain is None or not plain.sim_ticks.isdigit():
@@ -143,19 +113,30 @@ def write_deltas(rows: List[HarvestRow], path: Path) -> None:
     base = int(plain.sim_ticks)
     if base <= 0:
         return
+    base_us = base / 1e6
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w") as f:
-        f.write("mode\tsim_ticks\truntime_us\tdelta_ticks\t"
-                "delta_us\tdelta_pct\n")
+        f.write("mode\tsim_ticks\truntime_us\tdelta_us\tdelta_pct"
+                "\teffective_us\teffective_delta_pct\n")
         for r in rows:
             if not r.sim_ticks.isdigit():
-                f.write(f"{r.label}\t{r.sim_ticks}\t{r.runtime_us}\t-\t-\t-\n")
+                f.write(f"{r.label}\t{r.sim_ticks}\t{r.runtime_us}"
+                        f"\t-\t-\t-\t-\n")
                 continue
             v = int(r.sim_ticks)
-            d = v - base
-            pct = (d / base) * 100.0
-            f.write(f"{r.label}\t{v}\t{r.runtime_us}\t{d}\t"
-                    f"{d/1e6:.3f}\t{pct:.3f}\n")
+            d_us = (v - base) / 1e6
+            pct = (d_us / base_us) * 100.0
+            overhead_us = 0.0
+            for col in (r.aia_kd_overhead_us, r.iommu_overhead_us):
+                try:
+                    overhead_us += float(col)
+                except ValueError:
+                    pass
+            eff_us = (v / 1e6) + overhead_us
+            eff_pct = ((eff_us - base_us) / base_us) * 100.0
+            f.write(f"{r.label}\t{v}\t{r.runtime_us}\t"
+                    f"{d_us:.3f}\t{pct:.3f}\t"
+                    f"{eff_us:.3f}\t{eff_pct:.3f}\n")
 
 
 def harvest_outdir(outroot: Path,

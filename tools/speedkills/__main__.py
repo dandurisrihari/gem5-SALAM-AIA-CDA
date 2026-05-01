@@ -49,7 +49,6 @@ def cmd_compare(args: argparse.Namespace) -> int:
 
     extra = _split_extra(args.extra)
     mode_opts = {
-        "granule_kib": args.granule_kib,
         "aia_kd_latency": args.aia_kd_latency,
         "iotlb_entries": args.iotlb_entries,
         "iotlb_hit_latency": args.iotlb_hit_latency,
@@ -59,13 +58,6 @@ def cmd_compare(args: argparse.Namespace) -> int:
     runs: List[Run] = []
     requested = args.modes.split()
     for mode in requested:
-        if mode == "smmu-tlb-sweep":
-            for label, flags in profiles.expand_tlb_sweep(
-                    _ints(args.tlb_sweep), args.granule_kib):
-                runs.append(Run(label=label, bench=bench,
-                                extra_flags=flags + extra,
-                                outdir=outroot / label))
-            continue
         if mode not in profiles.MODES:
             print(f"Unknown mode: {mode}", file=sys.stderr)
             return 2
@@ -93,6 +85,107 @@ def cmd_compare(args: argparse.Namespace) -> int:
     return 0
 
 
+# ---- compare-all ----------------------------------------------------------
+
+def cmd_compare_all(args: argparse.Namespace) -> int:
+    """Run every registered benchmark across the 3 protection modes.
+
+    Each benchmark gets its own subdir under --outdir, with one
+    sub-subdir per mode plus that bench's summary.tsv / deltas.tsv.
+    A top-level summary.tsv aggregates all (bench, mode) rows.
+    """
+    if args.bench:
+        bench_names = args.bench.split(",")
+    else:
+        excl = set(args.exclude.split(",")) if args.exclude else set()
+        bench_names = [n for n in sorted(REGISTRY) if n not in excl]
+
+    benches = [resolve(n) for n in bench_names]
+    outroot = Path(args.outdir).resolve()
+    outroot.mkdir(parents=True, exist_ok=True)
+    extra = _split_extra(args.extra)
+
+    # Phase 1: regen + sw build (per-path-locked inside).
+    if args.regen or args.build_sw:
+        for b in benches:
+            if args.regen:
+                regen_bench(b, log=outroot / f"{b.name}_setup.log")
+            if args.build_sw:
+                build_sw(b, log=outroot / f"{b.name}_setup.log")
+
+    mode_opts = {
+        "aia_kd_latency": args.aia_kd_latency,
+        "iotlb_entries": args.iotlb_entries,
+        "iotlb_hit_latency": args.iotlb_hit_latency,
+        "iotlb_miss_latency": args.iotlb_miss_latency,
+    }
+    requested = args.modes.split()
+    for mode in requested:
+        if mode not in profiles.MODES:
+            print(f"Unknown mode: {mode}", file=sys.stderr)
+            return 2
+
+    # Phase 2: assemble runs across (bench x mode).
+    runs: List[Run] = []
+    per_bench_runs: dict[str, List[Run]] = {}
+    for b in benches:
+        per_bench_runs[b.name] = []
+        for mode in requested:
+            flags = profiles.MODES[mode](mode_opts)
+            r = Run(label=f"{b.name}/{mode}", bench=b,
+                    extra_flags=flags + extra,
+                    outdir=outroot / b.name / mode)
+            runs.append(r)
+            per_bench_runs[b.name].append(r)
+
+    run_parallel(runs, jobs=args.jobs)
+
+    # Phase 3: harvest per-bench and aggregate.
+    all_rows = []
+    for b in benches:
+        rows = [harvest_run(r.label.split("/", 1)[1], r.outdir)
+                for r in per_bench_runs[b.name]]
+        bench_dir = outroot / b.name
+        write_summary(rows, bench_dir / "summary.tsv")
+        write_deltas(rows, bench_dir / "deltas.tsv")
+        for r, row in zip(per_bench_runs[b.name], rows):
+            row.label = f"{b.name}/{row.label}"
+            all_rows.append(row)
+
+    write_summary(all_rows, outroot / "summary.tsv")
+    print()
+    print(f"===== Aggregate ({len(benches)} benches "
+          f"x {len(requested)} modes) =====")
+    print(pretty_print(all_rows))
+    print(f"\nOutput tree:        {outroot}")
+    print(f"Aggregate summary:  {outroot / 'summary.tsv'}")
+    return 0
+
+
+def add_compare_all(sp: argparse._SubParsersAction) -> None:
+    p = sp.add_parser("compare-all",
+                      help="Run every benchmark across the 3 protection modes")
+    p.add_argument("--outdir", required=True)
+    p.add_argument("--bench", default=None,
+                   help="Comma-separated subset of benchmarks "
+                        "(default: every registered bench)")
+    p.add_argument("--exclude", default="",
+                   help="Comma-separated benchmark names to skip")
+    p.add_argument("--modes", default=" ".join(profiles.DEFAULT_MODES),
+                   help="Modes to run for each bench (default: all 3)")
+    p.add_argument("--aia-kd-latency", type=int, default=8_367_000)
+    p.add_argument("--iotlb-entries", type=int, default=8)
+    p.add_argument("--iotlb-hit-latency", type=int, default=2_000)
+    p.add_argument("--iotlb-miss-latency", type=int, default=500_000)
+    p.add_argument("--jobs", type=int, default=os.cpu_count() or 4)
+    p.add_argument("--extra", default="")
+    p.add_argument("--regen", action="store_true",
+                   help="Run SALAM Configurator before launching")
+    p.add_argument("--build-sw", action="store_true",
+                   help="Run `make` in each bench dir before launching")
+    p.set_defaults(func=cmd_compare_all)
+
+
 def add_compare(sp: argparse._SubParsersAction) -> None:
     p = sp.add_parser("compare", help="Protection-mode comparison")
     p.add_argument("--bench", default="mobilenetv2")
@@ -102,9 +195,7 @@ def add_compare(sp: argparse._SubParsersAction) -> None:
     p.add_argument("--outdir", required=True)
     p.add_argument("--modes", default=" ".join(profiles.DEFAULT_MODES),
                    help="Space-separated mode list. Modes: "
-                        + ", ".join(list(profiles.MODES) + ["smmu-tlb-sweep"]))
-    p.add_argument("--tlb-sweep", default="8 16 32 64 256 2048")
-    p.add_argument("--granule-kib", type=int, default=4, choices=[4, 2048])
+                        + ", ".join(profiles.MODES))
     p.add_argument("--aia-kd-latency", type=int, default=8_367_000,
                    help="kernel_validation_latency in ticks (1 tick = 1 ps; "
                         "default 8,367,000 = 8.367 us per validated page)")
@@ -327,7 +418,6 @@ def cmd_list(args: argparse.Namespace) -> int:
     print("\nProtection modes (`compare --modes ...`):")
     for m in profiles.MODES:
         print(f"  {m}")
-    print("  smmu-tlb-sweep  (one run per --tlb-sweep size)")
     return 0
 
 
@@ -345,6 +435,7 @@ def build_parser() -> argparse.ArgumentParser:
                                  .RawDescriptionHelpFormatter)
     sp = p.add_subparsers(dest="cmd", required=True)
     add_compare(sp)
+    add_compare_all(sp)
     add_sweep(sp)
     add_run(sp)
     add_harvest(sp)
