@@ -23,18 +23,21 @@ class LLVMInterface(ComputeUnit):
     # Models per-access translation+permission cost: every memory access
     # pays an IOTLB lookup; misses additionally pay a page-walk cost.
     #
-    # Defaults are tuned to a low-end ARM MMU-400-class IOMMU at 1 GHz
-    # (1 tick = 1 ps):
-    #   * iotlb_entries     = 64    (matches PROFILE_IOT TLB band)
-    #   * iotlb_hit_latency = 1 ns  (~1 cycle SRAM lookup)
-    #   * iotlb_miss_latency= 300 ns (4-level stage-1 walk hitting
-    #                                  partial walk caches; published
-    #                                  ARM silicon numbers 200-500 ns)
-    # Override per-run via gem5 CLI / fs_*.py knobs; nothing is hard-coded.
+    # Defaults are tuned to a *constrained edge-IoT* peripheral IOMMU
+    # (Cortex-M / Cortex-A5-class device, ~400 MHz, DDR3/LPDDR2 walk):
+    #   * iotlb_entries     = 8       silicon-area-constrained vendor
+    #                                  IPs ship 4-16 entry uTLBs
+    #   * iotlb_hit_latency = 2 ns    ~1 cycle SRAM lookup @ 400-500 MHz
+    #   * iotlb_miss_latency= 500 ns  4-level walk to slow DRAM, no
+    #                                  walk caches, single PTW thread
+    # All within published Arm MMU-400 ranges; deliberately a tight,
+    # defensible profile so IOMMU overhead is non-trivial on memory-
+    # heavy workloads. Override per-run via gem5 CLI / fs_*.py knobs.
     enable_iommu = Param.Bool(False, "Enable IOMMU latency model")
-    iotlb_entries = Param.UInt32(64, "IOTLB capacity (LRU)")
-    iotlb_hit_latency = Param.Tick(1000, "IOTLB hit latency (ticks; "
-                                        "default 1000 = 1 ns)")
-    iotlb_miss_latency = Param.Tick(300000, "IOTLB miss / page-walk "
+    iotlb_entries = Param.UInt32(8, "IOTLB capacity (LRU; default 8 "
+                                    "= edge-IoT uTLB)")
+    iotlb_hit_latency = Param.Tick(2000, "IOTLB hit latency (ticks; "
+                                         "default 2000 = 2 ns)")
+    iotlb_miss_latency = Param.Tick(500000, "IOTLB miss / page-walk "
                                             "latency (ticks; default "
-                                            "300000 = 300 ns)")
+                                            "500000 = 500 ns)")

@@ -109,14 +109,15 @@ def add_compare(sp: argparse._SubParsersAction) -> None:
                    help="kernel_validation_latency in ticks (1 tick = 1 ps; "
                         "default 8,367,000 = 8.367 us per validated page)")
     # Analytical IOMMU knobs (used by mode `iommu`). 1 tick = 1 ps.
-    # Defaults match a low-end MMU-400-class profile (see profiles.py).
-    p.add_argument("--iotlb-entries", type=int, default=64,
-                   help="IOTLB capacity for `iommu` mode (LRU; default 64)")
-    p.add_argument("--iotlb-hit-latency", type=int, default=1_000,
-                   help="IOTLB hit latency in ticks (default 1000 = 1 ns)")
-    p.add_argument("--iotlb-miss-latency", type=int, default=300_000,
+    # Defaults match a constrained edge-IoT profile (see profiles.py):
+    # 8-entry LRU IOTLB, 2 ns hit, 500 ns page-walk miss.
+    p.add_argument("--iotlb-entries", type=int, default=8,
+                   help="IOTLB capacity for `iommu` mode (LRU; default 8)")
+    p.add_argument("--iotlb-hit-latency", type=int, default=2_000,
+                   help="IOTLB hit latency in ticks (default 2000 = 2 ns)")
+    p.add_argument("--iotlb-miss-latency", type=int, default=500_000,
                    help="IOTLB miss / page-walk latency in ticks "
-                        "(default 300000 = 300 ns)")
+                        "(default 500000 = 500 ns)")
     p.add_argument("--jobs", type=int, default=4)
     p.add_argument("--extra", default="",
                    help="Extra gem5 flags appended to every run (quoted)")

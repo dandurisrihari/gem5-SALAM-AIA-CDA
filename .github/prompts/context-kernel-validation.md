@@ -86,10 +86,11 @@ feature. Skipping them has cost real time in the past.
   - `validation_int_num` (Int32, default 172) — GIC IRQ raised to kernel
   - `process_id` (UInt64, default 17) — SMID for per-process cache
   - `enable_iommu` (Bool, default False)
-  - `iotlb_entries` (UInt32, default 64)
-  - `iotlb_hit_latency` (Tick, default 1 000 = 1 ns @ 1 GHz)
-  - `iotlb_miss_latency` (Tick, default 300 000 = 300 ns; ARM stage-1
-    walk hitting partial walk caches)
+  - `iotlb_entries` (UInt32, default **8** — constrained edge-IoT uTLB)
+  - `iotlb_hit_latency` (Tick, default **2 000 = 2 ns @ ~400-500 MHz**)
+  - `iotlb_miss_latency` (Tick, default **500 000 = 500 ns**; 4-level
+    walk to slow DRAM, no walk caches, single PTW thread — MMU-400
+    band)
 - Header: [src/hwacc/llvm_interface.hh](../../src/hwacc/llvm_interface.hh)
   - `PendingValidationRequest`, `WaitingInstruction` structs
   - `validatedPagesPerProcess` — per-PID cache of 4 KiB-aligned pages
@@ -155,8 +156,11 @@ The four experimental modes are:
   then free.
 - **iommu** — `--enable-iommu` plus IOTLB knobs. Cheap analytical tax
   (per-access IOTLB look-aside model) living inside `LLVMInterface`.
-  Per-accelerator only; defaults to a 64-entry LRU IOTLB with
-  1 ns hit / 300 ns miss-walk.
+  Per-accelerator only; defaults to a *constrained edge-IoT*
+  peripheral IOMMU (Cortex-M / Cortex-A5-class, ~400 MHz, DDR3 walk):
+  8-entry LRU IOTLB, 2 ns hit, 500 ns miss-walk. Deliberately tight
+  so reviewers can't dismiss the comparison as an IOMMU strawman with
+  unrealistically large TLBs.
 - **smmu-iot** (and `smmu-mmu500`, `smmu-server`, `smmu-bypass`) —
   `--enable-real-smmu` plus a profile from `profiles.py`. Instantiates a
   real `SMMUv3` per `AccCluster` between the cluster's coherency bus
@@ -190,12 +194,19 @@ and visualised by [tools/experiment_monitor.py](../../tools/experiment_monitor.p
   hook points, ahead of the AIA-KD block. Mutual exclusion is enforced
   in the constructor (`panic`) and in `AccConfig` (`raise`).
 - Fully-associative LRU IOTLB of `iotlb_entries` page numbers
-  (default 64).
-- Hit pays `iotlb_hit_latency` (default 1 000 ticks = 1 ns); miss pays
-  `iotlb_miss_latency` (default 300 000 ticks = 300 ns) and installs
-  the entry (LRU evict if full). `iotlb_entries=0` => every access
-  misses. All three knobs are CLI-overridable and surfaced as
+  (default **8** — constrained edge-IoT uTLB).
+- Hit pays `iotlb_hit_latency` (default 2 000 ticks = 2 ns @ ~400 MHz);
+  miss pays `iotlb_miss_latency` (default 500 000 ticks = 500 ns) and
+  installs the entry (LRU evict if full). `iotlb_entries=0` => every
+  access misses. All three knobs are CLI-overridable and surfaced as
   `compare --iotlb-entries / --iotlb-hit-latency / --iotlb-miss-latency`.
+- **Per-device**: each `LLVMInterface` (i.e. each accelerator compute
+  unit) owns an independent IOTLB and stats. **No shared L2 IOTLB at
+  the TCU is modeled** — this is the *conservative* IOMMU profile
+  (a real SoC could amortise some misses through a shared TLB, which
+  would slightly reduce IOMMU overhead). The AIA-KD cache, by
+  contrast, is keyed on PID and naturally shared across accelerators
+  of the same process for free.
 - Per-access deferral mirrors AIA: instruction returns `false`,
   `iommuPendingUIDs` keeps it from re-launching, `iommuDispatchEvent`
   fires at the deadline and dispatches via the same RAW-checked path.

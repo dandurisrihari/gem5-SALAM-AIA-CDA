@@ -92,15 +92,16 @@ MODES: Dict[str, ModeBuilder] = {
     # Analytical IOMMU latency model living inside LLVMInterface (no real
     # SMMU SimObject). Mutually exclusive with --enable-kernel-validation.
     # Defaults below match the LLVMInterface.py Param defaults, so passing
-    # `--enable-iommu` alone yields a low-end MMU-400-class profile:
-    #   64-entry LRU IOTLB, 1 ns hit, 300 ns miss / page-walk.
+    # `--enable-iommu` alone yields a constrained edge-IoT peripheral
+    # IOMMU profile (Cortex-M / Cortex-A5-class, ~400 MHz, DDR3 walk):
+    #   8-entry LRU IOTLB, 2 ns hit, 500 ns miss / page-walk.
     # Override via `compare --iotlb-entries / --iotlb-hit-latency /
     # --iotlb-miss-latency`; nothing is baked in here.
     "iommu": lambda o: [
         "--enable-iommu",
-        "--iotlb-entries",      str(o.get("iotlb_entries", 64)),
-        "--iotlb-hit-latency",  str(o.get("iotlb_hit_latency", 1_000)),
-        "--iotlb-miss-latency", str(o.get("iotlb_miss_latency", 300_000)),
+        "--iotlb-entries",      str(o.get("iotlb_entries", 8)),
+        "--iotlb-hit-latency",  str(o.get("iotlb_hit_latency", 2_000)),
+        "--iotlb-miss-latency", str(o.get("iotlb_miss_latency", 500_000)),
     ],
 }
 
