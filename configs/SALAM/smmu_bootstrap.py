@@ -1,5 +1,4 @@
 # Copyright (c) 2026 SALAM contributors
-#
 # SPDX-License-Identifier: BSD-3-Clause
 """
 SMMUv3 bootstrap blob builder.
@@ -9,153 +8,103 @@ translation mode needs in order to operate, *without* requiring any
 software (Linux driver or bare-metal init code) to run on the
 simulated CPU.
 
-Strategy
---------
-We build an identity-mapping AArch64 stage-1 page table covering the
-low 4 GiB of physical address space using 2 MiB block descriptors at
-L2. Identity mapping keeps the workload's pointers unchanged, while
-forcing the SMMU to perform real translations means every distinct
-2 MiB region the accelerator touches contributes a TLB miss + walk on
-first touch, exactly like a real SoC.
+Two granule modes are supported:
 
-A 2 MiB granule was chosen because:
+  granule_kib = 2048   -> 2 MiB block descriptors at L2.
+                          Walk depth on a cold miss = 3 (L0,L1,L2).
+                          Tiny page-table footprint (~32 KiB total).
+                          Good for "we just want translation enabled"
+                          experiments. Each TLB entry covers 2 MiB,
+                          so accelerator working sets up to a few MiB
+                          fit in 1-2 entries -> no realistic TLB
+                          pressure.
+  granule_kib = 4      -> 4 KiB page descriptors at L3. Full 4-level
+                          AArch64 walk (L0,L1,L2,L3) on a cold miss.
+                          Page-table footprint ~8 MiB (a fully
+                          materialised identity map of the low 4 GiB
+                          at 4 KiB granule). This is the realistic
+                          "edge SoC SMMU" mode -- TLB entries cover
+                          4 KiB, so any accelerator that streams more
+                          than a few hundred KiB will thrash a 16- or
+                          32-entry TBU exactly like real silicon.
 
-  * it keeps the page-table footprint tiny (≈ 24 KiB total tree),
-  * walk depth is L0 → L1 → L2 (3 reads on a cold miss), matching
-    a Linux-style large-page mapping, and
-  * the SMMU's main TLB caches at the block granule, so sweeping
-    `--smmu-tlb-entries` produces a measurable curve for any
-    workload whose footprint exceeds `tlb_entries * 2 MiB`.
+The blob layout (offsets relative to the per-cluster scratch base):
 
-The blob layout, relative to the per-cluster scratch base:
+    granule = 2 MiB                        granule = 4 KiB
+    +0x0000   STE table  (4 KiB)          +0x0000   STE table   (4 KiB)
+    +0x1000   CD         (64 B)           +0x1000   CD          (64 B)
+    +0x2000   L0 page table (4 KiB)       +0x2000   L0 page table (4 KiB)
+    +0x3000   L1 page table (4 KiB)       +0x3000   L1 page table (4 KiB)
+    +0x4000   L2 #0..#3   (16 KiB)        +0x4000   L2 #0..#3   (16 KiB)
+                                          +0x8000   L3 #0..#2047 (8 MiB)
 
-    +0x0000   STE table   (4 KiB,  64 entries × 64 B)
-    +0x1000   ContextDesc (64 B; one CD shared by every valid STE)
-    +0x2000   L0 page table (4 KiB; entry 0 → L1)
-    +0x3000   L1 page table (4 KiB; entries 0..3 → L2 #0..#3)
-    +0x4000   L2 page table #0 (4 KiB, identity-maps  0 .. 1 GiB)
-    +0x5000   L2 page table #1 (4 KiB, identity-maps 1 .. 2 GiB)
-    +0x6000   L2 page table #2 (4 KiB, identity-maps 2 .. 3 GiB)
-    +0x7000   L2 page table #3 (4 KiB, identity-maps 3 .. 4 GiB)
-
-Total: 32 KiB. The Python helper returns the bytes plus the values to
-seed into the SMMU registers (STRTAB_BASE, STRTAB_BASE_CFG, CR0).
+Stream table is linear, 64 entries (log2 = 6).
 """
 
 import struct
 
 
-# Layout offsets within the blob.
+# Layout constants.
 STE_TABLE_OFFSET = 0x0000
 CD_OFFSET        = 0x1000
 L0_OFFSET        = 0x2000
 L1_OFFSET        = 0x3000
 L2_BASE_OFFSET   = 0x4000
+L2_TABLES        = 4
+L2_REGION_SIZE   = L2_TABLES * 0x1000  # 16 KiB
 
-# 4 L2 tables × 4 KiB each, immediately after L2_BASE_OFFSET.
-BLOB_TOTAL_SIZE = 0x8000   # 32 KiB
+# L3 starts right after the L2 region; one L3 table per L2 entry that
+# we want to refine to 4 KiB pages. 4 GiB / 2 MiB = 2048 L3 tables.
+L3_BASE_OFFSET   = L2_BASE_OFFSET + L2_REGION_SIZE  # 0x8000
+L3_TABLES        = L2_TABLES * 512   # 2048
+L3_REGION_SIZE   = L3_TABLES * 0x1000   # 8 MiB
 
-# Stream table: 64 entries × 64 B = 4 KiB. log2(64) = 6.
 STREAM_TABLE_LOG2_ENTRIES = 6
 STREAM_TABLE_NUM_ENTRIES  = 1 << STREAM_TABLE_LOG2_ENTRIES
 STE_SIZE_BYTES            = 64
 CD_SIZE_BYTES             = 64
 
-# Page-table geometry: AArch64, 4 KiB granule.
 PT_ENTRIES_PER_LEVEL = 512
 GIB                  = 1 << 30
 MIB                  = 1 << 20
+KIB                  = 1 << 10
 
-# SMMUv3 stream-table-cfg encoding (ST_CFG_FMT_LINEAR == 0).
 ST_CFG_FMT_LINEAR = 0x0
-
-# CR0 bit.
-CR0_SMMUEN = 0x1
+CR0_SMMUEN        = 0x1
 
 
 def _ste_stage1_only(cd_pa: int) -> bytes:
-    """
-    Build a single 64 B STE that selects stage-1-only translation and
-    points at the given Context Descriptor.
-
-    Bit layout (DWORD0):
-      [0]      valid = 1
-      [3:1]    config = 0b101 (STE_CONFIG_STAGE1_ONLY)
-      [5:4]    s1fmt = 0 (single CD; not a CD table)
-      [51:6]   s1ctxptr = cd_pa >> 6 (placed at bit 6 -> shift left 0
-               after the right shift, since the field starts at bit 6)
-      [63:59]  s1cdmax = 0 (single CD)
-    Other DWORDs are zero (sane defaults: stage 2 disabled, NS, etc).
-    """
     if cd_pa & 0x3F:
         raise ValueError(
             f"CD address {cd_pa:#x} must be 64-byte aligned")
-
     dw0 = 0
-    dw0 |= 1 << 0                           # valid
-    dw0 |= (0x5 & 0x7) << 1                 # config = STAGE1_ONLY
-    dw0 |= (0 & 0x3) << 4                   # s1fmt = 0
-    dw0 |= ((cd_pa >> 6) & ((1 << 46) - 1)) << 6  # s1ctxptr
-    # s1cdmax stays 0.
-
+    dw0 |= 1 << 0                                       # valid
+    dw0 |= (0x5 & 0x7) << 1                             # config=STAGE1_ONLY
+    dw0 |= ((cd_pa >> 6) & ((1 << 46) - 1)) << 6        # s1ctxptr
     return struct.pack("<QQQQQQQQ", dw0, 0, 0, 0, 0, 0, 0, 0)
 
 
 def _context_descriptor(l0_pa: int) -> bytes:
-    """
-    Build a 64 B Context Descriptor that programs an AArch64 stage-1
-    translation regime with TTBR0 = l0_pa, 4 KiB granule, 48-bit VA.
-
-    DWORD0:
-      [5:0]    t0sz  = 16 (64 - 48 = 16)
-      [7:6]    tg0   = 0 (4 KiB granule)
-      [9:8]    ir0   = 1 (inner WB cacheable)
-      [11:10]  or0   = 1 (outer WB cacheable)
-      [13:12]  sh0   = 3 (inner shareable)
-      [14]     epd0  = 0 (TTBR0 walks enabled)
-      [15]     endi  = 0 (little-endian)
-      [21:16]  t1sz  = 0
-      [30]     epd1  = 1 (TTBR1 walks disabled)
-      [31]     valid = 1
-      [34:32]  ips   = 1 (40-bit PA output; plenty for our 4 GiB map)
-      [41]     aa64  = 1 (AArch64 mode)
-      [63:48]  asid  = 1
-    DWORD1:
-      [51:4]   ttb0  = l0_pa >> 4 (placed at bit 4)
-    """
     if l0_pa & 0xFFF:
         raise ValueError(
-            f"TTB0 address {l0_pa:#x} must be 4 KiB aligned")
-
+            f"TTB0 {l0_pa:#x} must be 4 KiB aligned")
     dw0 = 0
-    dw0 |= (16 & 0x3F)                      # t0sz
-    dw0 |= (0 & 0x3) << 6                   # tg0 = 4K
-    dw0 |= (1 & 0x3) << 8                   # ir0
-    dw0 |= (1 & 0x3) << 10                  # or0
-    dw0 |= (3 & 0x3) << 12                  # sh0
-    # epd0 = 0; endi = 0; t1sz = 0.
-    dw0 |= 1 << 30                          # epd1 = 1 (no TTBR1)
-    dw0 |= 1 << 31                          # valid
-    dw0 |= (1 & 0x7) << 32                  # ips = 40-bit
-    dw0 |= 1 << 41                          # aa64
-    dw0 |= (1 & 0xFFFF) << 48               # asid
-
+    dw0 |= (16 & 0x3F)                                  # t0sz
+    dw0 |= (0 & 0x3) << 6                               # tg0 = 4K
+    dw0 |= (1 & 0x3) << 8                               # ir0
+    dw0 |= (1 & 0x3) << 10                              # or0
+    dw0 |= (3 & 0x3) << 12                              # sh0
+    dw0 |= 1 << 30                                      # epd1
+    dw0 |= 1 << 31                                      # valid
+    dw0 |= (1 & 0x7) << 32                              # ips=40-bit
+    dw0 |= 1 << 41                                      # aa64
+    dw0 |= (1 & 0xFFFF) << 48                           # asid
     dw1 = 0
-    dw1 |= ((l0_pa >> 4) & ((1 << 48) - 1)) << 4   # ttb0 at [51:4]
-
-    # mair, amair, _pad[3]: leave zero. Translation works without
-    # MAIR being meaningful because we never check memory attributes.
+    dw1 |= ((l0_pa >> 4) & ((1 << 48) - 1)) << 4
     return struct.pack("<QQQQQQQQ", dw0, dw1, 0, 0, 0, 0, 0, 0)
 
 
 def _table_descriptor(next_pa: int) -> int:
-    """
-    AArch64 stage-1 table descriptor.
-
-      [0]     valid = 1
-      [1]     type  = 1 (table)
-      [47:12] next-level-table base (4 KiB aligned)
-    """
     if next_pa & 0xFFF:
         raise ValueError(
             f"Next-level table {next_pa:#x} must be 4 KiB aligned")
@@ -163,36 +112,30 @@ def _table_descriptor(next_pa: int) -> int:
 
 
 def _block_descriptor_2mb(pa: int) -> int:
-    """
-    AArch64 stage-1 block descriptor for an L2 entry (2 MiB block).
-
-      [0]      valid = 1
-      [1]      type  = 0 (block)
-      [4:2]    AttrIndx = 0 (MAIR index 0; we don't care for func)
-      [5]      NS    = 0
-      [7:6]    AP    = 0 (RW @ EL1)
-      [9:8]    SH    = 3 (inner shareable)
-      [10]     AF    = 1 (Access Flag set; otherwise SMMU faults on
-                          access-flag check)
-      [47:21]  OA[47:21] (2 MiB-aligned output address)
-    """
     if pa & (2 * MIB - 1):
-        raise ValueError(
-            f"Block PA {pa:#x} must be 2 MiB aligned")
+        raise ValueError(f"Block PA {pa:#x} must be 2 MiB aligned")
     desc = 0
-    desc |= 1                               # valid (type = 0)
-    desc |= 0 << 2                          # AttrIndx = 0
-    desc |= 0 << 5                          # NS = 0
-    desc |= 0 << 6                          # AP = 0 (RW EL1)
-    desc |= 3 << 8                          # SH = inner shareable
-    desc |= 1 << 10                         # AF
-    desc |= pa & ((1 << 48) - (1 << 21))    # OA[47:21]
+    desc |= 1                                # valid (type=0 -> block at L2)
+    desc |= 3 << 8                           # SH=inner-shareable
+    desc |= 1 << 10                          # AF
+    desc |= pa & ((1 << 48) - (1 << 21))     # OA[47:21]
     return desc
 
 
-def build_blob(scratch_pa: int, valid_stream_ids):
+def _page_descriptor_4kb(pa: int) -> int:
+    if pa & (4 * KIB - 1):
+        raise ValueError(f"Page PA {pa:#x} must be 4 KiB aligned")
+    desc = 0
+    desc |= 0x3                              # valid + page (L3 needs type=1)
+    desc |= 3 << 8                           # SH=inner-shareable
+    desc |= 1 << 10                          # AF
+    desc |= pa & ((1 << 48) - (1 << 12))     # OA[47:12]
+    return desc
+
+
+def build_blob(scratch_pa, valid_stream_ids, granule_kib=2048):
     """
-    Build the full SMMU bootstrap blob and return:
+    Build the SMMU bootstrap blob and return:
         (blob_bytes,
          strtab_base_value,
          strtab_base_cfg_value,
@@ -200,58 +143,73 @@ def build_blob(scratch_pa: int, valid_stream_ids):
 
     Parameters
     ----------
-    scratch_pa : int
-        Physical address at which the blob will be placed in DRAM.
-        Must be 4 KiB aligned. The SMMU will read its STE / CD / PT
-        structures from PAs derived from this base.
-    valid_stream_ids : iterable[int]
-        StreamIDs that should be programmed for stage-1 translation.
-        Every other STE in the table is left invalid (so a stray
-        request from an unmapped StreamID will raise a translation
-        fault and be visible in stats, rather than silently bypass).
-
-    Notes
-    -----
-    The same Context Descriptor and the same identity page table are
-    shared by every valid STE. This is fine because we are only using
-    translation as a latency model; the *identity* of the translation
-    is the same for every accelerator.
+    scratch_pa : int        4 KiB-aligned base PA where the blob lives.
+    valid_stream_ids : iter StreamIDs to program. Others stay invalid.
+    granule_kib : int       2048 (2 MiB blocks) or 4 (4 KiB pages).
     """
     if scratch_pa & 0xFFF:
         raise ValueError(
             f"scratch_pa {scratch_pa:#x} must be 4 KiB aligned")
+    if granule_kib not in (4, 2048):
+        raise ValueError("granule_kib must be 4 or 2048")
 
-    blob = bytearray(BLOB_TOTAL_SIZE)
+    if granule_kib == 2048:
+        blob_size = L3_BASE_OFFSET    # 32 KiB
+    else:
+        blob_size = L3_BASE_OFFSET + L3_REGION_SIZE  # 32 KiB + 8 MiB
 
-    # Resolve the absolute PAs of each region.
+    blob = bytearray(blob_size)
+
     ste_table_pa = scratch_pa + STE_TABLE_OFFSET
     cd_pa        = scratch_pa + CD_OFFSET
     l0_pa        = scratch_pa + L0_OFFSET
     l1_pa        = scratch_pa + L1_OFFSET
-    l2_pa = [scratch_pa + L2_BASE_OFFSET + i * 0x1000 for i in range(4)]
+    l2_pa = [scratch_pa + L2_BASE_OFFSET + i * 0x1000
+             for i in range(L2_TABLES)]
 
-    # --- L2 tables: 2 MiB block descriptors, identity mapping ---
-    for table_idx in range(4):
-        for entry_idx in range(PT_ENTRIES_PER_LEVEL):
-            pa = (table_idx * GIB) + (entry_idx * 2 * MIB)
-            desc = _block_descriptor_2mb(pa)
-            off = L2_BASE_OFFSET + table_idx * 0x1000 + entry_idx * 8
-            struct.pack_into("<Q", blob, off, desc)
+    if granule_kib == 2048:
+        # L2 holds 2 MiB block descriptors directly.
+        for table_idx in range(L2_TABLES):
+            for entry_idx in range(PT_ENTRIES_PER_LEVEL):
+                pa = (table_idx * GIB) + (entry_idx * 2 * MIB)
+                desc = _block_descriptor_2mb(pa)
+                off = (L2_BASE_OFFSET + table_idx * 0x1000
+                       + entry_idx * 8)
+                struct.pack_into("<Q", blob, off, desc)
+    else:
+        # L2 holds table descriptors -> L3; each L3 covers 2 MiB at 4K.
+        for table_idx in range(L2_TABLES):
+            for entry_idx in range(PT_ENTRIES_PER_LEVEL):
+                # L3 table sits at L3_BASE + (l2_idx * 512 + entry) * 4K.
+                l3_idx = table_idx * PT_ENTRIES_PER_LEVEL + entry_idx
+                l3_pa  = (scratch_pa + L3_BASE_OFFSET
+                          + l3_idx * 0x1000)
+                desc = _table_descriptor(l3_pa)
+                off = (L2_BASE_OFFSET + table_idx * 0x1000
+                       + entry_idx * 8)
+                struct.pack_into("<Q", blob, off, desc)
+                # Fill L3 with 512 page descriptors covering 2 MiB.
+                base_pa = (table_idx * GIB) + (entry_idx * 2 * MIB)
+                for page_idx in range(PT_ENTRIES_PER_LEVEL):
+                    page_pa = base_pa + page_idx * 4 * KIB
+                    page_desc = _page_descriptor_4kb(page_pa)
+                    page_off = (L3_BASE_OFFSET + l3_idx * 0x1000
+                                + page_idx * 8)
+                    struct.pack_into("<Q", blob, page_off, page_desc)
 
-    # --- L1 table: 4 valid table descriptors -> L2 #0..#3 ---
-    for i in range(4):
+    # L1 -> L2 (always 4 valid table descriptors)
+    for i in range(L2_TABLES):
         off = L1_OFFSET + i * 8
-        struct.pack_into("<Q", blob, off, _table_descriptor(l2_pa[i]))
-    # Entries 4..511 stay zero (invalid).
+        struct.pack_into("<Q", blob, off,
+                         _table_descriptor(l2_pa[i]))
 
-    # --- L0 table: only entry 0 valid, points at L1 ---
+    # L0[0] -> L1
     struct.pack_into("<Q", blob, L0_OFFSET, _table_descriptor(l1_pa))
 
-    # --- Context Descriptor (one, shared) ---
+    # Context descriptor + stream-table entries.
     cd_bytes = _context_descriptor(l0_pa)
     blob[CD_OFFSET:CD_OFFSET + CD_SIZE_BYTES] = cd_bytes
 
-    # --- Stream table: programmed entries point at the shared CD ---
     ste_bytes = _ste_stage1_only(cd_pa)
     for sid in valid_stream_ids:
         if not (0 <= sid < STREAM_TABLE_NUM_ENTRIES):
@@ -260,15 +218,8 @@ def build_blob(scratch_pa: int, valid_stream_ids):
                 f"[0, {STREAM_TABLE_NUM_ENTRIES})")
         off = STE_TABLE_OFFSET + sid * STE_SIZE_BYTES
         blob[off:off + STE_SIZE_BYTES] = ste_bytes
-    # Unprogrammed entries remain zero -> dw0.valid = 0 -> the
-    # SMMU model panics if a request arrives with such a StreamID.
 
-    # SMMU register seed values.
-    # STRTAB_BASE: top bits hold the stream-table base PA (already
-    # 4 KiB aligned). The model masks with VMT_BASE_ADDR_MASK.
-    strtab_base = ste_table_pa
-    # STRTAB_BASE_CFG: linear format (FMT field = 0), size = log2(N).
+    strtab_base     = ste_table_pa
     strtab_base_cfg = ST_CFG_FMT_LINEAR | STREAM_TABLE_LOG2_ENTRIES
-    cr0 = CR0_SMMUEN
-
+    cr0             = CR0_SMMUEN
     return bytes(blob), strtab_base, strtab_base_cfg, cr0

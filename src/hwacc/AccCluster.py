@@ -109,9 +109,58 @@ class AccCluster(Platform):
         reg_base = 0x2b400000 + smmu_idx * 0x00020000
 
         smmu = SMMUv3(reg_map=AddrRange(reg_base, size=0x00020000))
-        # Allow CLI overrides for the knobs experimenters actually sweep.
-        smmu.tlb_entries = getattr(options, 'smmu_tlb_entries', 2048)
-        smmu.tlb_lat = getattr(options, 'smmu_tlb_lat', 3)
+        # ----------------------------------------------------------------
+        # Low-end IoT IOMMU profile (Arm MMU-400-class, overridable).
+        #
+        # Target class: smallest realistic accelerator-side IOMMU shipped
+        # in low-power IoT / embedded SoCs. Reference is the Arm MMU-400
+        # TRM: SMMUv1, optional small main TLB (16-128 entries), 4-8
+        # entry micro-TLB, **no walk cache at all** (every miss is a full
+        # walk to memory), single PTW thread, single shared TCU.
+        #
+        # SALAM models one SMMU per accelerator cluster, which slightly
+        # over-resources real low-end SoCs (which would share one IOMMU
+        # across all DMA masters); we keep that structural choice but
+        # size each instance at the MMU-400 minimum band so the per-
+        # cluster cost stays defensible.
+        #
+        # All knobs are CLI-overridable so the same binary can be swept
+        # over (a) "no walk cache" (this default), (b) MMU-500 small
+        # config (--smmu-walk-enable + walk-S1L* knobs), and (c) server-
+        # class config without rebuilding.
+        # ----------------------------------------------------------------
+        smmu.tlb_entries  = getattr(options, 'smmu_tlb_entries', 16)
+        smmu.tlb_assoc    = getattr(options, 'smmu_tlb_assoc',   2)
+        smmu.tlb_enable   = True
+        smmu.tlb_lat      = getattr(options, 'smmu_tlb_lat',     3)
+        smmu.tlb_slots    = getattr(options, 'smmu_tlb_slots',   1)
+        # Translation pipeline / page-table walker bandwidth: minimal.
+        smmu.xlate_slots  = getattr(options, 'smmu_xlate_slots', 2)
+        smmu.ptw_slots    = getattr(options, 'smmu_ptw_slots',   1)
+        # Config (STE/CD) cache: tiny.
+        smmu.cfg_entries  = getattr(options, 'smmu_cfg_entries', 4)
+        smmu.cfg_assoc    = 2
+        # No stage-2 / virtualization in low-end IoT.
+        smmu.ipa_enable   = False
+        # Walk cache: DISABLED by default (MMU-400 has none). Every TBU
+        # miss costs a full N-step walk to DRAM. Re-enable + size via
+        # CLI knobs to model MMU-500 / server-class profiles.
+        smmu.walk_enable  = getattr(options, 'smmu_walk_enable',  False)
+        smmu.walk_S1L0    = getattr(options, 'smmu_walk_s1l0',    0)
+        smmu.walk_S1L1    = getattr(options, 'smmu_walk_s1l1',    0)
+        smmu.walk_S1L2    = getattr(options, 'smmu_walk_s1l2',    0)
+        smmu.walk_S1L3    = getattr(options, 'smmu_walk_s1l3',    0)
+        smmu.walk_S2L0    = 0
+        smmu.walk_S2L1    = 0
+        smmu.walk_S2L2    = 0
+        smmu.walk_S2L3    = 0
+        smmu.walk_assoc   = getattr(options, 'smmu_walk_assoc',   1)
+        smmu.walk_lat     = getattr(options, 'smmu_walk_lat',     4)
+        smmu.walk_slots   = getattr(options, 'smmu_walk_slots',   1)
+        # SMMU<->IFC link latency: low-end SoC NoCs are slower than
+        # gem5's server default (8 cy); use 12 cy.
+        smmu.ifc_smmu_lat = getattr(options, 'smmu_ifc_lat', 12)
+        smmu.smmu_ifc_lat = getattr(options, 'smmu_ifc_lat', 12)
         self.smmu = smmu
 
         # Downstream side: SMMU's request port goes to the same place
@@ -126,8 +175,19 @@ class AccCluster(Platform):
         smmu.control = system.iobus.mem_side_ports
 
         # Build one device interface per cluster and attach the cluster's
-        # outbound coherency-bus traffic to it.
+        # outbound coherency-bus traffic to it. This is the per-device
+        # TBU (Translation Buffer Unit) sitting in front of the central
+        # SMMU (TCU) modelled above.
+        # ----------------------------------------------------------------
+        # Low-end IoT TBU sizing (matches MMU-400-class profile above):
+        #   Main TLB depth   : 16
+        #   Micro TLB depth  : 4   (MMU-400/500 minimum)
+        #   Translate slots  : 1   (single in-flight translation)
+        # ----------------------------------------------------------------
         ifc = SMMUv3DeviceInterface()
+        ifc.utlb_entries  = getattr(options, 'smmu_utlb_entries',    4)
+        ifc.tlb_entries   = getattr(options, 'smmu_ifctlb_entries', 16)
+        ifc.xlate_slots   = getattr(options, 'smmu_tbu_xlate_slots', 1)
         if options.acc_cache and (cache_size != 0):
             self.cluster_cache = ClusterCache()
             self.cluster_cache.size = cache_size
@@ -148,18 +208,29 @@ class AccCluster(Platform):
             import os, tempfile
             from configs.SALAM.smmu_bootstrap import build_blob
 
-            stream_id = smmu_idx
-            # Per-cluster 1 MiB scratch slot in DRAM, well above the
-            # workload's working set (SALAM kernels load at 0x80000000
-            # and rarely exceed a few hundred MiB).
-            scratch_pa = 0xa0000000 + smmu_idx * 0x00100000
+            granule_kib = getattr(options, 'smmu_granule_kib', 2048)
+            # Per-cluster scratch slot. 4 KiB granule needs ~8 MiB of
+            # page tables, so we use a 16 MiB stride per cluster to
+            # leave headroom. 2 MiB granule fits comfortably too.
+            scratch_pa = 0xa0000000 + smmu_idx * 0x01000000
+
+            # Mark *every* STE in the per-cluster stream table valid.
+            # All 64 STEs share the same CD / identity page-tables, so
+            # whatever StreamID the device interface ends up presenting
+            # within its own SMMU (0 in current gem5, but model-internal
+            # remapping can change this) will find a valid STE. Cost is
+            # zero extra memory -- the STE table is one 4 KiB page
+            # regardless.
+            from configs.SALAM.smmu_bootstrap import (
+                STREAM_TABLE_NUM_ENTRIES)
+            valid_ids = list(range(STREAM_TABLE_NUM_ENTRIES))
 
             blob, strtab_base, strtab_base_cfg, cr0 = build_blob(
-                scratch_pa, [stream_id])
+                scratch_pa, valid_ids, granule_kib=granule_kib)
 
             blob_path = os.path.join(
                 tempfile.gettempdir(),
-                f"salam_smmu_blob_{smmu_idx}.bin")
+                f"salam_smmu_blob_{smmu_idx}_g{granule_kib}.bin")
             with open(blob_path, "wb") as fh:
                 fh.write(blob)
 
@@ -169,7 +240,7 @@ class AccCluster(Platform):
             smmu.init_strtab_base      = strtab_base
             smmu.init_strtab_base_cfg  = strtab_base_cfg
             smmu.init_cr0              = cr0
-            ifc.stream_id              = stream_id
+            ifc.stream_id              = smmu_idx
 
     def _connect_dma(self, system, dma):
         dma.pio = self.local_bus.master

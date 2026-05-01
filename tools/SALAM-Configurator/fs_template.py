@@ -104,12 +104,57 @@ def addHWAccOptions(parser):
                       default=False,
                       help="""Insert a real SMMUv3 in front of each """
                            """AccCluster's outbound coherency bus.""")
+    # ---- SMMU sizing knobs (defaults = low-end IoT / MMU-400-class) ----
+    # Defaults model an Arm MMU-400-class IOMMU: small TLBs, no walk
+    # cache, single PTW thread, single translate slot. Override any of
+    # these to sweep up to MMU-500 small-config or server-class.
     parser.add_argument("--smmu-tlb-entries", action="store", type=int,
-                      default=2048,
-                      help="""SMMUv3 main TLB capacity (entries)""")
+                      default=16,
+                      help="""SMMUv3 main TLB capacity (entries). """
+                           """Default 16 = MMU-400/500 minimum.""")
     parser.add_argument("--smmu-tlb-lat", action="store", type=int,
                       default=3,
                       help="""SMMUv3 main TLB lookup latency (cycles)""")
+    parser.add_argument("--smmu-tlb-assoc", action="store", type=int,
+                      default=2, help="Main TLB associativity")
+    parser.add_argument("--smmu-tlb-slots", action="store", type=int,
+                      default=1, help="Main TLB lookup slots")
+    parser.add_argument("--smmu-xlate-slots", action="store", type=int,
+                      default=2, help="TCU translation pipeline slots")
+    parser.add_argument("--smmu-ptw-slots", action="store", type=int,
+                      default=1, help="Page-table walker threads")
+    parser.add_argument("--smmu-cfg-entries", action="store", type=int,
+                      default=4, help="STE/CD config-cache entries")
+    parser.add_argument("--smmu-utlb-entries", action="store", type=int,
+                      default=4, help="Per-TBU micro-TLB entries")
+    parser.add_argument("--smmu-ifctlb-entries", action="store",
+                      type=int, default=16,
+                      help="Per-TBU main TLB entries")
+    parser.add_argument("--smmu-tbu-xlate-slots", action="store",
+                      type=int, default=1,
+                      help="Per-TBU translate pipeline slots")
+    parser.add_argument("--smmu-ifc-lat", action="store", type=int,
+                      default=12,
+                      help="TBU<->TCU link latency (cycles)")
+    # Walk cache: DISABLED by default (MMU-400 has none). Pass
+    # --smmu-walk-enable plus per-level sizes to model MMU-500.
+    parser.add_argument("--smmu-walk-enable", action="store_true",
+                      default=False,
+                      help="Enable walk cache (default off = MMU-400)")
+    parser.add_argument("--smmu-walk-s1l0", action="store", type=int,
+                      default=0, help="Walk cache S1 L0 entries")
+    parser.add_argument("--smmu-walk-s1l1", action="store", type=int,
+                      default=0, help="Walk cache S1 L1 entries")
+    parser.add_argument("--smmu-walk-s1l2", action="store", type=int,
+                      default=0, help="Walk cache S1 L2 entries")
+    parser.add_argument("--smmu-walk-s1l3", action="store", type=int,
+                      default=0, help="Walk cache S1 L3 entries")
+    parser.add_argument("--smmu-walk-assoc", action="store", type=int,
+                      default=1, help="Walk cache associativity")
+    parser.add_argument("--smmu-walk-lat", action="store", type=int,
+                      default=4, help="Walk cache lookup latency (cy)")
+    parser.add_argument("--smmu-walk-slots", action="store", type=int,
+                      default=1, help="Walk cache lookup slots")
     # When set (only meaningful with --enable-real-smmu), the SMMU is
     # bootstrapped from the gem5 side: a valid AArch64 stage-1 identity-
     # mapping page table is materialised in DRAM and the SMMU registers
@@ -120,6 +165,15 @@ def addHWAccOptions(parser):
                       help="""Bootstrap a valid SMMUv3 stream table """
                            """from the gem5 side (requires """
                            """--enable-real-smmu).""")
+    parser.add_argument("--smmu-granule-kib", action="store",
+                      type=int, default=2048, choices=[4, 2048],
+                      help="""Page-table granule for the bootstrap """
+                           """identity map. 2048 = 2 MiB blocks """
+                           """(server-style, 3-level walk, tiny PT """
+                           """footprint). 4 = 4 KiB pages (edge-IoT """
+                           """SMMU style, 4-level walk, ~8 MiB PT """
+                           """per cluster). Only meaningful with """
+                           """--smmu-program-stream-table.""")
 
 def cmd_line_template():
     if args.command_line and args.command_line_file:

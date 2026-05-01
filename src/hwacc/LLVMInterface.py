@@ -22,7 +22,19 @@ class LLVMInterface(ComputeUnit):
     # IOMMU/SMMU latency model (mutually exclusive with kernel validation).
     # Models per-access translation+permission cost: every memory access
     # pays an IOTLB lookup; misses additionally pay a page-walk cost.
+    #
+    # Defaults are tuned to a low-end ARM MMU-400-class IOMMU at 1 GHz
+    # (1 tick = 1 ps):
+    #   * iotlb_entries     = 64    (matches PROFILE_IOT TLB band)
+    #   * iotlb_hit_latency = 1 ns  (~1 cycle SRAM lookup)
+    #   * iotlb_miss_latency= 300 ns (4-level stage-1 walk hitting
+    #                                  partial walk caches; published
+    #                                  ARM silicon numbers 200-500 ns)
+    # Override per-run via gem5 CLI / fs_*.py knobs; nothing is hard-coded.
     enable_iommu = Param.Bool(False, "Enable IOMMU latency model")
     iotlb_entries = Param.UInt32(64, "IOTLB capacity (LRU)")
-    iotlb_hit_latency = Param.Tick(0, "IOTLB hit latency (ticks)")
-    iotlb_miss_latency = Param.Tick(0, "IOTLB miss latency (ticks)")
+    iotlb_hit_latency = Param.Tick(1000, "IOTLB hit latency (ticks; "
+                                        "default 1000 = 1 ns)")
+    iotlb_miss_latency = Param.Tick(300000, "IOTLB miss / page-walk "
+                                            "latency (ticks; default "
+                                            "300000 = 300 ns)")

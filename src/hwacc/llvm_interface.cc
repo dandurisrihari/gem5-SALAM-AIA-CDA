@@ -1381,14 +1381,17 @@ LLVMInterface::sendValidationRequest(uint64_t addr, size_t size, bool isRead,
     pendingValidations.push_back(req);
     totalKernelValidations++;
 
-    // Send interrupt to CPU/kernel if GIC is available
-    BaseGic* gic = comm->getGic();
-    if (gic && validationIntNum >= 0) {
-        DPRINTF(LLVMInterface,
-                "[AIA->KD] Raising interrupt %d to kernel\n",
-                validationIntNum);
-        gic->sendInt(validationIntNum);
-    }
+    // NOTE: We deliberately do NOT raise a real GIC interrupt here.
+    // The simulated bare-metal CPU has no meaningful ISR for it (the
+    // benchmarks ship a stub isr.c), so a real sendInt() only injects
+    // pipeline jitter into DerivO3CPU and skews end-to-end sim_ticks
+    // by far more than the modeled validation latency. Validation is
+    // entirely modeled in the gem5 side via validationResponseEvent
+    // below; this gives a clean, latency-only AIA-KD overhead curve.
+    //
+    // If a future configuration actually wires a kernel-side handler,
+    // re-enable by calling comm->getGic()->sendInt(validationIntNum)
+    // and the matching clearInt() in processValidationResponse().
 
     // Schedule validation response event
     if (!validationResponseEvent.scheduled()) {
@@ -1455,11 +1458,10 @@ LLVMInterface::processValidationResponse()
         // Remove instruction from reservation queue
         req.func->removeFromReservation(req.inst->getUID());
 
-        // Clear interrupt if GIC is available
-        BaseGic* gic = comm->getGic();
-        if (gic && validationIntNum >= 0) {
-            gic->clearInt(validationIntNum);
-        }
+        // Matching no-op for the suppressed sendInt() in
+        // sendValidationRequest(): we never raised the IRQ, so there
+        // is nothing to clear. Kept as a comment to make the AIA-KD
+        // protocol pairing obvious to readers.
 
         if (validationOK) {
             // Validation accepted: dispatch the originating access.
