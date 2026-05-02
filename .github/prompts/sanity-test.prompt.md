@@ -1,7 +1,13 @@
 # Sanity test — protection-mode latency models
 
+> Companion to [04-working-agreements.md](04-working-agreements.md)
+> rule 5. The packaged runner automates this prompt; the manual
+> recipes below are for diagnosing a deeper regression once the
+> automated suite already failed.
+
 **TL;DR — after every rebuild of `gem5.opt`** (i.e. any change to
-`src/hwacc/`, `src/dev/arm/`, embedded SimObject `.py`, or
+`src/hwacc/`, `src/dev/arm/`, embedded SimObject `.py`, the
+`AcceleratorIommu` / `AiaKdValidator` SimObjects, or
 SALAM-Configurator templates that change generated `configs/SALAM/*.py`)
 run the packaged suite first:
 
@@ -17,11 +23,16 @@ regression. **Do not commit if the suite fails.**
 
 ## When to also run the focused zero-latency tests
 
-Any time you touch `LLVMInterface` IOMMU / AIA-KD code paths
-in `src/hwacc/llvm_interface.{cc,hh}` (in particular `launchRead`,
-`launchWrite`, `launchReadAfter`, `launchWriteAfter`,
-`sendValidationRequest`, `processValidationResponse`, the IOTLB helpers,
-or any of the request-/response-side scheduling).
+Any time you touch the AIA-KD or IOMMU code paths:
+
+- `src/hwacc/llvm_interface.{cc,hh}` (`launchRead`, `launchWrite`,
+  `launchReadAfter`, `launchWriteAfter`, `sendValidationRequest`,
+  `processValidationResponse`)
+- `src/hwacc/comm_interface.{cc,hh}` (`tryIommuDelay`, the three
+  `recvTimingResp` callers)
+- `src/hwacc/aia_kd_validator.{hh,cc}` (cache / pending / waiter sets)
+- `src/hwacc/accelerator_iommu.{hh,cc}` (IOTLB, `nextReadyTick`,
+  `translate()`)
 
 **Why:** these models are *analytical* — they must add reported latency
 without perturbing simulator timing. A previous IOMMU rework went through

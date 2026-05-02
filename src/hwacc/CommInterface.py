@@ -24,3 +24,11 @@ class CommInterface(BasicPioDevice):
     data_bases = VectorParam.Addr([0x0], "Base addresses for data if they are predefined")
     enable_debug_msgs = Param.Bool(False, "Whether or not this device will display debug messages")
     reset_spm = Param.Bool(False, "Reset the ready state of any connected scratchpad memories when finished executing")
+
+    # Shared device-wide IOMMU SimObject (one per AccCluster). When
+    # set, MemSidePort/SPMPort/RegPort recvTimingResp() consults
+    # iommu->translate() to charge per-access translation latency on
+    # a single chip-wide translation port. NULL == IOMMU disabled.
+    iommu = Param.AcceleratorIommu(NULL,
+        "Device-wide accelerator IOMMU shared with sibling CUs "
+        "(NULL when IOMMU disabled)")

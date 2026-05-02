@@ -37,6 +37,8 @@
 #include "hwacc/LLVMRead/src/debug_flags.hh"
 #include "hwacc/LLVMRead/src/function.hh"
 #include "hwacc/LLVMRead/src/operand.hh"
+#include "hwacc/accelerator_iommu.hh"
+#include "hwacc/aia_kd_validator.hh"
 #include "hwacc/compute_unit.hh"
 #include "params/LLVMInterface.hh"
 
@@ -63,19 +65,6 @@ class LLVMInterface : public ComputeUnit {
     // Forward declaration of nested class
     class ActiveFunction;
 
-    // Pending validation request
-    struct PendingValidationRequest
-    {
-        uint64_t addr;
-        size_t size;
-        bool isRead;
-        std::shared_ptr<SALAM::Instruction> inst;
-        ActiveFunction* func;
-        Tick requestTime;
-        uint64_t pid;
-        uint64_t requestId;
-    };
-
     // Kernel validation settings
     bool enableKernelValidation;
     int32_t validationIntNum;
@@ -88,31 +77,33 @@ class LLVMInterface : public ComputeUnit {
     // every memory access incurs an IOTLB lookup; misses additionally
     // pay a page-walk cost. Unlike AIA-KD, there is no "validated
     // forever" cache -- evictions force fresh walks.
+    //
+    // All IOMMU state (IOTLB cache, chip-wide translation port
+    // deadline, stats) lives in the AcceleratorIommu SimObject pointed
+    // to by `iommu`. ONE instance per AccCluster is shared by every
+    // CommInterface + LLVMInterface in the cluster, so a hit installed
+    // by any CU benefits every other CU. `iommu` is null when IOMMU is
+    // disabled; check `enableIommu` before dereferencing.
     bool enableIommu;
-    uint32_t iotlbEntries;
-    Tick iotlbHitLatency;
-    Tick iotlbMissLatency;
+    AcceleratorIommu *iommu;
 
-    // IOTLB implemented as an LRU list of page numbers (front = MRU).
-    // A parallel set is kept for O(log n) membership tests.
-    std::list<uint64_t> iotlbLru;
-    std::set<uint64_t> iotlbSet;
-
-    // Stats
-    uint64_t iommuTotalChecks;
-    uint64_t iommuTlbHits;
-    uint64_t iommuTlbMisses;
-    Tick iommuTotalLatency;
-
-    // Pending validation tracking
-    std::list<PendingValidationRequest> pendingValidations;
-    uint64_t nextValidationRequestId;
+    // Pending validation tracking. The FIFO + response event used
+    // to live here per-CU; they now live on the chip-wide
+    // AiaKdValidator SimObject (one per AccCluster). Only this CU's
+    // "in-flight UID" set stays here -- it is consumed by the
+    // launchRead/Write fast path to skip pages this CU already has
+    // a request for, and is not visible to sibling CUs.
     std::set<uint64_t> pendingValidationUIDs;
 
-    // Track pages with in-flight validations to avoid duplicate requests.
-    // Insertion happens in sendValidationRequest(); erasure happens in
-    // processValidationResponse() once the page has been cached.
-    std::set<uint64_t> pendingValidationPages;
+    // Device-wide AIA-KD validator SimObject (null when AIA-KD
+    // disabled). One shared instance per AccCluster owns the cross-CU
+    // validated-pages cache, pending-pages set, and waiter queues --
+    // see src/hwacc/aia_kd_validator.{hh,cc}. The validation protocol
+    // (responseEvent, GIC IRQ raise, FIFO bookkeeping, scheduler
+    // re-dispatch) still lives in this class because it touches
+    // per-CU machinery; the SimObject is just the shared storage
+    // that used to be process-static.
+    AiaKdValidator *validator;
 
     // UIDs of instructions that completed kernel validation but were sent
     // back to the reservation queue because of a RAW hazard discovered at
@@ -122,18 +113,6 @@ class LLVMInterface : public ComputeUnit {
     // stays consistent with "accesses that never paid validation latency".
     std::set<uint64_t> revalidatedUIDs;
 
-    // Instructions waiting for a page validation to complete
-    // Key: page address, Value: list of (inst, func, isRead) waiting
-    struct WaitingInstruction {
-        std::shared_ptr<SALAM::Instruction> inst;
-        ActiveFunction* func;
-        bool isRead;
-        uint64_t addr;
-        size_t size;
-        Tick queueTime;  // When this instruction started waiting
-    };
-    std::map<uint64_t, std::list<WaitingInstruction>> waitingForPage;
-
     // Validation statistics
     uint64_t totalKernelValidations;
     Tick totalKernelValidationLatency;
@@ -142,12 +121,9 @@ class LLVMInterface : public ComputeUnit {
     uint64_t validationCoalescedWaits;      // Instructions that waited for in-flight validation
     Tick totalCoalescedWaitLatency;         // Total latency for coalesced waits
 
-    // Validation cache - per-process map of validated page addresses (4KB aligned)
-    // Key: process ID, Value: set of validated page addresses for that process
-    std::map<uint64_t, std::set<uint64_t>> validatedPagesPerProcess;
-
-    // Validation response event
-    EventFunctionWrapper validationResponseEvent;
+    // Per-CU response event removed: the chip-wide validator owns
+    // the single EventFunctionWrapper and drives completion via
+    // completeValidation() (declared public below).
 
     // ----- IOMMU latency injection -----
     // The IOMMU sits on the accelerator's memory port (downstream of
@@ -328,13 +304,15 @@ class LLVMInterface : public ComputeUnit {
         return pendingValidationUIDs.count(uid) > 0;
     }
     bool isPageValidationPending(uint64_t addr) {
+        if (!validator) return false;
         uint64_t pageAddr = addr & ~0xFFFULL;
-        return pendingValidationPages.count(pageAddr) > 0;
+        return validator->pendingValidationPages.count(pageAddr) > 0;
     }
     bool isPageValidated(uint64_t addr) {
+        if (!validator) return false;
         uint64_t pageAddr = addr & ~0xFFFULL;
-        auto it = validatedPagesPerProcess.find(processId);
-        if (it != validatedPagesPerProcess.end()) {
+        auto it = validator->validatedPagesPerProcess.find(processId);
+        if (it != validator->validatedPagesPerProcess.end()) {
             return it->second.find(pageAddr) != it->second.end();
         }
         return false;
@@ -356,23 +334,18 @@ class LLVMInterface : public ComputeUnit {
     void sendValidationRequest(uint64_t addr, size_t size, bool isRead,
                                std::shared_ptr<SALAM::Instruction> inst,
                                ActiveFunction* func);
-    void processValidationResponse();
+    // Per-request dispatch invoked by AiaKdValidator::processResponse()
+    // when this CU is the originator of a completed cold-miss request.
+    // Performs RAW re-check + launchRead/Write replay for the
+    // originator and fans out to coalesced waiters in
+    // validator->waitingForPage[pageAddr].
+    void completeValidation(const AiaKdValidator::PendingRequest &req,
+                            Tick now);
     bool validateWithKernel(uint64_t addr, size_t size, uint64_t pid);
     void printKernelValidationStats();
 
     // ----- IOMMU helpers -----
     bool isIommuEnabled() { return enableIommu; }
-    // Returns true on hit; either way, updates LRU / installs the entry.
-    bool iotlbAccess(uint64_t pageAddr);
-    // Bumps stats counters for one IOTLB lookup.
-    void accountIommuAccess(Tick latency, bool isHit);
-    // Override of ComputeUnit::iommuLatencyForAccess(). Called by
-    // CommInterface::MemSidePort::recvTimingResp() for every committed
-    // packet; performs the IOTLB lookup and returns the per-access
-    // latency (0 if the IOMMU is disabled). All deferral state lives
-    // in CommInterface; this override is stateless beyond the IOTLB
-    // cache + stats.
-    Tick iommuLatencyForAccess(Addr addr, bool isRead) override;
     void printIommuStats();
 };
 

@@ -266,6 +266,41 @@ class AccCluster:
         lines.append("	gic = system.realview.gic")
         lines.append("")
 
+        # ----------------------------------------------------------------
+        # Device-wide AcceleratorIommu: one shared instance per
+        # AccCluster, wired into every CommInterface + LLVMInterface
+        # in the cluster. Replaces the file-scope statics that used to
+        # live in llvm_interface.cc / comm_interface.cc. Always
+        # instantiated (with enabled=False) so the SimObject param on
+        # CommInterface / LLVMInterface always resolves -- the runtime
+        # cost when disabled is one early-return in tryIommuDelay().
+        # ----------------------------------------------------------------
+        lines.append("	clstr.iommu = AcceleratorIommu(")
+        lines.append("	    enabled=getattr(options, 'enable_iommu', False),")
+        lines.append("	    iotlb_entries=getattr(options, "
+                     "'iotlb_entries', 8),")
+        lines.append("	    hit_latency=getattr(options, "
+                     "'iotlb_hit_latency', 2000),")
+        lines.append("	    miss_latency=getattr(options, "
+                     "'iotlb_miss_latency', 500000))")
+        lines.append("")
+
+        # ----------------------------------------------------------------
+        # Device-wide AiaKdValidator: one shared instance per
+        # AccCluster, wired onto every LLVMInterface in the cluster.
+        # Owns the validated-pages cache, pending-pages set, and
+        # waiter queues that used to be file-scope statics in
+        # llvm_interface.cc. Always instantiated (with enabled=False)
+        # so the SimObject Param on LLVMInterface always resolves;
+        # when AIA-KD is disabled the per-CU code never touches it.
+        # ----------------------------------------------------------------
+        lines.append("	clstr.validator = AiaKdValidator(")
+        lines.append("	    enabled=getattr(options, "
+                     "'enable_kernel_validation', False),")
+        lines.append("	    latency=getattr(options, "
+                     "'kernel_validation_latency', 0))")
+        lines.append("")
+
         return lines
 
 
@@ -321,6 +356,18 @@ class Accelerator:
             lines.append("clstr." + self.name + " = CommInterface(devicename=acc, gic=gic, pio_addr="
                          + str(hex(self.address)) + ", pio_size=" + str(self.size) + ")")
 
+        # Wire the cluster-shared AcceleratorIommu SimObject into this
+        # CommInterface so its tryIommuDelay() consults the chip-wide
+        # IOTLB + port deadline. Always set: when IOMMU is disabled
+        # the SimObject's enabled() returns false and tryIommuDelay()
+        # short-circuits.
+        lines.append("clstr." + self.name + ".iommu = clstr.iommu")
+
+        # NOTE: AiaKdValidator wiring is NOT emitted here because
+        # llvm_interface is created inside AccConfig() (called below);
+        # the validator pointer is therefore handed in via the
+        # `validator=` kwarg and assigned by AccConfig.
+
         # Pass kernel validation options from args/options
         lines.append("AccConfig(clstr." + self.name + ", ir, hw_config,")
         lines.append("          enable_kernel_validation="
@@ -339,7 +386,12 @@ class Accelerator:
         lines.append("          iotlb_hit_latency="
                      "getattr(options, 'iotlb_hit_latency', 0),")
         lines.append("          iotlb_miss_latency="
-                     "getattr(options, 'iotlb_miss_latency', 0))")
+                     "getattr(options, 'iotlb_miss_latency', 0),")
+        # Pass the cluster-shared IOMMU + AIA-KD SimObjects so
+        # AccConfig can wire them onto acc.llvm_interface (kept
+        # symmetric with the per-CU wiring above).
+        lines.append("          iommu=clstr.iommu,")
+        lines.append("          validator=clstr.validator)")
         lines.append("")
 
         return lines

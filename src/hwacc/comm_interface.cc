@@ -10,13 +10,13 @@
 
 using namespace std;
 
-// Process-wide shared SMMU arbiter tick. All CommInterface instances
-// reserve serialized translation slots from this single timeline,
-// modeling one centralized SMMU shared across every accelerator
-// master (single-SMMU edge-IoT). Initialized to 0; the first
-// reservation will use max(curTick(), 0) which is curTick() once
-// simulation starts.
-Tick CommInterface::sIommuNextReadyTick = 0;
+// The chip-wide SMMU arbiter tick that used to live here as the
+// process-static `sIommuNextReadyTick` now lives inside the
+// AcceleratorIommu SimObject (see src/hwacc/accelerator_iommu.{hh,cc}).
+// One AcceleratorIommu is instantiated per AccCluster by the
+// SALAM-Configurator generator, so all CommInterface instances in the
+// cluster share its `nextReadyTick` -- the single chip-wide port
+// model is preserved without process-scope state.
 
 /***************************************************************************************
  * CommInterface serves as the general system interface for hardware accelerators. It
@@ -40,6 +40,7 @@ CommInterface::CommInterface(const CommInterfaceParams &p) :
     cacheLineSize(p.cache_line_size),
     clock_period(p.clock_period),
     reset_spm(p.reset_spm),
+    iommu(p.iommu),
     iommuRespEvent([this]{ processIommuRespQueue(); },
                    name() + ".iommuRespEvent") {
     processDelay = 1000 * clock_period;
@@ -71,29 +72,27 @@ CommInterface::tryIommuDelay(PacketPtr pkt) {
     // upstream tick alignment, and `iommu sim_ticks >= plain
     // sim_ticks` is structurally guaranteed.
     //
-    // Single shared SMMU model: sIommuNextReadyTick is process-wide,
-    // so every CU's translation queues serially behind every other
-    // CU's. This matches a centralized SMMU edge-IoT design: one TBU
-    // / TCU shared across all accelerator masters. Per-instance
-    // pendingIommuResps + iommuRespEvent only handle local dispatch
-    // at the slot the shared arbiter assigned us.
+    // All IOMMU bookkeeping (IOTLB cache, chip-wide port deadline,
+    // stats) lives in the AcceleratorIommu SimObject pointed to by
+    // `iommu`. The SimObject is shared by every CommInterface in
+    // this AccCluster, so cross-CU translations queue serially
+    // behind one chip-wide port -- matching a centralized SMMU
+    // edge-IoT design with one TBU/TCU.
     //
     // Called from every recvTimingResp path because in real hardware
     // every transaction crossing the accelerator's master interface
     // is translated by the SMMU (we do NOT distinguish on-chip vs
     // off-chip destinations in this model).
-    if (!cu) return false;
-    Tick lat = cu->iommuLatencyForAccess(
-        pkt->req->getPaddr(), pkt->isRead());
-    if (lat == 0) return false;
-    // In-order shared IOMMU port: each translation occupies the SMMU
-    // for `lat` ticks; subsequent requests (from this or any other
-    // CU) cannot start until the current one finishes. The port is
-    // exclusive -- one translation in flight at a time across the
-    // entire chip (single-SMMU edge-IoT).
-    Tick startTick = std::max(curTick(), sIommuNextReadyTick);
-    Tick ready = startTick + lat;
-    sIommuNextReadyTick = ready;
+    if (!iommu || !iommu->enabled()) return false;
+
+    uint64_t page = pkt->req->getPaddr() & ~0xFFFULL;
+    Tick ready = iommu->translate(page, pkt->isRead());
+
+    // translate() returns curTick() when latency is zero (disabled
+    // fast path or both hit/miss latencies = 0); skip deferral so
+    // behavior is bit-identical to plain mode.
+    if (ready <= curTick()) return false;
+
     pendingIommuResps.push_back({pkt, ready});
     if (!iommuRespEvent.scheduled()) {
         schedule(iommuRespEvent, ready);

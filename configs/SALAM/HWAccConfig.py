@@ -11,7 +11,9 @@ def AccConfig(acc, bench_file, config_file, enable_kernel_validation=False,
               kernel_validation_latency=0, validation_int_num=172,
               process_id=17,
               enable_iommu=False, iotlb_entries=64,
-              iotlb_hit_latency=0, iotlb_miss_latency=0):
+              iotlb_hit_latency=0, iotlb_miss_latency=0,
+              iommu=None,
+              validator=None):
     # Initialize LLVMInterface Objects
     acc.llvm_interface = LLVMInterface()
 
@@ -22,10 +24,23 @@ def AccConfig(acc, bench_file, config_file, enable_kernel_validation=False,
     acc.llvm_interface.process_id = process_id
 
     # IOMMU configuration (mutually exclusive with kernel validation)
+    # The numeric params are kept on the LLVMInterface for backward CLI
+    # compatibility, but the *active* IOTLB cache + chip-wide port
+    # deadline + stats live on the AcceleratorIommu SimObject pointed
+    # to by `iommu` (one per AccCluster, shared with sibling CUs).
     acc.llvm_interface.enable_iommu = enable_iommu
     acc.llvm_interface.iotlb_entries = iotlb_entries
     acc.llvm_interface.iotlb_hit_latency = iotlb_hit_latency
     acc.llvm_interface.iotlb_miss_latency = iotlb_miss_latency
+    if iommu is not None:
+        acc.llvm_interface.iommu = iommu
+
+    # AIA-KD validator wiring. The numeric/per-CU AIA-KD params still
+    # live on LLVMInterface; the cluster-shared validated-pages cache,
+    # pending-pages set, and waiter queues live on the AiaKdValidator
+    # SimObject pointed to by `validator`.
+    if validator is not None:
+        acc.llvm_interface.validator = validator
 
     if enable_kernel_validation and enable_iommu:
         raise ValueError(

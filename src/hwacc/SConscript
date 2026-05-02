@@ -17,7 +17,14 @@ if env['TARGET_ISA'] == 'arm':
     #LLVMInterface
     SimObject('ComputeUnit.py')
     SimObject('LLVMInterface.py')
-    
+
+    # Device-wide protection-model SimObjects (one per AccCluster,
+    # shared by every CommInterface + LLVMInterface in the cluster).
+    # Replace the file-scope statics that used to live in
+    # llvm_interface.cc / comm_interface.cc.
+    SimObject('AcceleratorIommu.py')
+    SimObject('AiaKdValidator.py')
+
     #HWInterface
     SimObject('CycleCounts.py')
     SimObject('FunctionalUnits.py')
@@ -35,6 +42,8 @@ if env['TARGET_ISA'] == 'arm':
     Source('comm_interface.cc')
     Source('compute_unit.cc')
     Source('llvm_interface.cc')
+    Source('accelerator_iommu.cc')
+    Source('aia_kd_validator.cc')
     Source('dma_write_fifo.cc')
     Source('noncoherent_dma.cc')
     Source('stream_dma.cc')
@@ -43,7 +52,7 @@ if env['TARGET_ISA'] == 'arm':
     Source('stream_port.cc')
     Source('scratchpad_memory.cc')
     Source('register_bank.cc')
-    
+
     #
     Source('LLVMRead/src/value.cc')
     Source('LLVMRead/src/function.cc')

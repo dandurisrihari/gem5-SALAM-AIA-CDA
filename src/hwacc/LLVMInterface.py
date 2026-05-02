@@ -41,3 +41,23 @@ class LLVMInterface(ComputeUnit):
     iotlb_miss_latency = Param.Tick(500000, "IOTLB miss / page-walk "
                                             "latency (ticks; default "
                                             "500000 = 500 ns)")
+
+    # Shared device-wide IOMMU SimObject. NULL when IOMMU is disabled.
+    # Wired by the SALAM-Configurator generator (config_parser.py)
+    # to a single AcceleratorIommu instance per AccCluster, so that
+    # all CUs in the cluster share one IOTLB cache and one chip-wide
+    # translation port. Replaces the file-scope statics that used to
+    # back the IOMMU model in llvm_interface.cc.
+    iommu = Param.AcceleratorIommu(NULL,
+        "Device-wide accelerator IOMMU shared across all CUs in the "
+        "cluster (NULL when IOMMU disabled)")
+
+    # Shared device-wide AIA-KD validator SimObject. NULL when AIA-KD
+    # is disabled. Wired by the SALAM-Configurator generator to a
+    # single AiaKdValidator instance per AccCluster, so that all CUs
+    # share the same validated-pages cache and pending/waiter
+    # coalescing structures. Replaces the file-scope statics that
+    # used to back the AIA-KD model in llvm_interface.cc.
+    validator = Param.AiaKdValidator(NULL,
+        "Device-wide AIA-KD validator shared across all CUs in the "
+        "cluster (NULL when AIA-KD disabled)")
