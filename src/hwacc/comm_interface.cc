@@ -31,7 +31,10 @@ CommInterface::CommInterface(const CommInterfaceParams &p) :
     tickEvent(this),
     cacheLineSize(p.cache_line_size),
     clock_period(p.clock_period),
-    reset_spm(p.reset_spm) {
+    reset_spm(p.reset_spm),
+    iommuNextReadyTick(0),
+    iommuRespEvent([this]{ processIommuRespQueue(); },
+                   name() + ".iommuRespEvent") {
     processDelay = 1000 * clock_period;
     FLAG_OFFSET = 0;
     CONFIG_OFFSET = flag_size;
@@ -55,6 +58,29 @@ CommInterface::CommInterface(const CommInterfaceParams &p) :
 
 bool
 CommInterface::MemSidePort::recvTimingResp(PacketPtr pkt) {
+    // Inject IOMMU translation latency on the response path. Located
+    // here (downstream of the accelerator pipeline) so added latency
+    // is purely additive on the critical path -- it cannot perturb
+    // upstream tick alignment, and `iommu sim_ticks >= plain
+    // sim_ticks` is structurally guaranteed.
+    if (owner->cu) {
+        Tick lat = owner->cu->iommuLatencyForAccess(
+            pkt->req->getPaddr(), pkt->isRead());
+        if (lat > 0) {
+            // In-order IOMMU port: a fast hit cannot overtake a
+            // slower miss already in flight.
+            Tick ready = std::max(curTick() + lat,
+                                  owner->iommuNextReadyTick);
+            owner->iommuNextReadyTick = ready;
+            owner->pendingIommuResps.push_back({pkt, ready});
+            if (!owner->iommuRespEvent.scheduled()) {
+                owner->schedule(owner->iommuRespEvent, ready);
+            } else if (owner->iommuRespEvent.when() > ready) {
+                owner->reschedule(owner->iommuRespEvent, ready);
+            }
+            return true;
+        }
+    }
     owner->recvPacket(pkt);
     return true;
 }
@@ -192,6 +218,21 @@ CommInterface::recvPacket(PacketPtr pkt) {
     }
     //if (pkt->req) delete pkt->req;
     delete pkt;
+}
+
+void
+CommInterface::processIommuRespQueue() {
+    // Drain ready entries (FIFO, in-order: front is always earliest).
+    Tick now = curTick();
+    while (!pendingIommuResps.empty()
+           && pendingIommuResps.front().readyTick <= now) {
+        PacketPtr pkt = pendingIommuResps.front().pkt;
+        pendingIommuResps.pop_front();
+        recvPacket(pkt);
+    }
+    if (!pendingIommuResps.empty()) {
+        schedule(iommuRespEvent, pendingIommuResps.front().readyTick);
+    }
 }
 
 void

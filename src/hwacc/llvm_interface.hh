@@ -104,13 +104,6 @@ class LLVMInterface : public ComputeUnit {
     uint64_t iommuTlbMisses;
     Tick iommuTotalLatency;
 
-    // Real IOMMUs have an in-order request port: a later access cannot
-    // overtake an earlier one even if its translation is faster (TLB hit
-    // vs. miss). Track the tick at which the last delayed enqueue was
-    // scheduled so subsequent ones are pushed out to preserve issue
-    // order. Reset implicitly by being monotonic with curTick().
-    Tick lastIommuReleaseTick;
-
     // Pending validation tracking
     std::list<PendingValidationRequest> pendingValidations;
     uint64_t nextValidationRequestId;
@@ -155,6 +148,14 @@ class LLVMInterface : public ComputeUnit {
 
     // Validation response event
     EventFunctionWrapper validationResponseEvent;
+
+    // ----- IOMMU latency injection -----
+    // The IOMMU sits on the accelerator's memory port (downstream of
+    // CommInterface). Latency is injected in MemSidePort::recvTimingResp
+    // by overriding ComputeUnit::iommuLatencyForAccess() below; this
+    // class only owns the IOTLB cache + stats, NOT a queue or event.
+    // See context-kernel-validation.md for why upstream injection
+    // (the previous design) produced negative sim_ticks deltas.
 
     std::chrono::duration<float> setupTime;
     std::chrono::duration<float> simTotal;
@@ -365,14 +366,13 @@ class LLVMInterface : public ComputeUnit {
     bool iotlbAccess(uint64_t pageAddr);
     // Bumps stats counters for one IOTLB lookup.
     void accountIommuAccess(Tick latency, bool isHit);
-    // Issue the request to memory after `latency` ticks. The
-    // accelerator already considers the access launched; only the
-    // packet's transit to the membus is delayed (models an SMMU on
-    // the accelerator's port without changing accelerator hardware).
-    void launchReadAfter(MemoryRequest* memReq, ActiveFunction* func,
-                         Tick latency, bool isHit);
-    void launchWriteAfter(MemoryRequest* memReq, ActiveFunction* func,
-                          Tick latency, bool isHit);
+    // Override of ComputeUnit::iommuLatencyForAccess(). Called by
+    // CommInterface::MemSidePort::recvTimingResp() for every committed
+    // packet; performs the IOTLB lookup and returns the per-access
+    // latency (0 if the IOMMU is disabled). All deferral state lives
+    // in CommInterface; this override is stateless beyond the IOTLB
+    // cache + stats.
+    Tick iommuLatencyForAccess(Addr addr, bool isRead) override;
     void printIommuStats();
 };
 

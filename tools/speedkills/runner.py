@@ -18,7 +18,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, List, Sequence
+from typing import Callable, Iterable, List, Sequence
 
 from . import config as cfg
 from .benchmarks import Bench
@@ -50,7 +50,12 @@ class Run:
     rc: int | None = field(default=None, init=False)
 
     def cmd(self, binary: Path) -> List[str]:
-        cmd = [str(binary), f"--outdir={self.outdir}"]
+        # --listener-mode=off prevents gem5 from binding TCP ports
+        # (vncserver, terminal, gdb, m5term). Without this, parallel
+        # launches race on the same default ports and one of them
+        # aborts with "ListenSocket(listen): bind() failed!".
+        cmd = [str(binary), "--listener-mode=off",
+               f"--outdir={self.outdir}"]
         if self.debug_flags:
             cmd += [f"--debug-flags={self.debug_flags}",
                     "--debug-file=trace.log"]
@@ -127,7 +132,10 @@ def launch_run(run: Run, binary: Path,
     if counter is not None and total is not None and counter_lock is not None:
         with counter_lock:
             counter[1] += 1   # in-flight start count
-            print(f"[start {counter[1]:>3}/{total}] {run.label}",
+            in_flight = counter[1] - counter[0]
+            pending = total - counter[1]
+            print(f"[start {counter[1]:>3}/{total}] {run.label}  "
+                  f"(running={in_flight}, pending={pending})",
                   file=sys.stderr, flush=True)
     log_file = run.outdir / "run.log"
     with log_file.open("w") as f:
@@ -140,8 +148,11 @@ def launch_run(run: Run, binary: Path,
         with counter_lock:
             counter[0] += 1
             done = counter[0]
+            in_flight = counter[1] - done
+            pending = total - counter[1]
             print(f"[done  {done:>3}/{total}] {run.label}  "
-                  f"{status}  ({elapsed:.1f}s)",
+                  f"{status}  ({elapsed:.1f}s)  "
+                  f"(running={in_flight}, pending={pending})",
                   file=sys.stderr, flush=True)
     else:
         print(f"[done] {run.label}  {status}  ({elapsed:.1f}s)",
@@ -150,7 +161,9 @@ def launch_run(run: Run, binary: Path,
 
 
 def run_parallel(runs: Iterable[Run], jobs: int,
-                 binary: Path | None = None) -> List[Run]:
+                 binary: Path | None = None,
+                 on_variant_done: Callable[[str, List[Run]], None]
+                 | None = None) -> List[Run]:
     """Launch ``runs`` with at most ``jobs`` concurrent gem5 processes.
 
     Runs whose benches share a ``bench.path`` (i.e. variants of the
@@ -161,6 +174,10 @@ def run_parallel(runs: Iterable[Run], jobs: int,
     consuming it. Variants on distinct paths run fully in parallel.
     All modes (plain / aia-kd / iommu) of the *same* variant share the
     same elf and are safe to fan out concurrently.
+
+    ``on_variant_done(variant_name, runs)`` is invoked as soon as every
+    mode of a single variant has finished, allowing callers to harvest
+    that bench's results without waiting for the rest of the matrix.
     """
     binary = binary or cfg.require_binary()
     runs = list(runs)
@@ -205,7 +222,14 @@ def run_parallel(runs: Iterable[Run], jobs: int,
                 futures = [p.submit(launch_run, r, binary,
                                     counter, total, counter_lock)
                            for r in modes]
-                out.extend(f.result() for f in as_completed(futures))
+                done = [f.result() for f in as_completed(futures)]
+            out.extend(done)
+            if on_variant_done is not None:
+                try:
+                    on_variant_done(name, done)
+                except Exception as e:  # noqa: BLE001
+                    print(f"[on_variant_done {name}] {e!r}",
+                          file=sys.stderr, flush=True)
         return out
 
     # Across path groups: parallel.

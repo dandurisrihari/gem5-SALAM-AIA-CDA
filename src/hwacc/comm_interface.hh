@@ -9,6 +9,7 @@
 #include "hwacc/stream_port.hh"
 #include "hwacc/scratchpad_memory.hh"
 #include "hwacc/LLVMRead/src/debug_flags.hh"
+#include "sim/eventq.hh"
 
 #include <list>
 #include <queue>
@@ -243,6 +244,21 @@ class CommInterface : public BasicPioDevice
     bool reset_spm;
 
     ComputeUnit *cu;
+
+    // ----- IOMMU response-path latency injection -----
+    // When ComputeUnit::iommuLatencyForAccess() returns lat>0 in
+    // MemSidePort::recvTimingResp(), the packet is parked here and
+    // dispatched to recvPacket() after `lat` ticks. The IOMMU port is
+    // modeled as in-order: a fast hit cannot overtake a slower miss,
+    // enforced by `iommuNextReadyTick` (monotonic).
+    struct PendingIommuResp {
+        PacketPtr pkt;
+        Tick readyTick;
+    };
+    std::list<PendingIommuResp> pendingIommuResps;
+    Tick iommuNextReadyTick;
+    EventFunctionWrapper iommuRespEvent;
+    void processIommuRespQueue();
 
   public:
     PARAMS(CommInterface);

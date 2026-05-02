@@ -66,6 +66,15 @@ feature. Skipping them has cost real time in the past.
    `scons build/ARM/gem5.opt -jN` finishes. Check
    `ls -la build/ARM/gem5.opt` after the build before launching runs.
 
+   **Always pipe `yes ""` into the build command** so scons doesn't
+   stall on the one-time gem5 git-style hook installer prompt
+   (`Press enter to continue, or ctrl-c to abort:`):
+   ```bash
+   yes "" | scons build/ARM/gem5.opt -j$(nproc) 2>&1 | tail -20
+   ```
+   Without the `yes ""` the build hangs silently waiting for stdin
+   the first time it's run in a fresh worktree / container.
+
 5. **Run the sanity suite after every rebuild.** Any change that
    requires `scons build/ARM/gem5.opt` to re-link the binary
    (anything under `src/hwacc/`, `src/dev/arm/`, embedded SimObject
@@ -74,14 +83,21 @@ feature. Skipping them has cost real time in the past.
    ```bash
    python3 tests/aia_cda_tests/run_sanity.py --regen
    ```
-   The suite is short (4 fast benches × 3 modes, well under a minute
-   on the dev container) and asserts the protection-mode invariants
-   that have regressed before:
-     - `iommu sim_ticks == plain sim_ticks` bit-for-bit (the
-       analytical IOMMU must never perturb the simulator),
-     - `aia_kd_overhead_us > 0` (checkpoints actually fire),
-     - `iommu_checks > 0` (IOMMU hook actually fires),
-     - every (bench, mode) row appears in `summary.tsv`.
+   The suite is short (2 fast benches × 3 modes plus an aia-kd@lat=0
+   noise-floor check, well under a minute on the dev container) and
+   asserts the protection-mode invariants that have regressed before:
+     - every (bench, mode) row appears in `summary.tsv`,
+     - `aia_kd_overhead_us > 0` at default latency (checkpoints fire),
+     - `iommu_checks > 0` (IOMMU hook fires),
+     - aia-kd@lat=0 sim_ticks within 0.5 % of plain (event-queue
+       reordering noise floor; proves the fast-path bypasses real work).
+
+     Note: we deliberately do *not* assert `iommu sim_ticks == plain
+     sim_ticks`. The current IOMMU model is analytical and happens to
+     be non-perturbing, but a real SMMU sits in the critical path and
+     would legitimately perturb sim_ticks. The bit-identical property
+     is only meaningful for AIA-KD@lat=0.
+
    If the suite fails, **do not commit** — diagnose first. Pass
    `--bench n1,n2` to narrow the scope while iterating, but the full
    default set must pass before the change is considered done. Pure
@@ -218,12 +234,60 @@ and visualised by [tools/experiment_monitor.py](../../tools/experiment_monitor.p
   would slightly reduce IOMMU overhead). The AIA-KD cache, by
   contrast, is keyed on PID and naturally shared across accelerators
   of the same process for free.
-- Per-access deferral mirrors AIA: instruction returns `false`,
-  `iommuPendingUIDs` keeps it from re-launching, `iommuDispatchEvent`
-  fires at the deadline and dispatches via the same RAW-checked path.
-- RAW-deferred replays use `iommuClearedUIDs` to bypass the IOMMU block
-  and avoid double-charging latency.
 - Stats printed by `printIommuStats()` after `printKernelValidationStats()`.
+
+### IOMMU lives in CommInterface (response-path latency injection)
+
+The IOMMU sits on the accelerator's memory port — downstream of
+CommInterface — exactly where a real SMMU sits in hardware. Latency
+is injected in `CommInterface::MemSidePort::recvTimingResp` (in
+[src/hwacc/comm_interface.cc](../../src/hwacc/comm_interface.cc)) by
+calling the virtual hook `ComputeUnit::iommuLatencyForAccess(addr,
+isRead)`. `LLVMInterface` overrides that hook to perform the IOTLB
+lookup and stat accounting; if it returns `lat > 0`, CommInterface
+parks the packet in `pendingIommuResps` and dispatches it to
+`recvPacket()` after `lat` ticks via `iommuRespEvent`. The IOMMU
+port is modeled as in-order: a fast hit cannot overtake a slower
+miss already in flight, enforced by monotonic `iommuNextReadyTick`
+(matches a real SMMU request port).
+
+Why this design and not upstream-of-CommInterface deferral:
+- The accelerator pipeline (reservation, per-fn queues, dependency
+  tracker, `comm->enqueueRead`) runs **identically** to plain mode.
+  Tick alignment between accelerator `tickEvent` and `comm`
+  `tickEvent` is therefore unperturbed, and added IOTLB latency is
+  purely additive on the critical path.
+- Consequence: `iommu sim_ticks >= plain sim_ticks` is a structural
+  guarantee — there is no longer any way for IOMMU mode to "go
+  faster than plain" on alignment artifacts.
+- `LLVMInterface` no longer carries any IOMMU FSM (no
+  `pendingIotlb*`, no `iotlbResolveEvent`, no IOMMU branch in
+  `launchRead`/`launchWrite`); it only owns the IOTLB cache + stats.
+
+**lat=0 invariant** (enforced by `tests/aia_cda_tests/run_sanity.py
+::run_iommu_lat0_check`): with both `iotlb_hit_latency=0` and
+`iotlb_miss_latency=0`, `iommuLatencyForAccess` returns 0 for every
+packet → CommInterface takes the inline `recvPacket(pkt)` fast path,
+so iommu `sim_ticks` is **bit-identical** to plain.
+
+Stat note: `iommu_checks` counts response packets (one per memory
+transaction), not per-`launchRead/Write` calls. It is therefore
+~1 order of magnitude smaller than the upstream-injection counts you
+might see in older logs. `iommu_proj_us` and `iommu_overhead_us` are
+now in close agreement (no longer artificially inflated by
+double-counting partial accesses).
+
+#### History (do NOT re-introduce upstream-of-CommInterface injection)
+
+Five upstream attempts all failed the same way — `iommu sim_ticks`
+ended up **lower** than `plain sim_ticks` because deferring at
+`launchRead`/`launchWrite` (or anywhere before
+`comm->enqueueRead`) shifted when `CommInterface::tickEvent` first
+ran and changed how packets clustered against the accelerator tick.
+Even the AIA-KD-style "bail before queue insert" variant produced
+-28% on nw. The artifact is fundamental to upstream injection; only
+the response-path placement (current design) avoids it. See git log
+on `src/hwacc/llvm_interface.{cc,hh}` for the failed attempts.
 
 ## Things To Be Careful About When Modifying
 

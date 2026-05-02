@@ -208,10 +208,11 @@ def _safe_float(s: str) -> float | None:
 def write_overhead_summary(rows: Iterable[HarvestRow], path: Path) -> str:
     """Per-benchmark overhead pivot vs the bench's `plain` row.
 
-    Reports raw microsecond overheads (not %) for aia-kd and iommu,
-    plus SMID Request / SMID Validations (from the aia-kd row) and
-    IOMMU check / hit / miss / hit-rate (from the iommu row).
-    Returns the formatted text and writes a TSV at ``path``.
+    Headline overhead columns are derived from ``sim_ticks`` (i.e. the
+    ``Exiting @ tick ...`` value, 1 tick = 1 ps), so they reflect what
+    the simulator actually observed. For the analytical IOMMU mode the
+    projected cost computed inside the model is reported separately as
+    ``iommu_proj_us`` / ``iommu_proj_pct``.
     """
     by_bench: dict[str, dict[str, HarvestRow]] = {}
     for r in rows:
@@ -220,9 +221,11 @@ def write_overhead_summary(rows: Iterable[HarvestRow], path: Path) -> str:
         bench, mode = r.label.split("/", 1)
         by_bench.setdefault(bench, {})[mode] = r
 
-    cols = ("benchmark", "plain_us", "aia_kd_overhead_us",
-            "aia_kd_overhead_pct", "iommu_overhead_us",
-            "iommu_overhead_pct", "smid_requests", "smid_validations",
+    cols = ("benchmark", "plain_us",
+            "aia_kd_overhead_us", "aia_kd_overhead_pct",
+            "iommu_overhead_us", "iommu_overhead_pct",
+            "iommu_proj_us", "iommu_proj_pct",
+            "smid_requests", "smid_validations",
             "iommu_checks", "iotlb_hits", "iotlb_misses",
             "iotlb_hit_rate_pct")
     lines = ["\t".join(cols)]
@@ -230,22 +233,33 @@ def write_overhead_summary(rows: Iterable[HarvestRow], path: Path) -> str:
     for bench in sorted(by_bench):
         modes = by_bench[bench]
         plain = modes.get("plain")
-        plain_us = _safe_float(plain.runtime_us) if plain else None
+        plain_ticks = (int(plain.sim_ticks)
+                       if plain and plain.sim_ticks.isdigit() else None)
+        plain_us = (plain_ticks / 1e6) if plain_ticks else None
         plain_us_s = (f"{plain_us:.3f}" if plain_us is not None else "-")
+
+        def tick_overhead(row: HarvestRow | None) -> tuple[str, str]:
+            if (row is None or plain_ticks is None
+                    or not row.sim_ticks.isdigit()):
+                return "-", "-"
+            d_us = (int(row.sim_ticks) - plain_ticks) / 1e6
+            pct = (d_us / plain_us) * 100.0 if plain_us else 0.0
+            return f"{d_us:.3f}", f"{pct:.3f}%"
 
         aia_row = modes.get("aia-kd")
         iommu_row = modes.get("iommu")
-        aia_us = aia_row.aia_kd_overhead_us if aia_row else "-"
-        iommu_us = iommu_row.iommu_overhead_us if iommu_row else "-"
+        aia_us, aia_pct = tick_overhead(aia_row)
+        iommu_us, iommu_pct = tick_overhead(iommu_row)
 
-        def pct(us_str: str) -> str:
-            ov = _safe_float(us_str)
-            if ov is None or plain_us in (None, 0.0):
-                return "-"
-            return f"{(ov / plain_us) * 100.0:.3f}%"
+        # Analytical IOMMU projection (what a real SMMU *would* add,
+        # accumulated from per-access IOTLB hit/miss latencies).
+        iommu_proj_us = iommu_row.iommu_overhead_us if iommu_row else "-"
+        proj_val = _safe_float(iommu_proj_us)
+        if proj_val is None or plain_us in (None, 0.0):
+            iommu_proj_pct = "-"
+        else:
+            iommu_proj_pct = f"{(proj_val / plain_us) * 100.0:.3f}%"
 
-        aia_pct = pct(aia_us)
-        iommu_pct = pct(iommu_us)
         smid_r = aia_row.smid_requests if aia_row else "-"
         smid_v = aia_row.smid_validations if aia_row else "-"
         iommu_checks = iommu_row.iommu_checks if iommu_row else "-"
@@ -255,8 +269,12 @@ def write_overhead_summary(rows: Iterable[HarvestRow], path: Path) -> str:
                     if iommu_row and iommu_row.iotlb_hit_rate_pct != "-"
                     else "-")
 
-        vals = (bench, plain_us_s, aia_us, aia_pct, iommu_us, iommu_pct,
-                smid_r, smid_v, iommu_checks, iotlb_h, iotlb_m, iotlb_hr)
+        vals = (bench, plain_us_s,
+                aia_us, aia_pct,
+                iommu_us, iommu_pct,
+                iommu_proj_us, iommu_proj_pct,
+                smid_r, smid_v, iommu_checks,
+                iotlb_h, iotlb_m, iotlb_hr)
         lines.append("\t".join(vals))
         pretty.append("  ".join(v.ljust(20) for v in vals))
 

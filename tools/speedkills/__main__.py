@@ -19,6 +19,7 @@ import os
 import shlex
 import subprocess
 import sys
+import threading
 from pathlib import Path
 from typing import List
 
@@ -129,9 +130,7 @@ def cmd_compare_all(args: argparse.Namespace) -> int:
     # serialised end-to-end so each variant's elf is consumed before
     # the next variant rebuilds it.
     runs: List[Run] = []
-    per_bench_runs: dict[str, List[Run]] = {}
     for b in benches:
-        per_bench_runs[b.name] = []
         for i, mode in enumerate(requested):
             flags = profiles.MODES[mode](mode_opts)
             r = Run(label=f"{b.name}/{mode}", bench=b,
@@ -141,22 +140,35 @@ def cmd_compare_all(args: argparse.Namespace) -> int:
                     build_before=args.build_sw and i == 0,
                     setup_log=outroot / f"{b.name}_setup.log")
             runs.append(r)
-            per_bench_runs[b.name].append(r)
 
-    run_parallel(runs, jobs=args.jobs)
+    # Per-variant harvest: as soon as all modes of a single bench
+    # finish, write that bench's summary/deltas/overhead files
+    # immediately so users get incremental results without waiting
+    # for the full matrix.
+    all_rows: List = []
+    all_rows_lock = threading.Lock()
 
-    # Phase 3: harvest per-bench and aggregate.
-    all_rows = []
-    for b in benches:
+    def on_variant_done(variant_name: str, finished: List[Run]) -> None:
         rows = [harvest_run(r.label.split("/", 1)[1], r.outdir)
-                for r in per_bench_runs[b.name]]
-        bench_dir = outroot / b.name
+                for r in finished]
+        bench_dir = outroot / variant_name
         write_summary(rows, bench_dir / "summary.tsv")
         write_deltas(rows, bench_dir / "deltas.tsv")
-        for r, row in zip(per_bench_runs[b.name], rows):
-            row.label = f"{b.name}/{row.label}"
-            all_rows.append(row)
+        for row in rows:
+            row.label = f"{variant_name}/{row.label}"
+        with all_rows_lock:
+            all_rows.extend(rows)
+            snapshot = [r for r in all_rows
+                        if r.label.startswith(f"{variant_name}/")]
+        write_overhead_summary(
+            snapshot, bench_dir / "overhead_summary.tsv")
+        print(f"[harvest] {variant_name}: wrote "
+              f"{bench_dir / 'overhead_summary.csv'}",
+              flush=True)
 
+    run_parallel(runs, jobs=args.jobs, on_variant_done=on_variant_done)
+
+    # Phase 3: aggregate across all benches once everything is done.
     write_summary(all_rows, outroot / "summary.tsv")
     print()
     print(f"===== Aggregate ({len(benches)} benches "

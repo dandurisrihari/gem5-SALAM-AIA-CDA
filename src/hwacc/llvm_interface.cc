@@ -30,8 +30,7 @@ LLVMInterface::LLVMInterface(const LLVMInterfaceParams &p):
     iommuTotalChecks(0),
     iommuTlbHits(0),
     iommuTlbMisses(0),
-    iommuTotalLatency(0),
-    lastIommuReleaseTick(0)
+    iommuTotalLatency(0)
 {
     clock_period = clock_period * 1000;
     dbg = comm->debug();
@@ -650,34 +649,11 @@ LLVMInterface::ActiveFunction::launchRead(
         size_t reqSize = rdInst->getSizeInBytes();
 
         // ====================================================
-        // IOMMU LATENCY MODEL (mutually exclusive with AIA-KD).
-        // Every access pays an IOTLB lookup; misses additionally pay
-        // a page-walk cost. Unlike AIA-KD, there is no "validated
-        // forever" cache -- evictions force fresh walks.
+        // IOMMU latency injection lives in CommInterface (response
+        // path of MemSidePort::recvTimingResp). Nothing to do here:
+        // the launchRead path is identical to plain mode, ensuring
+        // upstream tick alignment is unperturbed.
         // ====================================================
-        if (owner->isIommuEnabled()) {
-            // The IOMMU sits on the accelerator's memory port: the
-            // accelerator can keep issuing; only the request's transit
-            // to memory is delayed by the IOTLB lookup (and page-walk
-            // on a miss). We do NOT stall reservation -- modeling a
-            // queue on the accelerator side would imply a hardware
-            // change to the accelerator, which is out of scope.
-            uint64_t page = ptrAddr & ~0xFFFULL;
-            bool hit = owner->iotlbAccess(page);
-            Tick lat = hit ? owner->iotlbHitLatency
-                           : owner->iotlbMissLatency;
-            if (dbg)
-                DPRINTFS(RuntimeCompute, owner,
-                    "|| IOMMU READ %s: addr=0x%016lx lat=%llu\n",
-                    hit ? "HIT" : "MISS", ptrAddr, lat);
-            owner->accountIommuAccess(lat, hit);
-            auto memReq = (readInst)->createMemoryRequest();
-            auto rd_uid = readInst->getUID();
-            readQueue.insert({rd_uid, (readInst)});
-            readQueueMap.insert({memReq, rd_uid});
-            owner->launchReadAfter(memReq, this, lat, hit);
-            return true;
-        }
 
         // ====================================================
         // KERNEL VALIDATION (AIA -> KD) FAST-PATH FOR LOADS
@@ -758,29 +734,9 @@ LLVMInterface::ActiveFunction::launchWrite(
     size_t reqSize = writeInst->getOperands()->at(0).getSizeInBytes();
 
     // ====================================================
-    // IOMMU LATENCY MODEL (mutually exclusive with AIA-KD). See
-    // launchRead() above for rationale.
+    // IOMMU latency injection lives in CommInterface (response path
+    // of MemSidePort::recvTimingResp). See launchRead() above.
     // ====================================================
-    if (owner->isIommuEnabled()) {
-        // See launchRead() above: latency is applied to the packet's
-        // transit to memory; the accelerator is not stalled.
-        uint64_t page = ptrAddr & ~0xFFFULL;
-        bool hit = owner->iotlbAccess(page);
-        Tick lat = hit ? owner->iotlbHitLatency
-                       : owner->iotlbMissLatency;
-        if (dbg)
-            DPRINTFS(RuntimeCompute, owner,
-                "|| IOMMU WRITE %s: addr=0x%016lx lat=%llu\n",
-                hit ? "HIT" : "MISS", ptrAddr, lat);
-        owner->accountIommuAccess(lat, hit);
-        auto memReq = (writeInst)->createMemoryRequest();
-        trackWrite(memReq->getAddress(), writeInst);
-        auto wr_uid = writeInst->getUID();
-        writeQueue.insert({wr_uid, (writeInst)});
-        writeQueueMap.insert({memReq, wr_uid});
-        owner->launchWriteAfter(memReq, this, lat, hit);
-        return true;
-    }
 
     // ====================================================
     // KERNEL VALIDATION (AIA -> KD) FAST-PATH FOR STORES
@@ -1696,33 +1652,28 @@ LLVMInterface::accountIommuAccess(Tick latency, bool isHit)
     }
 }
 
-void
-LLVMInterface::launchReadAfter(MemoryRequest* memReq, ActiveFunction* func,
-                               Tick latency, bool isHit)
+Tick
+LLVMInterface::iommuLatencyForAccess(Addr addr, bool isRead)
 {
-    // Analytical IOMMU model: do NOT perturb the event queue. Going
-    // through any extra event hop here changes the relative ordering of
-    // CommInterface tickEvent vs accelerator events and produces a
-    // simulator-timing artifact (visible even at lat=0). Instead we
-    // call enqueueRead inline -- bit-for-bit identical to the
-    // non-IOMMU path -- and let accountIommuAccess() track the
-    // translation latency for the stats summary. The reported runtime
-    // is plain + sum(per-access IOMMU latency); for cycle-accurate
-    // request-path modelling use --enable-real-smmu.
-    (void)latency;
-    (void)isHit;
-    globalReadQueue.insert({memReq, func});
-    comm->enqueueRead(memReq);
-}
-
-void
-LLVMInterface::launchWriteAfter(MemoryRequest* memReq, ActiveFunction* func,
-                                Tick latency, bool isHit)
-{
-    (void)latency;
-    (void)isHit;
-    globalWriteQueue.insert({memReq, func});
-    comm->enqueueWrite(memReq);
+    // Called from CommInterface::MemSidePort::recvTimingResp() for
+    // every committed packet. Returns 0 when the IOMMU is disabled,
+    // so non-IOMMU runs have a true zero-cost fast path. With the
+    // IOMMU enabled, performs the IOTLB lookup (LRU update) and
+    // accounts the per-access latency in the same counters used by
+    // the analytical iommu_proj_us projection. The deferral happens
+    // inside CommInterface; this method is stateless beyond IOTLB
+    // cache + stats.
+    if (!enableIommu) return 0;
+    uint64_t page = addr & ~0xFFFULL;
+    bool hit = iotlbAccess(page);
+    Tick lat = hit ? iotlbHitLatency : iotlbMissLatency;
+    accountIommuAccess(lat, hit);
+    DPRINTF(LLVMInterface,
+            "[IOMMU] %s addr=0x%016lx page=0x%016lx %s lat=%llu\n",
+            isRead ? "READ " : "WRITE", (unsigned long)addr,
+            (unsigned long)page, hit ? "HIT" : "MISS",
+            (unsigned long long)lat);
+    return lat;
 }
 
 void

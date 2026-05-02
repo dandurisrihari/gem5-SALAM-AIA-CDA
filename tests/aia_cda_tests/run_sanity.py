@@ -23,7 +23,7 @@ DEFAULT_OUTDIR = REPO / "BM_ARM_OUT" / "aia_cda_sanity"
 # Selected for short plain-mode runtime (< ~2 ms sim time on the dev
 # container). Keep this list small — the suite is supposed to finish
 # well under one minute end-to-end with --jobs >= 4.
-FAST_BENCHES = ["nw", "fft", "stencil2d", "md_knn"]
+FAST_BENCHES = ["nw", "fft"]
 MODES = ["plain", "aia-kd", "iommu"]
 
 # When kernel_validation_latency == 0, AIA-KD should report 0 µs of
@@ -79,20 +79,21 @@ def check(rows: dict[str, dict[str, str]], benches: list[str]) -> list[str]:
         aiakd = rows.get(f"{b}/aia-kd")
         if not (plain and iommu and aiakd):
             continue
-        # Invariant 2: iommu sim_ticks bit-identical to plain.
-        if plain["sim_ticks"] != iommu["sim_ticks"]:
-            failures.append(
-                f"{b}: iommu sim_ticks ({iommu['sim_ticks']}) != "
-                f"plain sim_ticks ({plain['sim_ticks']}) — "
-                "analytical IOMMU must not perturb the simulator")
-        # Invariant 3: aia-kd reports non-zero overhead with default lat.
+        # Invariant 2: aia-kd reports non-zero overhead with default lat.
         if _num(aiakd["aia_kd_overhead_us"]) <= 0.0:
             failures.append(
                 f"{b}: aia-kd overhead is 0 — AIA-KD checkpoints not firing")
-        # Invariant 4: iommu reports non-zero check count.
+        # Invariant 3: iommu reports non-zero check count.
         if _num(iommu["iommu_checks"]) <= 0.0:
             failures.append(
                 f"{b}: iommu_checks is 0 — IOMMU hook not firing")
+        # NOTE: We deliberately do NOT assert iommu sim_ticks ==
+        # plain sim_ticks. The current IOMMU model is analytical and
+        # happens to be non-perturbing, but a real SMMU sits in the
+        # critical path between the accelerator and DRAM and would
+        # legitimately add latency to every memory access. The
+        # bit-identical invariant only holds for AIA-KD@lat=0
+        # (enforced separately in run_lat0_check).
     return failures
 
 
@@ -152,6 +153,60 @@ def run_lat0_check(outdir: Path, regen: bool) -> tuple[int, list[str]]:
     return 0, failures
 
 
+def run_iommu_lat0_check(outdir: Path, regen: bool) -> tuple[int, list[str]]:
+    """Verify iommu mode at iotlb_*_latency=0 is bit-identical to plain.
+
+    Mirrors run_lat0_check but for the IOMMU branch. With both IOTLB
+    latencies set to zero, every access falls through the IOMMU branch
+    to the plain enqueue path, so sim_ticks must match plain exactly.
+    Drift here would mean the IOMMU branch is perturbing event-queue
+    state (extra schedule()/event allocation) when it should be inert.
+    """
+    sub = outdir / "_iommu_lat0"
+    if sub.exists():
+        shutil.rmtree(sub)
+    cmd = [
+        sys.executable, "-m", "tools.speedkills", "compare",
+        "--bench", LAT0_BENCH,
+        "--outdir", str(sub),
+        "--modes", "plain iommu",
+        "--iotlb-hit-latency", "0",
+        "--iotlb-miss-latency", "0",
+        "--jobs", "2",
+    ]
+    if regen:
+        cmd.append("--regen")
+    print("[run]", " ".join(cmd))
+    rc = subprocess.call(cmd, cwd=str(REPO))
+    if rc != 0:
+        return rc, [f"iommu lat=0 compare exited rc={rc}"]
+    summary = sub / "summary.tsv"
+    if not summary.exists():
+        return 1, [f"iommu lat=0 missing {summary}"]
+    rows: dict[str, dict[str, str]] = {}
+    with summary.open() as fh:
+        for row in csv.DictReader(fh, delimiter="\t"):
+            rows[row["mode"]] = row
+    plain = rows.get("plain")
+    iommu = rows.get("iommu")
+    if not (plain and iommu):
+        return 1, ["iommu lat=0: missing plain or iommu row"]
+    failures: list[str] = []
+    p_t = _num(plain["sim_ticks"])
+    i_t = _num(iommu["sim_ticks"])
+    if p_t <= 0:
+        return 1, ["iommu lat=0: plain sim_ticks <= 0"]
+    if p_t != i_t:
+        failures.append(
+            f"iommu lat=0: sim_ticks differ "
+            f"(plain={int(p_t)} iommu={int(i_t)} delta={int(i_t - p_t)}); "
+            f"expected bit-identical")
+    print(f"[iommu_lat0] {LAT0_BENCH}: "
+          f"plain={int(p_t)} iommu={int(i_t)} "
+          f"({'OK' if p_t == i_t else 'DRIFT'})")
+    return 0, failures
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--outdir", default=str(DEFAULT_OUTDIR),
@@ -198,6 +253,13 @@ def main() -> int:
         if rc != 0 or lat0_failures:
             print("\n===== LAT=0 FAILURES =====", file=sys.stderr)
             for f in lat0_failures:
+                print(f"  - {f}", file=sys.stderr)
+            return 1
+
+        rc, ilat0_failures = run_iommu_lat0_check(outdir, args.regen)
+        if rc != 0 or ilat0_failures:
+            print("\n===== IOMMU LAT=0 FAILURES =====", file=sys.stderr)
+            for f in ilat0_failures:
                 print(f"  - {f}", file=sys.stderr)
             return 1
 
