@@ -201,8 +201,14 @@ def cmd_compare_all(args: argparse.Namespace) -> int:
                         if r.label.startswith(f"{variant_name}/")]
         write_overhead_summary(
             snapshot, bench_dir / "overhead_summary.tsv")
+        # Unified per-(bench, mode) pivot. Includes every config
+        # (plain, aia-kd, iommu_e<E>_m<M>ns) as its own row so the
+        # sweep matrix is visible per-bench, not only in the
+        # aggregate.
+        _write_all_modes_overhead(
+            snapshot, bench_dir / "all_modes_overhead.tsv")
         print(f"[harvest] {variant_name}: wrote "
-              f"{bench_dir / 'overhead_summary.csv'}",
+              f"{bench_dir / 'all_modes_overhead.csv'}",
               flush=True)
 
     run_parallel(runs, jobs=args.jobs, on_variant_done=on_variant_done,
