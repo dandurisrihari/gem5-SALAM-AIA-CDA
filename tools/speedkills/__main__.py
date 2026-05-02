@@ -81,7 +81,7 @@ def cmd_compare(args: argparse.Namespace) -> int:
         print("No runs queued", file=sys.stderr)
         return 1
 
-    run_parallel(runs, jobs=args.jobs)
+    run_parallel(runs, jobs=args.jobs, serial_modes=args.serial_modes)
 
     rows = [harvest_run(r.label, r.outdir) for r in runs]
     write_summary(rows, outroot / "summary.tsv")
@@ -174,7 +174,8 @@ def cmd_compare_all(args: argparse.Namespace) -> int:
               f"{bench_dir / 'overhead_summary.csv'}",
               flush=True)
 
-    run_parallel(runs, jobs=args.jobs, on_variant_done=on_variant_done)
+    run_parallel(runs, jobs=args.jobs, on_variant_done=on_variant_done,
+                 serial_modes=args.serial_modes)
 
     # Phase 3: aggregate across all benches once everything is done.
     write_summary(all_rows, outroot / "summary.tsv")
@@ -215,6 +216,9 @@ def add_compare_all(sp: argparse._SubParsersAction) -> None:
                         "(implies --build-sw)")
     p.add_argument("--build-sw", action="store_true",
                    help="Run `make` in each bench dir before launching")
+    p.add_argument("--serial-modes", action="store_true",
+                   help="Run modes within a variant one at a time "
+                        "(slower, useful when host RAM is tight)")
     p.set_defaults(func=cmd_compare_all)
 
 
@@ -249,6 +253,9 @@ def add_compare(sp: argparse._SubParsersAction) -> None:
                         "(implies --build-sw)")
     p.add_argument("--build-sw", action="store_true",
                    help="Run `make` in the bench dir before launching")
+    p.add_argument("--serial-modes", action="store_true",
+                   help="Run modes one at a time instead of in parallel "
+                        "(slower wall-clock; sim results are identical)")
     p.set_defaults(func=cmd_compare)
 
 

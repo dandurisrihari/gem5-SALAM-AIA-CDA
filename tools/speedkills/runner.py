@@ -163,7 +163,8 @@ def launch_run(run: Run, binary: Path,
 def run_parallel(runs: Iterable[Run], jobs: int,
                  binary: Path | None = None,
                  on_variant_done: Callable[[str, List[Run]], None]
-                 | None = None) -> List[Run]:
+                 | None = None,
+                 serial_modes: bool = False) -> List[Run]:
     """Launch ``runs`` with at most ``jobs`` concurrent gem5 processes.
 
     Runs whose benches share a ``bench.path`` (i.e. variants of the
@@ -173,7 +174,11 @@ def run_parallel(runs: Iterable[Run], jobs: int,
     rebuild the shared firmware while an earlier variant is still
     consuming it. Variants on distinct paths run fully in parallel.
     All modes (plain / aia-kd / iommu) of the *same* variant share the
-    same elf and are safe to fan out concurrently.
+    same elf and are safe to fan out concurrently -- unless
+    ``serial_modes=True``, in which case modes within a variant run
+    one at a time too (slower, but eliminates any chance that a
+    background regen/build queued for the next variant could race
+    with a slow in-flight mode of the current variant).
 
     ``on_variant_done(variant_name, runs)`` is invoked as soon as every
     mode of a single variant has finished, allowing callers to harvest
@@ -218,7 +223,8 @@ def run_parallel(runs: Iterable[Run], jobs: int,
                 regen_bench(head.bench, log=head.setup_log)
             if head.build_before:
                 build_sw(head.bench, log=head.setup_log)
-            with ThreadPoolExecutor(max_workers=max(1, len(modes))) as p:
+            workers = 1 if serial_modes else max(1, len(modes))
+            with ThreadPoolExecutor(max_workers=workers) as p:
                 futures = [p.submit(launch_run, r, binary,
                                     counter, total, counter_lock)
                            for r in modes]
@@ -232,12 +238,14 @@ def run_parallel(runs: Iterable[Run], jobs: int,
                           file=sys.stderr, flush=True)
         return out
 
-    # Across path groups: parallel.
+    # Across path groups: parallel (or serial if serial_modes also
+    # implies the user wants a fully sequential schedule).
     if len(by_path) == 1:
         return serialise_group(next(iter(by_path.values())))
 
+    cross_workers = 1 if serial_modes else max(1, jobs)
     results: List[Run] = []
-    with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
+    with ThreadPoolExecutor(max_workers=cross_workers) as pool:
         futures = [pool.submit(serialise_group, g)
                    for g in by_path.values()]
         for f in as_completed(futures):
