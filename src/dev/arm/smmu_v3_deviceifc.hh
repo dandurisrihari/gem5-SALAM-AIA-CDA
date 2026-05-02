@@ -82,10 +82,6 @@ class SMMUv3DeviceInterface : public ClockedObject
     // in bytes
     const unsigned portWidth;
 
-    // SALAM Option-A: StreamID stamped on requests passing through.
-    // Set from the SMMUv3DeviceInterface.stream_id Python param.
-    const uint32_t streamId;
-
     unsigned wrBufSlotsRemaining;
     unsigned xlateSlotsRemaining;
     unsigned pendingMemAccesses;

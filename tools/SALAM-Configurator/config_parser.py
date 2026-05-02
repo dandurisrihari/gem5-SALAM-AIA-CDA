@@ -261,18 +261,8 @@ class AccCluster:
         lines.append(
             "	system.iobus.mem_side_ports = clstr.local_bus.cpu_side_ports")
         # Need to define l2coherency in the YAML file?
-        # When --enable-real-smmu is set, route the cluster's outbound
-        # traffic through a per-cluster SMMUv3 instead of going straight
-        # to the system bus.
         lines.append(
-            "	if getattr(options, 'enable_real_smmu', False):")
-        lines.append(
-            "		clstr._connect_caches_smmu(system, options, "
-            "l2coherent=False)")
-        lines.append(
-            "	else:")
-        lines.append(
-            "		clstr._connect_caches(system, options, l2coherent=False)")
+            "	clstr._connect_caches(system, options, l2coherent=False)")
         lines.append("	gic = system.realview.gic")
         lines.append("")
 

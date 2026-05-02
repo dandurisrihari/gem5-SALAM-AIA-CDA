@@ -67,15 +67,6 @@ class SMMUv3DeviceInterface(ClockedObject):
     utlb_lat = Param.Cycles(1, 'Micro TLB lookup latency')
     utlb_slots = Param.Cycles(1, 'Micro TLB lookup slots')
 
-    # SALAM Option-A extension: StreamID stamped on incoming requests.
-    # Upstream gem5 expects the requestor (a PCI device behind a
-    # SMMUv3DeviceInterface) to have already set Request::streamId
-    # before the packet reaches the SMMU. SALAM's CommInterface does
-    # not do this, so we stamp it here based on a per-interface param.
-    # Index into the stream table written by salam_smmu_init.c.
-    stream_id = Param.UInt32(0,
-        'StreamID stamped on requests entering this device interface')
-
     tlb_entries = Param.Unsigned(2048, 'Main TLB size (entries)')
     tlb_assoc = Param.Unsigned(4, 'Main TLB associativity (0=full)')
     tlb_policy = Param.String('rr', 'Main TLB replacement policy')
@@ -194,25 +185,6 @@ class SMMUv3(ClockedObject):
 
     # [7:0] (0 = SMMUv3.0) (1 = SMMUv3.1)
     smmu_aidr = Param.UInt32(0, "SMMU_AIDR register");
-
-    # SALAM Option-A bootstrap. Lets the Python config side pre-program
-    # the SMMU as if a kernel had configured it: writes a stream-table /
-    # CD / page-table blob into DRAM via the system port, and seeds the
-    # initial values of strtab_base, strtab_base_cfg, and cr0.
-    # When bootstrap_enable is False (default) all four params below are
-    # ignored and the SMMU starts with cr0=0 (bypass-by-default).
-    bootstrap_enable = Param.Bool(False,
-        'Pre-program the SMMU at startup using bootstrap_blob_*')
-    bootstrap_blob = Param.String('',
-        'Path to a binary file holding the pre-built STE/CD/PT blob')
-    bootstrap_blob_addr = Param.Addr(0,
-        'Physical address at which to load bootstrap_blob into DRAM')
-    init_strtab_base = Param.Addr(0,
-        'Initial value of SMMU_STRTAB_BASE')
-    init_strtab_base_cfg = Param.UInt32(0,
-        'Initial value of SMMU_STRTAB_BASE_CFG')
-    init_cr0 = Param.UInt32(0,
-        'Initial value of SMMU_CR0 (set CR0_SMMUEN bit to enable)')
 
     def generateDeviceTree(self, state):
         reg_addr = self.reg_map.start
