@@ -246,17 +246,19 @@ class CommInterface : public BasicPioDevice
     ComputeUnit *cu;
 
     // ----- IOMMU response-path latency injection -----
-    // When ComputeUnit::iommuLatencyForAccess() returns lat>0 in
-    // MemSidePort::recvTimingResp(), the packet is parked here and
-    // dispatched to recvPacket() after `lat` ticks. The IOMMU port is
-    // modeled as in-order: a fast hit cannot overtake a slower miss,
-    // enforced by `iommuNextReadyTick` (monotonic).
-    struct PendingIommuResp {
+    // Single shared SMMU model: all CommInterface instances reserve
+    // serialized slots from one process-wide monotonic timeline
+    // (sIommuNextReadyTick). Per-instance pending queue + event
+    // dispatch the deferred packets at their assigned slots. This is
+    // the centralized-SMMU edge-IoT design point (Arm SMMUv2 IHI
+    // 0062): one TBU/TCU shared across every accelerator master.
+    struct PendingIommuResp
+    {
         PacketPtr pkt;
         Tick readyTick;
     };
     std::list<PendingIommuResp> pendingIommuResps;
-    Tick iommuNextReadyTick;
+    static Tick sIommuNextReadyTick;   // shared across all CommInterfaces
     EventFunctionWrapper iommuRespEvent;
     void processIommuRespQueue();
     // Returns true if the response was deferred (caller must NOT

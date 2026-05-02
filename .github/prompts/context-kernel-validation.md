@@ -36,14 +36,16 @@ the AIA-KD paper's IRQ-driven kernel-driver path.
     typically beats IOMMU on workloads with high access counts and
     small page footprints.
 
-### IOMMU baseline (per-accelerator stage-1 SMMU)
+### IOMMU baseline (single shared SMMU, edge-IoT)
 
-What we are modeling: a hardware translation engine on the
-accelerator's master interface, sized as a **constrained edge-IoT
-peripheral SMMU** (Cortex-M / Cortex-A5-class SoC, ~400-500 MHz,
-DDR3 page-table walk, no walk caches, single PTW thread,
-MMU-400-class band). Each accelerator has its own private IOTLB —
-no shared L2 IOTLB at the TCU.
+What we are modeling: **one** hardware translation engine shared by
+every accelerator master in the system, sized as a constrained
+edge-IoT peripheral SMMU (Cortex-M / Cortex-A5-class SoC,
+~400-500 MHz, DDR3 page-table walk, no walk caches, single PTW
+thread, MMU-400-class band, SMMUv2 IHI 0062 reference). Each
+accelerator has its own private IOTLB — no shared L2 IOTLB at the
+TCU — but **all CUs queue against one shared SMMU port**
+(`sIommuNextReadyTick`), one translation in flight chip-wide.
 
   - **Cost model**: per-access tax, *not* per-page. Every memory
     transaction the accelerator emits (off-chip DRAM, on-chip SPM,
@@ -52,13 +54,20 @@ no shared L2 IOTLB at the TCU.
     `iotlb_miss_latency` (default 500 ns, for a 4-level walk to
     slow DRAM) on miss with LRU install. The IOTLB is small
     (default 8 entries) reflecting an edge-class uTLB.
-  - **What we expect to see**: cost scales with access count, not
-    page count; high IOTLB hit-rate workloads pay only the hit
-    latency on every access; workloads whose hot page footprint
-    exceeds 8 pages start to thrash the IOTLB.
-  - **Key design property**: hardware-style (one cost per *access*).
-    This is why IOMMU typically loses to AIA-KD on access-heavy
-    workloads even when the page footprint is small.
+  - **Sharing semantics**: a translation request from any CU
+    reserves a serial slot on the shared SMMU timeline; subsequent
+    translations (from this or any other CU) cannot start until the
+    current one finishes. Membus / DRAM serialization is unchanged
+    from plain (it already exists downstream of the SMMU).
+  - **What we expect to see**: cost scales with **system-wide**
+    access count, not page count; high IOTLB hit-rate workloads
+    pay only the hit latency on every access; many-CU workloads
+    (MobileNet, GEMM-large) see measured ≈ analytical projection
+    because there is no parallel-CU savings.
+  - **Key design property**: hardware-style (one cost per *access*),
+    centralized (one cost per *chip-cycle*). This is why IOMMU
+    typically loses to AIA-KD on access-heavy workloads even when
+    the page footprint is small.
 
 ### Why both, side-by-side
 
@@ -68,6 +77,99 @@ identical SALAM platform with identical accelerators, identical
 benchmarks, and identical traffic lets a paper quote a clean
 apples-to-apples overhead delta per workload — without needing to
 argue away differences in the underlying accelerator timing model.
+
+### Architecture diagrams
+
+Both modes serialize all CUs through one shared resource. The
+difference is the trigger rate: AIA-KD fires on kernel launch with
+a cold page (rare); IOMMU fires on every memory access response
+(constant). This is the entire reason AIA-KD beats IOMMU on
+memory-heavy workloads.
+
+#### AIA-KD: per-page first-touch tax through the host CPU
+
+```
+  ┌──────────┐  ┌──────────┐  ┌──────────┐ ... ┌──────────┐
+  │   CU 0   │  │   CU 1   │  │   CU 2   │     │  CU N-1  │
+  │ (LLVM IF)│  │ (LLVM IF)│  │ (LLVM IF)│     │ (LLVM IF)│
+  └────┬─────┘  └────┬─────┘  └────┬─────┘     └────┬─────┘
+       │ kernel-entry / basic-block start          │
+       ▼             ▼             ▼               ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │  Per-CU validation cache (validatedPagesPerProcess)     │
+  │                                                         │
+  │  cache HIT  ──► fast path: 0 ticks, run kernel          │
+  │  cache MISS ──► slow path:                              │
+  │                  1. raise GIC IRQ to host CPU           │
+  │                  2. host CPU runs the AIA validator     │
+  │                  3. inject 8.367 us stall               │
+  │                  4. host acks ─► CU resumes ─► run      │
+  │                  5. install page in CU's cache          │
+  └─────────────────────────────────────────────────────────┘
+              │                          ▲
+              │ IRQ                      │ ack
+              ▼                          │
+         ┌──────────────────────────────────┐
+         │     GIC ──► host CPU             │
+         │  (one IRQ serviced at a time)    │  ◄── shared resource
+         └──────────────────────────────────┘
+
+  --- unchanged from plain ----------------------------------
+  memory accesses INSIDE the kernel are NOT inspected
+  (no per-access tax)
+  membus / iobus ──► DRAM controller ──► DDR3 banks
+```
+
+#### IOMMU (single-SMMU edge-IoT): per-access tax through one shared port
+
+```
+  ┌──────────┐  ┌──────────┐  ┌──────────┐ ... ┌──────────┐
+  │   CU 0   │  │   CU 1   │  │   CU 2   │     │  CU N-1  │
+  └────┬─────┘  └────┬─────┘  └────┬─────┘     └────┬─────┘
+  ┌────┴────┐   ┌────┴────┐   ┌────┴────┐      ┌────┴────┐
+  │ Comm IF │   │ Comm IF │   │ Comm IF │      │ Comm IF │
+  │ (Mem/SPM│   │ (Mem/SPM│   │ (Mem/SPM│      │ (Mem/SPM│
+  │  /Reg)  │   │  /Reg)  │   │  /Reg)  │      │  /Reg)  │
+  └────┬────┘   └────┬────┘   └────┬────┘      └────┬────┘
+       │             │             │                │
+       │  every memory-access response goes through the SMMU
+       ▼             ▼             ▼                ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │            Shared SMMU arbiter (one chip-wide)          │
+  │                                                         │
+  │   sIommuNextReadyTick  ◄── single monotonic timeline    │
+  │                                                         │
+  │   ┌──────────────┐                                      │
+  │   │  IOTLB (LRU) │   8 entries  per CU                  │
+  │   │              │   (lookup time accounted into the    │
+  │   └──────┬───────┘    shared timeline)                  │
+  │          │  hit ──► +2 ns                               │
+  │          │  miss ─► +500 ns (4-level walk, DRAM-rate)   │
+  │          ▼                                              │
+  │   ONE translation in flight at a time                   │
+  │   ready = max(curTick(), sIommuNextReadyTick) + lat     │
+  └────────────────────────────┬────────────────────────────┘
+                               ▼
+                  (response delivered to the
+                   originating CU's CommIF)
+
+  --- unchanged from plain ----------------------------------
+  membus / iobus ──► DRAM controller ──► DDR3 banks
+  (already serialized in plain mode; no extra delta from IOMMU)
+```
+
+#### Symmetry: both serialize all CUs, at very different rates
+
+```
+        AIA-KD                            IOMMU (shared SMMU)
+        ───────                           ───────────────────
+  trigger:  cold-page kernel launch      every memory response
+  rate  :  1×10^1 .. 1×10^3 events       1×10^5 .. 1×10^8 events
+  shared:  GIC ─► host CPU               sIommuNextReadyTick
+  cost  :  8.367 us per event            2 ns hit / 500 ns miss per event
+  ─────────────────────────────────────────────────────────────────
+  result:  bursty, rare, amortizes        constant, frequent, no amortization
+```
 
 ## Working agreements (read first, every session)
 

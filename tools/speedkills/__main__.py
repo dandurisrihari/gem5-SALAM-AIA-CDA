@@ -48,9 +48,14 @@ def cmd_compare(args: argparse.Namespace) -> int:
     outroot = Path(args.outdir).resolve()
     outroot.mkdir(parents=True, exist_ok=True)
 
+    # --regen rewrites benchmarks/<bench>/*_hw_defines.h. The host
+    # firmware (sw/main.elf) embeds those addresses, so regen WITHOUT
+    # rebuild leaves a stale elf and gem5 fatals on "Unable to find
+    # destination for ..." at the first MMR poke. Force rebuild.
     if args.regen:
         regen_bench(bench, log=outroot / "_setup.log")
-    if args.build_sw:
+        build_sw(bench, log=outroot / "_setup.log")
+    elif args.build_sw:
         build_sw(bench, log=outroot / "_setup.log")
 
     extra = _split_extra(args.extra)
@@ -133,11 +138,14 @@ def cmd_compare_all(args: argparse.Namespace) -> int:
     for b in benches:
         for i, mode in enumerate(requested):
             flags = profiles.MODES[mode](mode_opts)
+            # --regen forces a rebuild (see cmd_compare); shared-tree
+            # variants (mobilenetv2 / _35 / _75) MUST rebuild after
+            # regen overwrites their *_hw_defines.h.
             r = Run(label=f"{b.name}/{mode}", bench=b,
                     extra_flags=flags + extra,
                     outdir=outroot / b.name / mode,
                     regen_before=args.regen and i == 0,
-                    build_before=args.build_sw and i == 0,
+                    build_before=(args.regen or args.build_sw) and i == 0,
                     setup_log=outroot / f"{b.name}_setup.log")
             runs.append(r)
 
@@ -203,7 +211,8 @@ def add_compare_all(sp: argparse._SubParsersAction) -> None:
     p.add_argument("--jobs", type=int, default=os.cpu_count() or 4)
     p.add_argument("--extra", default="")
     p.add_argument("--regen", action="store_true",
-                   help="Run SALAM Configurator before launching")
+                   help="Run SALAM Configurator before launching "
+                        "(implies --build-sw)")
     p.add_argument("--build-sw", action="store_true",
                    help="Run `make` in each bench dir before launching")
     p.set_defaults(func=cmd_compare_all)
@@ -236,7 +245,8 @@ def add_compare(sp: argparse._SubParsersAction) -> None:
     p.add_argument("--extra", default="",
                    help="Extra gem5 flags appended to every run (quoted)")
     p.add_argument("--regen", action="store_true",
-                   help="Run SALAM Configurator before launching")
+                   help="Run SALAM Configurator before launching "
+                        "(implies --build-sw)")
     p.add_argument("--build-sw", action="store_true",
                    help="Run `make` in the bench dir before launching")
     p.set_defaults(func=cmd_compare)
@@ -261,20 +271,22 @@ def cmd_sweep(args: argparse.Namespace) -> int:
 
     latencies = _ints(args.latencies)
 
-    # Phase 1: regen + build_sw per bench (per-path-locked inside).
     benches = [resolve(n, args.bench_path if n == args.bench else None,
                        args.config if n == args.bench else None)
                for n in bench_names]
-    for b in benches:
-        regen_bench(b, log=outroot / f"{b.name}_setup.log")
-        build_sw(b, log=outroot / f"{b.name}_setup.log")
 
-    # Phase 2: assemble runs.
+    # Assemble runs. regen / build_sw are attached to the FIRST run of
+    # each variant so run_parallel can interleave them per-variant.
+    # Doing all regens then all builds up-front (the previous Phase 1
+    # model) silently corrupted shared-tree variants like
+    # mobilenetv2 / _35 / _75 because they share *_hw_defines.h and
+    # sw/main.elf -- only the last variant's elf survived. --regen
+    # implies a rebuild for the same reason as in cmd_compare.
     extra = _split_extra(args.extra)
     debug_flags = args.trace_flags if args.trace else ""
     runs: List[Run] = []
     for b in benches:
-        for lat in latencies:
+        for i, lat in enumerate(latencies):
             if lat == 0:
                 label = "baseline_no_validation"
                 mode_flags: List[str] = []
@@ -288,6 +300,9 @@ def cmd_sweep(args: argparse.Namespace) -> int:
                 extra_flags=mode_flags + extra,
                 outdir=outroot / b.name / label,
                 debug_flags=debug_flags,
+                regen_before=args.regen and i == 0,
+                build_before=(args.regen or args.build_sw) and i == 0,
+                setup_log=outroot / f"{b.name}_setup.log",
             ))
 
     run_parallel(runs, jobs=args.jobs)
@@ -314,6 +329,11 @@ def add_sweep(sp: argparse._SubParsersAction) -> None:
     p.add_argument("--extra", default="")
     p.add_argument("--trace", action="store_true")
     p.add_argument("--trace-flags", default="LLVMInterface")
+    p.add_argument("--regen", action="store_true",
+                   help="Run SALAM Configurator before launching "
+                        "(implies --build-sw)")
+    p.add_argument("--build-sw", action="store_true",
+                   help="Run `make` in each bench dir before launching")
     p.set_defaults(func=cmd_sweep)
 
 

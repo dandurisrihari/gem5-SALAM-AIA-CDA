@@ -10,6 +10,14 @@
 
 using namespace std;
 
+// Process-wide shared SMMU arbiter tick. All CommInterface instances
+// reserve serialized translation slots from this single timeline,
+// modeling one centralized SMMU shared across every accelerator
+// master (single-SMMU edge-IoT). Initialized to 0; the first
+// reservation will use max(curTick(), 0) which is curTick() once
+// simulation starts.
+Tick CommInterface::sIommuNextReadyTick = 0;
+
 /***************************************************************************************
  * CommInterface serves as the general system interface for hardware accelerators. It
  * provides a set of memory-mapped registers, as well as master ports for accessing
@@ -32,7 +40,6 @@ CommInterface::CommInterface(const CommInterfaceParams &p) :
     cacheLineSize(p.cache_line_size),
     clock_period(p.clock_period),
     reset_spm(p.reset_spm),
-    iommuNextReadyTick(0),
     iommuRespEvent([this]{ processIommuRespQueue(); },
                    name() + ".iommuRespEvent") {
     processDelay = 1000 * clock_period;
@@ -64,6 +71,13 @@ CommInterface::tryIommuDelay(PacketPtr pkt) {
     // upstream tick alignment, and `iommu sim_ticks >= plain
     // sim_ticks` is structurally guaranteed.
     //
+    // Single shared SMMU model: sIommuNextReadyTick is process-wide,
+    // so every CU's translation queues serially behind every other
+    // CU's. This matches a centralized SMMU edge-IoT design: one TBU
+    // / TCU shared across all accelerator masters. Per-instance
+    // pendingIommuResps + iommuRespEvent only handle local dispatch
+    // at the slot the shared arbiter assigned us.
+    //
     // Called from every recvTimingResp path because in real hardware
     // every transaction crossing the accelerator's master interface
     // is translated by the SMMU (we do NOT distinguish on-chip vs
@@ -72,10 +86,14 @@ CommInterface::tryIommuDelay(PacketPtr pkt) {
     Tick lat = cu->iommuLatencyForAccess(
         pkt->req->getPaddr(), pkt->isRead());
     if (lat == 0) return false;
-    // In-order IOMMU port: a fast hit cannot overtake a slower miss
-    // already in flight.
-    Tick ready = std::max(curTick() + lat, iommuNextReadyTick);
-    iommuNextReadyTick = ready;
+    // In-order shared IOMMU port: each translation occupies the SMMU
+    // for `lat` ticks; subsequent requests (from this or any other
+    // CU) cannot start until the current one finishes. The port is
+    // exclusive -- one translation in flight at a time across the
+    // entire chip (single-SMMU edge-IoT).
+    Tick startTick = std::max(curTick(), sIommuNextReadyTick);
+    Tick ready = startTick + lat;
+    sIommuNextReadyTick = ready;
     pendingIommuResps.push_back({pkt, ready});
     if (!iommuRespEvent.scheduled()) {
         schedule(iommuRespEvent, ready);
