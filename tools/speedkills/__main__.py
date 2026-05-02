@@ -128,6 +128,26 @@ def cmd_compare_all(args: argparse.Namespace) -> int:
             print(f"Unknown mode: {mode}", file=sys.stderr)
             return 2
 
+    # Optional inline IOMMU sweep: expand into per-config modes
+    # (entries x miss_ns) that run in the SAME parallel batch as
+    # plain / aia-kd. The single generic `iommu` mode is dropped
+    # because the matrix already covers it (avoids duplicate runs).
+    sweep_entries: List[int] = []
+    sweep_miss_ns: List[int] = []
+    sweep_specs: List[tuple] = []
+    if args.iommu_sweep:
+        sweep_entries = _ints(args.iommu_sweep_entries)
+        sweep_miss_ns = _ints(args.iommu_sweep_miss_ns)
+        if not sweep_entries or not sweep_miss_ns:
+            print("--iommu-sweep needs non-empty --iommu-sweep-entries "
+                  "and --iommu-sweep-miss-ns", file=sys.stderr)
+            return 2
+        for e in sweep_entries:
+            for m in sweep_miss_ns:
+                sweep_specs.append((e, m, f"iommu_e{e}_m{m}ns"))
+        if "iommu" in requested:
+            requested = [m for m in requested if m != "iommu"]
+
     # Assemble runs across (bench x mode). regen / build_sw are
     # attached to the *first* mode of each variant so the runner can
     # interleave them correctly with launches: variants that share a
@@ -136,14 +156,25 @@ def cmd_compare_all(args: argparse.Namespace) -> int:
     # the next variant rebuilds it.
     runs: List[Run] = []
     for b in benches:
-        for i, mode in enumerate(requested):
-            flags = profiles.MODES[mode](mode_opts)
+        bench_modes: List[tuple] = []
+        for mode in requested:
+            bench_modes.append(
+                (mode, profiles.MODES[mode](mode_opts),
+                 outroot / b.name / mode))
+        for e, m, label in sweep_specs:
+            miss_ticks = m * 1000
+            flags = ["--enable-iommu",
+                     "--iotlb-entries",      str(e),
+                     "--iotlb-hit-latency",  str(args.iotlb_hit_latency),
+                     "--iotlb-miss-latency", str(miss_ticks)]
+            bench_modes.append((label, flags, outroot / b.name / label))
+        for i, (mode, flags, mode_outdir) in enumerate(bench_modes):
             # --regen forces a rebuild (see cmd_compare); shared-tree
             # variants (mobilenetv2 / _35 / _75) MUST rebuild after
             # regen overwrites their *_hw_defines.h.
             r = Run(label=f"{b.name}/{mode}", bench=b,
                     extra_flags=flags + extra,
-                    outdir=outroot / b.name / mode,
+                    outdir=mode_outdir,
                     regen_before=args.regen and i == 0,
                     build_before=(args.regen or args.build_sw) and i == 0,
                     setup_log=outroot / f"{b.name}_setup.log")
@@ -191,7 +222,119 @@ def cmd_compare_all(args: argparse.Namespace) -> int:
     print(f"\nOutput tree:        {outroot}")
     print(f"Aggregate summary:  {outroot / 'summary.tsv'}")
     print(f"Overhead summary:   {outroot / 'overhead_summary.tsv'}")
+
+    # Unified per-mode overhead pivot: one row per (bench, mode),
+    # each compared to that bench's `plain` baseline. Includes
+    # plain / aia-kd / iommu and every iommu_e<E>_m<M>ns sweep
+    # config so the user can read the whole matrix in one CSV.
+    if args.iommu_sweep or len(requested) > 1:
+        unified_text = _write_all_modes_overhead(
+            all_rows, outroot / "all_modes_overhead.tsv")
+        print()
+        print("===== All-modes overhead vs plain (one row per config) =====")
+        print(unified_text)
+        print(f"All-modes overhead: {outroot / 'all_modes_overhead.tsv'}")
     return 0
+
+
+def _write_all_modes_overhead(rows, path: Path) -> str:
+    """Per-(bench, mode) overhead pivot vs the bench's `plain` row.
+
+    Handles arbitrary mode labels including ``iommu_e<E>_m<M>ns``
+    sweep configs. Columns:
+
+      benchmark, mode, entries, miss_ns, plain_us, runtime_us,
+      abs_overhead_us, abs_overhead_pct, proj_overhead_us,
+      proj_overhead_pct, iommu_checks, iotlb_hits, iotlb_misses,
+      iotlb_hit_rate_pct, smid_requests, smid_validations
+    """
+    import re as _re
+    by_bench: dict = {}
+    for r in rows:
+        if "/" not in r.label:
+            continue
+        bench, mode = r.label.split("/", 1)
+        by_bench.setdefault(bench, {})[mode] = r
+
+    cols = ("benchmark", "mode", "entries", "miss_ns",
+            "plain_us", "runtime_us",
+            "abs_overhead_us", "abs_overhead_pct",
+            "proj_overhead_us", "proj_overhead_pct",
+            "iommu_checks", "iotlb_hits", "iotlb_misses",
+            "iotlb_hit_rate_pct",
+            "smid_requests", "smid_validations")
+    lines = ["\t".join(cols)]
+    pretty = ["  ".join(c.ljust(18) for c in cols)]
+    sweep_re = _re.compile(r"^iommu_e(\d+)_m(\d+)ns$")
+
+    def _mode_sort_key(m: str) -> tuple:
+        if m == "plain":
+            return (0, 0, 0, m)
+        if m == "aia-kd":
+            return (1, 0, 0, m)
+        if m == "iommu":
+            return (2, 0, 0, m)
+        mt = sweep_re.match(m)
+        if mt:
+            return (3, int(mt.group(1)), int(mt.group(2)), m)
+        return (4, 0, 0, m)
+
+    for bench in sorted(by_bench):
+        modes = by_bench[bench]
+        plain = modes.get("plain")
+        plain_ticks = (int(plain.sim_ticks)
+                       if plain and plain.sim_ticks.isdigit() else None)
+        plain_us = (plain_ticks / 1e6) if plain_ticks else None
+        plain_us_s = f"{plain_us:.3f}" if plain_us is not None else "-"
+
+        for mode in sorted(modes, key=_mode_sort_key):
+            row = modes[mode]
+            mt = sweep_re.match(mode)
+            entries = mt.group(1) if mt else "-"
+            miss_ns = mt.group(2) if mt else "-"
+            runtime_us = row.runtime_us
+            if (plain_ticks is not None and row.sim_ticks.isdigit()):
+                d_us = (int(row.sim_ticks) - plain_ticks) / 1e6
+                pct = ((d_us / plain_us) * 100.0
+                       if plain_us else 0.0)
+                abs_o = f"{d_us:.3f}"
+                abs_p = f"{pct:.3f}%"
+            else:
+                abs_o = "-"
+                abs_p = "-"
+            # Analytical projection: aia-kd reports its own us value;
+            # iommu modes report iommu_overhead_us; plain has neither.
+            # Pick by mode label so a 0.000 sibling column doesn't win.
+            if mode == "aia-kd":
+                proj_us = row.aia_kd_overhead_us
+            elif mode == "iommu" or sweep_re.match(mode):
+                proj_us = row.iommu_overhead_us
+            else:
+                proj_us = "-"
+            try:
+                pv = float(proj_us)
+                proj_pct = (f"{(pv / plain_us) * 100.0:.3f}%"
+                            if plain_us else "-")
+            except (TypeError, ValueError):
+                proj_pct = "-"
+
+            vals = (bench, mode, entries, miss_ns,
+                    plain_us_s, runtime_us,
+                    abs_o, abs_p,
+                    proj_us, proj_pct,
+                    row.iommu_checks, row.iotlb_hits, row.iotlb_misses,
+                    (f"{row.iotlb_hit_rate_pct}%"
+                     if row.iotlb_hit_rate_pct != "-" else "-"),
+                    row.smid_requests, row.smid_validations)
+            lines.append("\t".join(vals))
+            pretty.append("  ".join(v.ljust(18) for v in vals))
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n")
+    csv_path = path.with_suffix(".csv")
+    csv_path.write_text(
+        "\n".join(l.replace("\t", ",") for l in lines) + "\n")
+    return "\n".join(pretty)
 
 
 def add_compare_all(sp: argparse._SubParsersAction) -> None:
@@ -222,6 +365,24 @@ def add_compare_all(sp: argparse._SubParsersAction) -> None:
                         "Variants of the same bench-path family "
                         "(mobilenetv2 / _35 / _75) are ALWAYS serialised "
                         "against each other regardless of this flag.")
+    p.add_argument("--iommu-sweep", action="store_true",
+                   help="Expand the matrix of IOMMU configs "
+                        "(entries x miss_ns) into the SAME parallel "
+                        "batch as plain + aia-kd. Each config gets "
+                        "label iommu_e<E>_m<M>ns and appears as its "
+                        "own row in <outdir>/all_modes_overhead.csv "
+                        "(per-bench and aggregate), comparing each "
+                        "config's overhead vs that bench's plain "
+                        "baseline. Drops the generic `iommu` mode to "
+                        "avoid a duplicate run.")
+    p.add_argument("--iommu-sweep-entries", default=" ".join(
+        str(x) for x in _DEFAULT_IOTLB_ENTRIES),
+        help="IOTLB capacities for the chained sweep (default: "
+             f"{' '.join(str(x) for x in _DEFAULT_IOTLB_ENTRIES)})")
+    p.add_argument("--iommu-sweep-miss-ns", default=" ".join(
+        str(x) for x in _DEFAULT_IOMMU_MISS_NS),
+        help="Page-walk miss latencies (ns) for the chained sweep "
+             f"(default: {' '.join(str(x) for x in _DEFAULT_IOMMU_MISS_NS)})")
     p.set_defaults(func=cmd_compare_all)
 
 
