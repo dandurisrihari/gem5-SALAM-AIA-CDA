@@ -88,12 +88,18 @@ def addHWAccOptions(parser):
                       default=False,
                       help="""Enable IOMMU latency model on accelerator""")
     parser.add_argument("--iotlb-entries", action="store", type=int,
-                      default=64, help="""IOTLB capacity (LRU)""")
+                      default=8,
+                      help="""IOTLB capacity (LRU; default 8 -- """
+                           """matches the IoT-class IOMMU profile """
+                           """in .github/prompts/02-iommu-design.md)""")
     parser.add_argument("--iotlb-hit-latency", action="store", type=int,
-                      default=0, help="""IOTLB hit latency (ticks)""")
+                      default=2000,
+                      help="""IOTLB hit latency (ticks; """
+                           """default 2000 = 2 ns)""")
     parser.add_argument("--iotlb-miss-latency", action="store", type=int,
-                      default=0,
-                      help="""IOTLB miss / page-walk latency (ticks)""")
+                      default=500000,
+                      help="""IOTLB miss / page-walk latency (ticks; """
+                           """default 500000 = 500 ns)""")
 
 def cmd_line_template():
     if args.command_line and args.command_line_file:

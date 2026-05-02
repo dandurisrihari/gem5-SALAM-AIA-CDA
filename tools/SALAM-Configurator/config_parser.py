@@ -378,15 +378,19 @@ class Accelerator:
                      "getattr(options, 'validation_int_num', 172),")
         lines.append("          process_id="
                      "getattr(options, 'process_id', 17),")
-        # IOMMU options (mutually exclusive with kernel validation)
+        # IOMMU options (mutually exclusive with kernel validation).
+        # The numeric IOTLB geometry kwargs are inert on AccConfig
+        # (the IOTLB lives on the cluster-shared AcceleratorIommu
+        # built above); we still emit them so existing CLI flags
+        # keep working and the kwargs match AccConfig's signature.
         lines.append("          enable_iommu="
                      "getattr(options, 'enable_iommu', False),")
         lines.append("          iotlb_entries="
-                     "getattr(options, 'iotlb_entries', 64),")
+                     "getattr(options, 'iotlb_entries', 8),")
         lines.append("          iotlb_hit_latency="
-                     "getattr(options, 'iotlb_hit_latency', 0),")
+                     "getattr(options, 'iotlb_hit_latency', 2000),")
         lines.append("          iotlb_miss_latency="
-                     "getattr(options, 'iotlb_miss_latency', 0),")
+                     "getattr(options, 'iotlb_miss_latency', 500000),")
         # Pass the cluster-shared IOMMU + AIA-KD SimObjects so
         # AccConfig can wire them onto acc.llvm_interface (kept
         # symmetric with the per-CU wiring above).

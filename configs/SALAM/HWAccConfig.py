@@ -24,14 +24,17 @@ def AccConfig(acc, bench_file, config_file, enable_kernel_validation=False,
     acc.llvm_interface.process_id = process_id
 
     # IOMMU configuration (mutually exclusive with kernel validation)
-    # The numeric params are kept on the LLVMInterface for backward CLI
-    # compatibility, but the *active* IOTLB cache + chip-wide port
+    # The on/off switch is forwarded to LLVMInterface for the C++
+    # ctor cross-check; the actual IOTLB cache + chip-wide port
     # deadline + stats live on the AcceleratorIommu SimObject pointed
     # to by `iommu` (one per AccCluster, shared with sibling CUs).
+    # The numeric IOTLB geometry kwargs (iotlb_entries / hit / miss
+    # latency) are accepted here for backward compatibility with
+    # already-generated configs/SALAM/*.py files but are NOT written
+    # onto the per-CU LLVMInterface -- they configure the cluster-
+    # shared AcceleratorIommu instance, which is built directly by
+    # the generator (see config_parser.py).
     acc.llvm_interface.enable_iommu = enable_iommu
-    acc.llvm_interface.iotlb_entries = iotlb_entries
-    acc.llvm_interface.iotlb_hit_latency = iotlb_hit_latency
-    acc.llvm_interface.iotlb_miss_latency = iotlb_miss_latency
     if iommu is not None:
         acc.llvm_interface.iommu = iommu
 

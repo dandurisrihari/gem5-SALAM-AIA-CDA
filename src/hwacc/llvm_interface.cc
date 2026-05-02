@@ -1592,9 +1592,61 @@ LLVMInterface::completeValidation(const AiaKdValidator::PendingRequest &req,
             validator->waitingForPage.erase(waitIt);
         }
     } else {
-        // Access denied by kernel.
+        // Access denied by the kernel-side policy.
+        //
+        // `validateWithKernel()` is currently a stub that always
+        // returns true (we model only the latency of consulting the
+        // driver, not the policy). This branch is therefore
+        // unreachable today. If a real denial policy is added in
+        // future work, the originator + every coalesced waiter must
+        // be (a) cleanly removed from cluster-shared validator state
+        // and (b) faulted/cancelled in their per-CU pipelines.
+        //
+        // Step (a) is done here so the validator's bookkeeping does
+        // not leak even if step (b) is not yet implemented. Step (b)
+        // requires a SALAM-level "instruction fault" mechanism that
+        // does not exist yet, so we still panic to make the missing
+        // work loud rather than silently dropping accesses.
         kernelValidationDenied++;
-        panic("[SECURITY] Kernel denied %s: addr=0x%016lx, pid=%llu",
+
+        uint64_t pageAddr = req.addr & ~0xFFFULL;
+
+        // Drain the originator's bookkeeping: per-CU pending-UID set
+        // and reservation queue entry. (pendingValidationUIDs erase
+        // for the originator was already done above; the
+        // removeFromReservation call too. Repeated here for clarity
+        // when reading the denial path in isolation -- both calls
+        // are idempotent.)
+        pendingValidationUIDs.erase(req.inst->getUID());
+        func->removeFromReservation(req.inst->getUID());
+
+        // Drain coalesced waiters from the cluster-shared
+        // waitingForPage map and from each waiter's per-CU state.
+        auto waitIt = validator->waitingForPage.find(pageAddr);
+        if (waitIt != validator->waitingForPage.end()) {
+            for (auto &waiting : waitIt->second) {
+                ActiveFunction *waitingFunc =
+                    static_cast<ActiveFunction*>(waiting.func);
+                LLVMInterface *waiterCU = waitingFunc->owner;
+                waiterCU->pendingValidationUIDs.erase(
+                    waiting.inst->getUID());
+                waitingFunc->removeFromReservation(
+                    waiting.inst->getUID());
+                waiterCU->kernelValidationDenied++;
+            }
+            validator->waitingForPage.erase(waitIt);
+        }
+
+        // Drop the page from the cluster-shared in-flight set so
+        // future accesses to the same page do not coalesce against
+        // a request that no longer exists.
+        validator->pendingValidationPages.erase(pageAddr);
+
+        panic("[SECURITY] Kernel denied %s: addr=0x%016lx, pid=%llu. "
+              "Validator-side state has been cleaned, but per-CU "
+              "instruction-fault dispatch is NOT YET IMPLEMENTED -- "
+              "see denial-path checklist in "
+              ".github/prompts/01-aia-kd-design.md.",
               req.isRead ? "READ" : "WRITE", req.addr, req.pid);
     }
 }
