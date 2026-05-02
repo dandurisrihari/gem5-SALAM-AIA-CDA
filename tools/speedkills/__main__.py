@@ -21,7 +21,7 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
-from typing import Iterable, List
+from typing import List
 
 from . import config as cfg
 from . import profiles
@@ -29,25 +29,6 @@ from .benchmarks import REGISTRY, GROUPS, group_for, resolve
 from .harvest import (HEADER, harvest_outdir, harvest_run, pretty_print,
                       write_deltas, write_overhead_summary, write_summary)
 from .runner import Run, build_sw, regen_bench, run_parallel
-
-
-# Benchmark families whose variants share a bench.path (and therefore a
-# single sw/main.elf + *_hw_defines.h). For these, serialising modes
-# within a variant is the safer default: any background regen+build
-# queued for the next variant cannot then race a slow in-flight mode
-# of the current variant. Pass --parallel-modes to override.
-_SERIAL_MODE_BENCHES = {
-    "mobilenetv2", "mobilenetv2_35", "mobilenetv2_75",
-}
-
-
-def _resolve_serial_modes(args: argparse.Namespace,
-                          bench_names: Iterable[str]) -> bool:
-    if getattr(args, "parallel_modes", False):
-        return False
-    if getattr(args, "serial_modes", False):
-        return True
-    return any(n in _SERIAL_MODE_BENCHES for n in bench_names)
 
 
 # ---- helpers --------------------------------------------------------------
@@ -100,12 +81,7 @@ def cmd_compare(args: argparse.Namespace) -> int:
         print("No runs queued", file=sys.stderr)
         return 1
 
-    serial = _resolve_serial_modes(args, [bench.name])
-    if serial and not args.serial_modes:
-        print(f"[note] {bench.name}: enabling --serial-modes by default "
-              f"(shared bench-path family); pass --parallel-modes to "
-              f"override.", file=sys.stderr)
-    run_parallel(runs, jobs=args.jobs, serial_modes=serial)
+    run_parallel(runs, jobs=args.jobs, serial_modes=args.serial_modes)
 
     rows = [harvest_run(r.label, r.outdir) for r in runs]
     write_summary(rows, outroot / "summary.tsv")
@@ -198,14 +174,8 @@ def cmd_compare_all(args: argparse.Namespace) -> int:
               f"{bench_dir / 'overhead_summary.csv'}",
               flush=True)
 
-    serial = _resolve_serial_modes(args, [b.name for b in benches])
-    if serial and not args.serial_modes:
-        affected = [b.name for b in benches if b.name in _SERIAL_MODE_BENCHES]
-        print(f"[note] enabling --serial-modes by default for shared "
-              f"bench-path family: {', '.join(affected)}; pass "
-              f"--parallel-modes to override.", file=sys.stderr)
     run_parallel(runs, jobs=args.jobs, on_variant_done=on_variant_done,
-                 serial_modes=serial)
+                 serial_modes=args.serial_modes)
 
     # Phase 3: aggregate across all benches once everything is done.
     write_summary(all_rows, outroot / "summary.tsv")
@@ -247,12 +217,11 @@ def add_compare_all(sp: argparse._SubParsersAction) -> None:
     p.add_argument("--build-sw", action="store_true",
                    help="Run `make` in each bench dir before launching")
     p.add_argument("--serial-modes", action="store_true",
-                   help="Force modes within a variant to run one at a "
-                        "time (default: auto -- on for mobilenetv2*, off "
-                        "for everything else)")
-    p.add_argument("--parallel-modes", action="store_true",
-                   help="Force modes to run in parallel even for the "
-                        "mobilenetv2 family (overrides the auto default)")
+                   help="Run modes within a variant one at a time "
+                        "(slower, useful when host RAM is tight). "
+                        "Variants of the same bench-path family "
+                        "(mobilenetv2 / _35 / _75) are ALWAYS serialised "
+                        "against each other regardless of this flag.")
     p.set_defaults(func=cmd_compare_all)
 
 
@@ -288,11 +257,8 @@ def add_compare(sp: argparse._SubParsersAction) -> None:
     p.add_argument("--build-sw", action="store_true",
                    help="Run `make` in the bench dir before launching")
     p.add_argument("--serial-modes", action="store_true",
-                   help="Force modes to run one at a time (default: auto "
-                        "-- on for mobilenetv2*, off for everything else)")
-    p.add_argument("--parallel-modes", action="store_true",
-                   help="Force modes to run in parallel even for the "
-                        "mobilenetv2 family (overrides the auto default)")
+                   help="Run modes one at a time instead of in parallel "
+                        "(slower wall-clock; sim results are identical)")
     p.set_defaults(func=cmd_compare)
 
 
