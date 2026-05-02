@@ -1,11 +1,16 @@
-"""speedkills CLI: ``python -m speedkills <subcommand>``.
+"""speedkills CLI: ``python -m speedkills [<subcommand>]``.
+
+Default (no subcommand) is equivalent to ``compare-all`` over every
+registered benchmark across the three protection modes (plain, aia-kd,
+iommu) in parallel, with output under ``BM_ARM_OUT/aia_cda_default``.
 
 Subcommands:
-    compare   Protection-mode comparison (replaces run_protection_compare.sh)
-    sweep     Latency sweep across benchmarks (replaces run_parallel.sh)
-    run       Single-bench debug run (replaces run_system.sh)
-    harvest   Re-parse an existing outdir without re-running gem5
-    monitor   Launch the HTML dashboard (delegates to experiment_monitor.py)
+    compare       Protection-mode comparison for one benchmark
+    compare-all   Same, fanned out over every registered benchmark
+    sweep         Latency sweep across benchmarks
+    run           Single-bench debug run
+    harvest       Re-parse an existing outdir without re-running gem5
+    list          Show benchmarks and modes
 """
 from __future__ import annotations
 
@@ -21,7 +26,7 @@ from . import config as cfg
 from . import profiles
 from .benchmarks import REGISTRY, GROUPS, group_for, resolve
 from .harvest import (HEADER, harvest_outdir, harvest_run, pretty_print,
-                      write_deltas, write_summary)
+                      write_deltas, write_overhead_summary, write_summary)
 from .runner import Run, build_sw, regen_bench, run_parallel
 
 
@@ -105,14 +110,6 @@ def cmd_compare_all(args: argparse.Namespace) -> int:
     outroot.mkdir(parents=True, exist_ok=True)
     extra = _split_extra(args.extra)
 
-    # Phase 1: regen + sw build (per-path-locked inside).
-    if args.regen or args.build_sw:
-        for b in benches:
-            if args.regen:
-                regen_bench(b, log=outroot / f"{b.name}_setup.log")
-            if args.build_sw:
-                build_sw(b, log=outroot / f"{b.name}_setup.log")
-
     mode_opts = {
         "aia_kd_latency": args.aia_kd_latency,
         "iotlb_entries": args.iotlb_entries,
@@ -125,16 +122,24 @@ def cmd_compare_all(args: argparse.Namespace) -> int:
             print(f"Unknown mode: {mode}", file=sys.stderr)
             return 2
 
-    # Phase 2: assemble runs across (bench x mode).
+    # Assemble runs across (bench x mode). regen / build_sw are
+    # attached to the *first* mode of each variant so the runner can
+    # interleave them correctly with launches: variants that share a
+    # bench-path (mobilenetv2 / _35 / _75 share sw/main.elf) are
+    # serialised end-to-end so each variant's elf is consumed before
+    # the next variant rebuilds it.
     runs: List[Run] = []
     per_bench_runs: dict[str, List[Run]] = {}
     for b in benches:
         per_bench_runs[b.name] = []
-        for mode in requested:
+        for i, mode in enumerate(requested):
             flags = profiles.MODES[mode](mode_opts)
             r = Run(label=f"{b.name}/{mode}", bench=b,
                     extra_flags=flags + extra,
-                    outdir=outroot / b.name / mode)
+                    outdir=outroot / b.name / mode,
+                    regen_before=args.regen and i == 0,
+                    build_before=args.build_sw and i == 0,
+                    setup_log=outroot / f"{b.name}_setup.log")
             runs.append(r)
             per_bench_runs[b.name].append(r)
 
@@ -157,8 +162,14 @@ def cmd_compare_all(args: argparse.Namespace) -> int:
     print(f"===== Aggregate ({len(benches)} benches "
           f"x {len(requested)} modes) =====")
     print(pretty_print(all_rows))
+    overhead_text = write_overhead_summary(
+        all_rows, outroot / "overhead_summary.tsv")
+    print()
+    print("===== Per-benchmark overhead vs plain baseline =====")
+    print(overhead_text)
     print(f"\nOutput tree:        {outroot}")
     print(f"Aggregate summary:  {outroot / 'summary.tsv'}")
+    print(f"Overhead summary:   {outroot / 'overhead_summary.tsv'}")
     return 0
 
 
@@ -390,23 +401,7 @@ def add_harvest(sp: argparse._SubParsersAction) -> None:
     p.set_defaults(func=cmd_harvest)
 
 
-# ---- monitor (delegates to existing tool) ---------------------------------
-
-def cmd_monitor(args: argparse.Namespace) -> int:
-    monitor = cfg.M5_PATH / "tools" / "experiment_monitor.py"
-    if not monitor.exists():
-        print(f"experiment_monitor.py missing at {monitor}", file=sys.stderr)
-        return 2
-    cmd = [sys.executable, str(monitor), *args.passthrough]
-    return subprocess.run(cmd).returncode
-
-
-def add_monitor(sp: argparse._SubParsersAction) -> None:
-    p = sp.add_parser("monitor", help="HTML dashboard "
-                      "(delegates to tools/experiment_monitor.py)")
-    p.add_argument("passthrough", nargs=argparse.REMAINDER,
-                   help="Forwarded as-is to experiment_monitor.py")
-    p.set_defaults(func=cmd_monitor)
+# ---- monitor subcommand removed (experiment_monitor.py was deleted) ----
 
 
 # ---- list -----------------------------------------------------------------
@@ -433,19 +428,48 @@ def build_parser() -> argparse.ArgumentParser:
                                 description=__doc__,
                                  formatter_class=argparse
                                  .RawDescriptionHelpFormatter)
-    sp = p.add_subparsers(dest="cmd", required=True)
+    sp = p.add_subparsers(dest="cmd")
     add_compare(sp)
     add_compare_all(sp)
     add_sweep(sp)
     add_run(sp)
     add_harvest(sp)
-    add_monitor(sp)
     add_list(sp)
     return p
 
 
+DEFAULT_OUTDIR = cfg.M5_PATH / "BM_ARM_OUT" / "aia_cda_default"
+
+
+def _default_compare_all_argv() -> list[str]:
+    """Build the argv for the implicit no-subcommand default action.
+
+    Default = compare-all, every registered benchmark, every default
+    mode, jobs = os.cpu_count(), regen on so a fresh checkout / pull
+    Just Works. Output goes to BM_ARM_OUT/aia_cda_default.
+    """
+    DEFAULT_OUTDIR.mkdir(parents=True, exist_ok=True)
+    return [
+        "compare-all",
+        "--outdir", str(DEFAULT_OUTDIR),
+        "--jobs", str(os.cpu_count() or 4),
+        "--regen",
+    ]
+
+
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    raw = list(argv if argv is not None else sys.argv[1:])
+    parser = build_parser()
+    if not raw:
+        print("[speedkills] no subcommand given — running default "
+              "compare-all over every benchmark x DEFAULT_MODES.\n"
+              f"             output: {DEFAULT_OUTDIR}",
+              file=sys.stderr)
+        raw = _default_compare_all_argv()
+    args = parser.parse_args(raw)
+    if not getattr(args, "func", None):
+        parser.print_help()
+        return 2
     return args.func(args)
 
 

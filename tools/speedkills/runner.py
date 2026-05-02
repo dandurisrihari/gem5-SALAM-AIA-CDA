@@ -13,6 +13,8 @@ import shlex
 import subprocess
 import sys
 import threading
+import time
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -42,6 +44,9 @@ class Run:
     extra_flags: Sequence[str]
     outdir: Path
     debug_flags: str = ""           # gem5 --debug-flags=...
+    regen_before: bool = False      # run SALAM Configurator before launch
+    build_before: bool = False      # `make` SW before launch
+    setup_log: Path | None = None   # where to spool regen/build output
     rc: int | None = field(default=None, init=False)
 
     def cmd(self, binary: Path) -> List[str]:
@@ -102,10 +107,14 @@ def _run_logged(cmd: List[str], log: Path | None,
         raise RuntimeError(f"{tag} failed (rc={rc}): {pretty}")
 
 
-def launch_run(run: Run, binary: Path) -> Run:
+def launch_run(run: Run, binary: Path,
+               counter: List[int] | None = None,
+               total: int | None = None,
+               counter_lock: threading.Lock | None = None) -> Run:
     """Execute one gem5 run, redirecting output to ``run.log``.
 
-    Also writes ``run.cmd`` for reproducibility.
+    Also writes ``run.cmd`` for reproducibility. If ``counter`` is
+    provided it is used to print a live ``[k/N]`` progress prefix.
     """
     run.outdir.mkdir(parents=True, exist_ok=True)
     cmd = run.cmd(binary)
@@ -114,25 +123,99 @@ def launch_run(run: Run, binary: Path) -> Run:
         f"label: {run.label}\ncmd:   "
         + " ".join(shlex.quote(c) for c in cmd) + "\n"
     )
+    started = time.monotonic()
+    if counter is not None and total is not None and counter_lock is not None:
+        with counter_lock:
+            counter[1] += 1   # in-flight start count
+            print(f"[start {counter[1]:>3}/{total}] {run.label}",
+                  file=sys.stderr, flush=True)
     log_file = run.outdir / "run.log"
     with log_file.open("w") as f:
         proc = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT,
                               cwd=cfg.M5_PATH)
     run.rc = proc.returncode
+    elapsed = time.monotonic() - started
     status = "OK" if proc.returncode == 0 else f"FAIL(rc={proc.returncode})"
-    print(f"[done] {run.label}  {status}", file=sys.stderr)
+    if counter is not None and total is not None and counter_lock is not None:
+        with counter_lock:
+            counter[0] += 1
+            done = counter[0]
+            print(f"[done  {done:>3}/{total}] {run.label}  "
+                  f"{status}  ({elapsed:.1f}s)",
+                  file=sys.stderr, flush=True)
+    else:
+        print(f"[done] {run.label}  {status}  ({elapsed:.1f}s)",
+              file=sys.stderr, flush=True)
     return run
 
 
 def run_parallel(runs: Iterable[Run], jobs: int,
                  binary: Path | None = None) -> List[Run]:
-    """Launch ``runs`` with at most ``jobs`` concurrent gem5 processes."""
+    """Launch ``runs`` with at most ``jobs`` concurrent gem5 processes.
+
+    Runs whose benches share a ``bench.path`` (i.e. variants of the
+    same source tree such as ``mobilenetv2`` / ``mobilenetv2_35`` /
+    ``mobilenetv2_75`` that all read ``benchmarks/mobilenetv2/sw/main.elf``)
+    are serialised against each other so a later variant cannot
+    rebuild the shared firmware while an earlier variant is still
+    consuming it. Variants on distinct paths run fully in parallel.
+    All modes (plain / aia-kd / iommu) of the *same* variant share the
+    same elf and are safe to fan out concurrently.
+    """
     binary = binary or cfg.require_binary()
     runs = list(runs)
     if not runs:
         return []
-    print(f"[launch] {len(runs)} runs, {jobs} parallel slot(s)",
-          file=sys.stderr)
-    with ThreadPoolExecutor(max_workers=jobs) as pool:
-        futures = [pool.submit(launch_run, r, binary) for r in runs]
-        return [f.result() for f in as_completed(futures)]
+
+    # Group by bench-path; runs in the same group serialise one variant
+    # at a time, but modes within a single (variant, group) batch run
+    # in parallel.
+    by_path: dict[str, List[Run]] = defaultdict(list)
+    for r in runs:
+        by_path[str(r.bench.path.resolve())].append(r)
+
+    total = len(runs)
+    counter = [0, 0]   # [done, started]
+    counter_lock = threading.Lock()
+    print(f"[launch] {total} runs across {len(by_path)} bench path(s), "
+          f"{jobs} parallel slot(s)", file=sys.stderr, flush=True)
+
+    def serialise_group(group: List[Run]) -> List[Run]:
+        # Bucket by variant (bench.name); execute variants sequentially,
+        # but fan out the modes of one variant across the global pool.
+        variants: dict[str, List[Run]] = defaultdict(list)
+        order: List[str] = []
+        for r in group:
+            if r.bench.name not in variants:
+                order.append(r.bench.name)
+            variants[r.bench.name].append(r)
+        out: List[Run] = []
+        for name in order:
+            modes = variants[name]
+            head = modes[0]
+            # Regen / build for THIS variant immediately before its
+            # mode batch — required for shared-tree variants
+            # (mobilenetv2*) so the elf consumed by gem5 is the one
+            # this variant just produced.
+            if head.regen_before:
+                regen_bench(head.bench, log=head.setup_log)
+            if head.build_before:
+                build_sw(head.bench, log=head.setup_log)
+            with ThreadPoolExecutor(max_workers=max(1, len(modes))) as p:
+                futures = [p.submit(launch_run, r, binary,
+                                    counter, total, counter_lock)
+                           for r in modes]
+                out.extend(f.result() for f in as_completed(futures))
+        return out
+
+    # Across path groups: parallel.
+    if len(by_path) == 1:
+        return serialise_group(next(iter(by_path.values())))
+
+    results: List[Run] = []
+    with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
+        futures = [pool.submit(serialise_group, g)
+                   for g in by_path.values()]
+        for f in as_completed(futures):
+            results.extend(f.result())
+    return results
