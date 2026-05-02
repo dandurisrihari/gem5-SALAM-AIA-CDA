@@ -57,30 +57,37 @@ CommInterface::CommInterface(const CommInterfaceParams &p) :
 }
 
 bool
-CommInterface::MemSidePort::recvTimingResp(PacketPtr pkt) {
+CommInterface::tryIommuDelay(PacketPtr pkt) {
     // Inject IOMMU translation latency on the response path. Located
-    // here (downstream of the accelerator pipeline) so added latency
-    // is purely additive on the critical path -- it cannot perturb
+    // downstream of the accelerator pipeline so added latency is
+    // purely additive on the critical path -- it cannot perturb
     // upstream tick alignment, and `iommu sim_ticks >= plain
     // sim_ticks` is structurally guaranteed.
-    if (owner->cu) {
-        Tick lat = owner->cu->iommuLatencyForAccess(
-            pkt->req->getPaddr(), pkt->isRead());
-        if (lat > 0) {
-            // In-order IOMMU port: a fast hit cannot overtake a
-            // slower miss already in flight.
-            Tick ready = std::max(curTick() + lat,
-                                  owner->iommuNextReadyTick);
-            owner->iommuNextReadyTick = ready;
-            owner->pendingIommuResps.push_back({pkt, ready});
-            if (!owner->iommuRespEvent.scheduled()) {
-                owner->schedule(owner->iommuRespEvent, ready);
-            } else if (owner->iommuRespEvent.when() > ready) {
-                owner->reschedule(owner->iommuRespEvent, ready);
-            }
-            return true;
-        }
+    //
+    // Called from every recvTimingResp path because in real hardware
+    // every transaction crossing the accelerator's master interface
+    // is translated by the SMMU (we do NOT distinguish on-chip vs
+    // off-chip destinations in this model).
+    if (!cu) return false;
+    Tick lat = cu->iommuLatencyForAccess(
+        pkt->req->getPaddr(), pkt->isRead());
+    if (lat == 0) return false;
+    // In-order IOMMU port: a fast hit cannot overtake a slower miss
+    // already in flight.
+    Tick ready = std::max(curTick() + lat, iommuNextReadyTick);
+    iommuNextReadyTick = ready;
+    pendingIommuResps.push_back({pkt, ready});
+    if (!iommuRespEvent.scheduled()) {
+        schedule(iommuRespEvent, ready);
+    } else if (iommuRespEvent.when() > ready) {
+        reschedule(iommuRespEvent, ready);
     }
+    return true;
+}
+
+bool
+CommInterface::MemSidePort::recvTimingResp(PacketPtr pkt) {
+    if (owner->tryIommuDelay(pkt)) return true;
     owner->recvPacket(pkt);
     return true;
 }
@@ -112,6 +119,7 @@ CommInterface::MemSidePort::sendPacket(PacketPtr pkt) {
 
 bool
 CommInterface::SPMPort::recvTimingResp(PacketPtr pkt) {
+    if (owner->tryIommuDelay(pkt)) return true;
     owner->recvPacket(pkt);
     return true;
 }
@@ -143,6 +151,7 @@ CommInterface::SPMPort::sendPacket(PacketPtr pkt) {
 
 bool
 CommInterface::RegPort::recvTimingResp(PacketPtr pkt) {
+    if (owner->tryIommuDelay(pkt)) return true;
     owner->recvPacket(pkt);
     return true;
 }

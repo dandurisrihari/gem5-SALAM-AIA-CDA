@@ -259,6 +259,14 @@ class CommInterface : public BasicPioDevice
     Tick iommuNextReadyTick;
     EventFunctionWrapper iommuRespEvent;
     void processIommuRespQueue();
+    // Returns true if the response was deferred (caller must NOT
+    // touch pkt afterwards); false if no IOMMU latency applies and
+    // the caller should dispatch the packet inline. Called from every
+    // recvTimingResp path (MemSidePort / SPMPort / RegPort) because in
+    // a real SMMU every transaction crossing the accelerator's master
+    // interface is translated, regardless of on-chip vs off-chip
+    // destination.
+    bool tryIommuDelay(PacketPtr pkt);
 
   public:
     PARAMS(CommInterface);
