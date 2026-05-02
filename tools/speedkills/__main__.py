@@ -347,6 +347,239 @@ def add_sweep(sp: argparse._SubParsersAction) -> None:
     p.set_defaults(func=cmd_sweep)
 
 
+# ---- iommu-sweep ----------------------------------------------------------
+
+# Default IOMMU parameter sweep:
+#   entries: 8 -> 2048 covers IoT (8) through DRAM-resident IOTLB (2048)
+#   miss_ns: 100 / 250 / 500 / 1000 ns covers fast on-die walker through
+#            slow DRAM-walking SMMUv3-class translation
+_DEFAULT_IOTLB_ENTRIES = (8, 16, 32, 64, 256, 2048)
+_DEFAULT_IOMMU_MISS_NS = (100, 250, 500, 1000)
+
+
+def _iommu_sweep_runs(bench, requested_entries, requested_miss_ns,
+                      hit_latency_ticks, include_baselines, aia_kd_latency,
+                      extra_flags, outroot):
+    """Build the run matrix for one bench.
+
+    Labels are ``iommu_e<N>_m<M>ns``, ``plain`` and ``aia-kd``. Each
+    config gets its own outdir under ``outroot/<bench>/<label>``.
+    """
+    runs: List[Run] = []
+    if include_baselines:
+        runs.append(Run(
+            label=f"{bench.name}/plain", bench=bench,
+            extra_flags=list(extra_flags),
+            outdir=outroot / bench.name / "plain",
+        ))
+        runs.append(Run(
+            label=f"{bench.name}/aia-kd", bench=bench,
+            extra_flags=[
+                "--enable-kernel-validation",
+                "--kernel-validation-latency", str(aia_kd_latency),
+                *extra_flags,
+            ],
+            outdir=outroot / bench.name / "aia-kd",
+        ))
+    for e in requested_entries:
+        for miss_ns in requested_miss_ns:
+            miss_ticks = int(miss_ns) * 1000  # 1 ns = 1000 ticks
+            label_short = f"iommu_e{e}_m{miss_ns}ns"
+            runs.append(Run(
+                label=f"{bench.name}/{label_short}", bench=bench,
+                extra_flags=[
+                    "--enable-iommu",
+                    "--iotlb-entries",      str(e),
+                    "--iotlb-hit-latency",  str(hit_latency_ticks),
+                    "--iotlb-miss-latency", str(miss_ticks),
+                    *extra_flags,
+                ],
+                outdir=outroot / bench.name / label_short,
+            ))
+    return runs
+
+
+def _write_iommu_sweep_csv(rows_by_bench, requested_entries,
+                           requested_miss_ns, path: Path) -> str:
+    """Wide CSV: one row per (bench, entries, miss_ns).
+
+    Columns: bench, entries, miss_ns, plain_us, runtime_us, abs_overhead_us,
+    abs_overhead_pct, iommu_proj_us, iommu_proj_pct, iommu_checks,
+    iotlb_hits, iotlb_misses, iotlb_hit_rate_pct.
+    """
+    cols = ("benchmark", "entries", "miss_ns",
+            "plain_us", "runtime_us",
+            "abs_overhead_us", "abs_overhead_pct",
+            "iommu_proj_us", "iommu_proj_pct",
+            "iommu_checks", "iotlb_hits", "iotlb_misses",
+            "iotlb_hit_rate_pct")
+    lines = ["\t".join(cols)]
+    pretty = ["  ".join(c.ljust(18) for c in cols)]
+    for bench in sorted(rows_by_bench):
+        modes = rows_by_bench[bench]
+        plain = modes.get("plain")
+        plain_ticks = (int(plain.sim_ticks)
+                       if plain and plain.sim_ticks.isdigit() else None)
+        plain_us = (plain_ticks / 1e6) if plain_ticks else None
+        plain_us_s = f"{plain_us:.3f}" if plain_us is not None else "-"
+        for e in requested_entries:
+            for miss_ns in requested_miss_ns:
+                lbl = f"iommu_e{e}_m{miss_ns}ns"
+                r = modes.get(lbl)
+                if r is None or not r.sim_ticks.isdigit():
+                    runtime_us = (r.runtime_us if r else "-")
+                    vals = (bench, str(e), str(miss_ns),
+                            plain_us_s, runtime_us,
+                            "-", "-", "-", "-", "-", "-", "-", "-")
+                    lines.append("\t".join(vals))
+                    pretty.append("  ".join(v.ljust(18) for v in vals))
+                    continue
+                v_ticks = int(r.sim_ticks)
+                if plain_ticks is not None and plain_us:
+                    d_us = (v_ticks - plain_ticks) / 1e6
+                    pct = f"{(d_us / plain_us) * 100.0:.3f}%"
+                    d_us_s = f"{d_us:.3f}"
+                else:
+                    d_us_s = "-"
+                    pct = "-"
+                proj_us = r.iommu_overhead_us
+                if proj_us != "-" and plain_us:
+                    proj_pct = f"{(float(proj_us) / plain_us) * 100.0:.3f}%"
+                else:
+                    proj_pct = "-"
+                vals = (bench, str(e), str(miss_ns),
+                        plain_us_s, r.runtime_us,
+                        d_us_s, pct, proj_us, proj_pct,
+                        r.iommu_checks, r.iotlb_hits, r.iotlb_misses,
+                        (f"{r.iotlb_hit_rate_pct}%"
+                         if r.iotlb_hit_rate_pct != "-" else "-"))
+                lines.append("\t".join(vals))
+                pretty.append("  ".join(v.ljust(18) for v in vals))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n")
+    csv_path = path.with_suffix(".csv")
+    csv_path.write_text(
+        "\n".join(l.replace("\t", ",") for l in lines) + "\n")
+    return "\n".join(pretty)
+
+
+def cmd_iommu_sweep(args: argparse.Namespace) -> int:
+    """Sweep the IOMMU (entries x miss_ns) matrix per benchmark.
+
+    Default matrix: 6 IOTLB sizes x 4 page-walk latencies = 24 IOMMU
+    runs per benchmark, plus optional plain + aia-kd baselines.
+    Modes within a variant fan out across --jobs slots; cross-variant
+    runs serialise via the per-bench-path lock as usual.
+    """
+    if args.bench:
+        bench_names = args.bench.split(",")
+    else:
+        excl = set(args.exclude.split(",")) if args.exclude else set()
+        bench_names = [n for n in sorted(REGISTRY) if n not in excl]
+    benches = [resolve(n) for n in bench_names]
+
+    entries = _ints(args.entries)
+    miss_ns = _ints(args.miss_ns)
+    if not entries or not miss_ns:
+        print("Need at least one --entries and one --miss-ns", file=sys.stderr)
+        return 2
+
+    outroot = Path(args.outdir).resolve()
+    outroot.mkdir(parents=True, exist_ok=True)
+    extra = _split_extra(args.extra)
+
+    runs: List[Run] = []
+    for b in benches:
+        bench_runs = _iommu_sweep_runs(
+            b, entries, miss_ns,
+            hit_latency_ticks=args.iotlb_hit_latency,
+            include_baselines=not args.no_baselines,
+            aia_kd_latency=args.aia_kd_latency,
+            extra_flags=extra,
+            outroot=outroot,
+        )
+        # Attach regen / build_sw to the very first run of each bench so
+        # the runner triggers them once before launching that bench's
+        # batch (cross-variant lock serialises shared-tree families).
+        if bench_runs:
+            bench_runs[0].regen_before = args.regen
+            bench_runs[0].build_before = args.regen or args.build_sw
+            bench_runs[0].setup_log = outroot / f"{b.name}_setup.log"
+        runs.extend(bench_runs)
+
+    rows_by_bench: dict = {b.name: {} for b in benches}
+    rows_by_bench_lock = threading.Lock()
+
+    def on_variant_done(variant_name: str, finished: List[Run]) -> None:
+        modes_dict = {}
+        for r in finished:
+            short = r.label.split("/", 1)[1]
+            modes_dict[short] = harvest_run(short, r.outdir)
+        with rows_by_bench_lock:
+            rows_by_bench[variant_name].update(modes_dict)
+            snapshot = {variant_name: dict(rows_by_bench[variant_name])}
+        bench_dir = outroot / variant_name
+        _write_iommu_sweep_csv(
+            snapshot, entries, miss_ns, bench_dir / "iommu_sweep.tsv")
+        print(f"[harvest] {variant_name}: wrote "
+              f"{bench_dir / 'iommu_sweep.csv'}", flush=True)
+
+    print(f"[iommu-sweep] {len(benches)} bench(es) x "
+          f"({len(entries)} entries x {len(miss_ns)} miss_ns"
+          f"{' + 2 baselines' if not args.no_baselines else ''}) "
+          f"= {len(runs)} runs total", file=sys.stderr)
+
+    run_parallel(runs, jobs=args.jobs, on_variant_done=on_variant_done,
+                 serial_modes=args.serial_modes)
+
+    pretty = _write_iommu_sweep_csv(
+        rows_by_bench, entries, miss_ns, outroot / "iommu_sweep.tsv")
+    print()
+    print("===== IOMMU sweep (per bench x entries x miss_ns) =====")
+    print(pretty)
+    print(f"\nOutput tree:    {outroot}")
+    print(f"Wide CSV:       {outroot / 'iommu_sweep.csv'}")
+    return 0
+
+
+def add_iommu_sweep(sp: argparse._SubParsersAction) -> None:
+    p = sp.add_parser("iommu-sweep",
+                      help="Sweep IOTLB entries x page-walk miss latency")
+    p.add_argument("--outdir", required=True)
+    p.add_argument("--bench", default=None,
+                   help="Comma-separated subset (default: every "
+                        "registered bench)")
+    p.add_argument("--exclude", default="",
+                   help="Comma-separated names to skip")
+    p.add_argument("--entries", default=" ".join(
+        str(x) for x in _DEFAULT_IOTLB_ENTRIES),
+        help="IOTLB capacities to sweep (default: "
+             f"{' '.join(str(x) for x in _DEFAULT_IOTLB_ENTRIES)})")
+    p.add_argument("--miss-ns", default=" ".join(
+        str(x) for x in _DEFAULT_IOMMU_MISS_NS),
+        help="Page-walk miss latencies in ns (default: "
+             f"{' '.join(str(x) for x in _DEFAULT_IOMMU_MISS_NS)})")
+    p.add_argument("--iotlb-hit-latency", type=int, default=2_000,
+                   help="IOTLB hit latency in ticks (1 tick = 1 ps; "
+                        "default 2000 = 2 ns)")
+    p.add_argument("--no-baselines", action="store_true",
+                   help="Skip the plain + aia-kd reference rows")
+    p.add_argument("--aia-kd-latency", type=int, default=8_367_000,
+                   help="kernel_validation_latency for the aia-kd "
+                        "baseline (default 8367000 = 8.367 us)")
+    p.add_argument("--jobs", type=int, default=os.cpu_count() or 4)
+    p.add_argument("--extra", default="",
+                   help="Extra gem5 flags appended to every run")
+    p.add_argument("--regen", action="store_true",
+                   help="Run SALAM Configurator before launching "
+                        "(implies --build-sw)")
+    p.add_argument("--build-sw", action="store_true",
+                   help="Run `make` in each bench dir before launching")
+    p.add_argument("--serial-modes", action="store_true",
+                   help="Serialise modes within a variant (default: parallel)")
+    p.set_defaults(func=cmd_iommu_sweep)
+
+
 # ---- run ------------------------------------------------------------------
 
 def cmd_run(args: argparse.Namespace) -> int:
@@ -474,6 +707,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_compare(sp)
     add_compare_all(sp)
     add_sweep(sp)
+    add_iommu_sweep(sp)
     add_run(sp)
     add_harvest(sp)
     add_list(sp)

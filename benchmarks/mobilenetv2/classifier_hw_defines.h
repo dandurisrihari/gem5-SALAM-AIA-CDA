@@ -1,33 +1,33 @@
 //BEGIN GENERATED CODE
 //Cluster: CLASSIFIER
 //NonCoherentDMA
-#define CLASSIFIER_DMA_Flags 0x10062700
-#define CLASSIFIER_DMA_RdAddr 0x10062701
-#define CLASSIFIER_DMA_WrAddr 0x10062709
-#define CLASSIFIER_DMA_CopyLen 0x10062711
+#define CLASSIFIER_DMA_Flags 0x1011b000
+#define CLASSIFIER_DMA_RdAddr 0x1011b001
+#define CLASSIFIER_DMA_WrAddr 0x1011b009
+#define CLASSIFIER_DMA_CopyLen 0x1011b011
 //StreamDMA
-#define CLASSIFIER_STREAM_DMA0_Flags 0x10062740
-#define CLASSIFIER_STREAM_DMA0_RdAddr 0x10062744
-#define CLASSIFIER_STREAM_DMA0_WrAddr 0x1006274c
-#define CLASSIFIER_STREAM_DMA0_RdFrameSize 0x10062754
-#define CLASSIFIER_STREAM_DMA0_NumRdFrames 0x10062758
-#define CLASSIFIER_STREAM_DMA0_RdFrameBufSize 0x10062759
-#define CLASSIFIER_STREAM_DMA0_WrFrameSize 0x1006275a
-#define CLASSIFIER_STREAM_DMA0_NumWrFrames 0x1006275e
-#define CLASSIFIER_STREAM_DMA0_WrFrameBufSize 0x1006275f
-#define CLASSIFIER_STREAM_DMA0_Stream 0x10062760
-#define CLASSIFIER_STREAM_DMA0_Status 0x10062780
+#define CLASSIFIER_STREAM_DMA0_Flags 0x1011b040
+#define CLASSIFIER_STREAM_DMA0_RdAddr 0x1011b044
+#define CLASSIFIER_STREAM_DMA0_WrAddr 0x1011b04c
+#define CLASSIFIER_STREAM_DMA0_RdFrameSize 0x1011b054
+#define CLASSIFIER_STREAM_DMA0_NumRdFrames 0x1011b058
+#define CLASSIFIER_STREAM_DMA0_RdFrameBufSize 0x1011b059
+#define CLASSIFIER_STREAM_DMA0_WrFrameSize 0x1011b05a
+#define CLASSIFIER_STREAM_DMA0_NumWrFrames 0x1011b05e
+#define CLASSIFIER_STREAM_DMA0_WrFrameBufSize 0x1011b05f
+#define CLASSIFIER_STREAM_DMA0_Stream 0x1011b060
+#define CLASSIFIER_STREAM_DMA0_Status 0x1011b080
 //Accelerator: CLASSIFIER_TOP
-#define CLASSIFIER_TOP 0x100627c0
+#define CLASSIFIER_TOP 0x1011b0c0
 //Accelerator: CLASSIFIER_LINEAR
-#define CLASSIFIER_LINEAR 0x10062840
-#define classifier_LinearFeats 0x10062880
-#define classifier_LinearWeights 0x10062dc0
-#define classifier_PWBias 0x1019b600
-#define classifier_PWIMultBias 0x1019ba00
-#define classifier_PWNShiftBias 0x1019be00
-#define classifier_PWIMultOut 0x1019c200
-#define classifier_PWNShiftOut 0x1019c600
-#define classifier_PWWeightZP 0x1019ca00
-#define classifier_LinearSum 0x1019ce00
+#define CLASSIFIER_LINEAR 0x1011b140
+#define classifier_LinearFeats 0x1011b180
+#define classifier_LinearWeights 0x1011b6c0
+#define classifier_PWBias 0x10253f00
+#define classifier_PWIMultBias 0x10254300
+#define classifier_PWNShiftBias 0x10254700
+#define classifier_PWIMultOut 0x10254b00
+#define classifier_PWNShiftOut 0x10254f00
+#define classifier_PWWeightZP 0x10255300
+#define classifier_LinearSum 0x10255700
 //END GENERATED CODE
