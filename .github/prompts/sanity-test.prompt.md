@@ -1,6 +1,23 @@
 # Sanity test — protection-mode latency models
 
-**When to run:** any time you touch `LLVMInterface` IOMMU / AIA-KD code paths
+**TL;DR — after every rebuild of `gem5.opt`** (i.e. any change to
+`src/hwacc/`, `src/dev/arm/`, embedded SimObject `.py`, or
+SALAM-Configurator templates that change generated `configs/SALAM/*.py`)
+run the packaged suite first:
+
+```bash
+python3 tests/aia_cda_tests/run_sanity.py --regen
+```
+
+It executes 4 fast benches × 3 modes (~under a minute) and asserts the
+core invariants (iommu sim_ticks bit-identical to plain, AIA-KD and
+IOMMU hooks firing). Only after it reports `[PASS]` should you fall
+back to the focused zero-latency tests below for diagnosing a deeper
+regression. **Do not commit if the suite fails.**
+
+## When to also run the focused zero-latency tests
+
+Any time you touch `LLVMInterface` IOMMU / AIA-KD code paths
 in `src/hwacc/llvm_interface.{cc,hh}` (in particular `launchRead`,
 `launchWrite`, `launchReadAfter`, `launchWriteAfter`,
 `sendValidationRequest`, `processValidationResponse`, the IOTLB helpers,

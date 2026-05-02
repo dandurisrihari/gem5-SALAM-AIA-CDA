@@ -66,7 +66,29 @@ feature. Skipping them has cost real time in the past.
    `scons build/ARM/gem5.opt -jN` finishes. Check
    `ls -la build/ARM/gem5.opt` after the build before launching runs.
 
-5. **Don't pin parameters to a specific vendor part** unless the user
+5. **Run the sanity suite after every rebuild.** Any change that
+   requires `scons build/ARM/gem5.opt` to re-link the binary
+   (anything under `src/hwacc/`, `src/dev/arm/`, embedded SimObject
+   `.py` files, or the SALAM Configurator templates that change
+   generated `configs/SALAM/*.py`) **must** be followed by:
+   ```bash
+   python3 tests/aia_cda_tests/run_sanity.py --regen
+   ```
+   The suite is short (4 fast benches × 3 modes, well under a minute
+   on the dev container) and asserts the protection-mode invariants
+   that have regressed before:
+     - `iommu sim_ticks == plain sim_ticks` bit-for-bit (the
+       analytical IOMMU must never perturb the simulator),
+     - `aia_kd_overhead_us > 0` (checkpoints actually fire),
+     - `iommu_checks > 0` (IOMMU hook actually fires),
+     - every (bench, mode) row appears in `summary.tsv`.
+   If the suite fails, **do not commit** — diagnose first. Pass
+   `--bench n1,n2` to narrow the scope while iterating, but the full
+   default set must pass before the change is considered done. Pure
+   doc / prompt / README edits that don't touch built code are
+   exempt.
+
+6. **Don't pin parameters to a specific vendor part** unless the user
    explicitly asks. Cite the configurable range (Arm MMU-400/500 TRM)
    and pick the band; that keeps the result defensible without
    invitining "but vendor X actually ships Y" reviewer pushback.
