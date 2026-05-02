@@ -21,8 +21,6 @@ feature. Skipping them has cost real time in the past.
 1. **Keep this prompt in sync with the code.** Whenever you change any
    of the following, update the relevant section of *this file* in the
    same commit / turn:
-   - SMMU defaults in `src/hwacc/AccCluster.py::_connect_caches_smmu`
-     → update *Current experimental parameters* table.
    - CLI flags added/removed in `configs/SALAM/fs_*.py` or
      `tools/SALAM-Configurator/fs_template.py`
      → update *CLI Surface* and the recipe blocks.
@@ -38,7 +36,7 @@ feature. Skipping them has cost real time in the past.
    protection-comparison experiments. The package:
      - holds the canonical per-mode flag sets in
        [`tools/speedkills/profiles.py`](../../tools/speedkills/profiles.py)
-       (`PROFILE_IOT`, `PROFILE_MMU500`, `PROFILE_SERVER`, `MODES`),
+       (`MODES` — `plain`, `aia-kd`, `iommu`),
      - holds the benchmark registry in
        [`tools/speedkills/benchmarks.py`](../../tools/speedkills/benchmarks.py),
      - records `run.cmd` per run for reproducibility,
@@ -62,9 +60,6 @@ feature. Skipping them has cost real time in the past.
      - what could break (other call sites, stats accounting, RAW
        hazard handling, AccCluster.py needing a rebuild, etc.),
      - how you will verify (which run, which stat, expected delta).
-   For SMMU param changes specifically, sketch the cost model
-   (working-set vs cache reach, expected miss rate, ns/walk) so the
-   predicted overhead can be checked against the measured value.
 
 4. **Rebuild reminder.** `src/hwacc/AccCluster.py` is embedded into
    `gem5.opt` (`[EMBED PY]`). Edits to it have *no effect* until
@@ -150,39 +145,33 @@ through `addHWAccOptions`:
 --iotlb-miss-latency=<ticks>
 ```
 
-The four experimental modes are:
+The three experimental modes on this branch (`aia_cda_rel`) are:
 - **plain** — no flags set. Baseline.
 - **aia-kd** — `--enable-kernel-validation` plus latency. First-touch tax,
   then free.
-- **iommu** — `--enable-iommu` plus IOTLB knobs. Cheap analytical tax
+- **iommu** — `--enable-iommu` plus IOTLB knobs. Analytical tax
   (per-access IOTLB look-aside model) living inside `LLVMInterface`.
   Per-accelerator only; defaults to a *constrained edge-IoT*
   peripheral IOMMU (Cortex-M / Cortex-A5-class, ~400 MHz, DDR3 walk):
-  8-entry LRU IOTLB, 2 ns hit, 500 ns miss-walk. Deliberately tight
-  so reviewers can't dismiss the comparison as an IOMMU strawman with
-  unrealistically large TLBs.
-- **smmu-iot** (and `smmu-mmu500`, `smmu-server`, `smmu-bypass`) —
-  `--enable-real-smmu` plus a profile from `profiles.py`. Instantiates a
-  real `SMMUv3` per `AccCluster` between the cluster's coherency bus
-  and the system memory bus, with stream-table programming on by
-  default. Knobs are the full `--smmu-*` family. The wiring lives in
-  `AccCluster._connect_caches_smmu`.
+  8-entry LRU IOTLB, 2 ns hit, 500 ns miss-walk. Charges every
+  LLVM-IR load/store (including SPM-resident accesses) so the model
+  reflects "every access is security-checked" — the design goal of
+  this release branch.
 
-The three protection flags (`--enable-kernel-validation`,
-`--enable-iommu`, `--enable-real-smmu`) are **mutually exclusive**:
+The two protection flags (`--enable-kernel-validation`,
+`--enable-iommu`) are **mutually exclusive**:
   - enforced first at the fs-config layer
-    (`tools/SALAM-Configurator/fs_template.py` and the 14 generated
+    (`tools/SALAM-Configurator/fs_template.py` and the generated
     `configs/SALAM/fs_*.py`) — `Error: protection-model flags are
     mutually exclusive: ...` aborts the run before gem5 elaborates;
-  - additionally re-checked at the C++ ctor for the AIA-KD/IOMMU pair
-    (`llvm_interface.cc` `panic`) since both share the
-    `launchRead`/`launchWrite` hook.
+  - additionally re-checked at the C++ ctor (`llvm_interface.cc`
+    `panic`) since both share the `launchRead`/`launchWrite` hook.
 
 `speedkills compare` runs each mode in its own gem5 process / outdir,
 so modes can never co-activate inside a single simulation. The default
-mode set is `(plain, aia-kd, iommu, smmu-iot)` — the four-way
-comparison; the richer SMMU profiles are still selectable via
-`--modes "..."`.
+mode set is `(plain, aia-kd, iommu)`. The real SMMUv3 SimObject path
+that existed on `main` has been removed from this branch — see
+`tools/speedkills/README.md` for the rationale.
 
 Driven in bulk via [`python3 -m tools.speedkills sweep`](../../tools/speedkills/README.md)
 and visualised by [tools/experiment_monitor.py](../../tools/experiment_monitor.py)
@@ -248,147 +237,41 @@ and visualised by [tools/experiment_monitor.py](../../tools/experiment_monitor.p
   about at startup, but still runs the full protocol — useful for
   control runs where you want the bookkeeping but no overhead.
 
-## Current experimental parameters (low-end IoT profile, MMU-400-class)
+## Current experimental parameters
 
-We model the **smallest realistic accelerator-side IOMMU shipped in
-low-power IoT / embedded SoCs** — Arm **MMU-400-class**: SMMUv1, small
-TLBs, **no walk cache at all** (every miss is a full N-step walk to
-DRAM), single PTW thread, single translate slot. This is deliberately
-the *most pessimistic* defensible profile so the SMMU column shows a
-non-trivial overhead instead of vanishing into noise.
-
-All knobs are CLI-overridable, so the same binary sweeps from this
-default up through "MMU-500 small config" (pass `--smmu-walk-enable`
-plus walk-S1L* sizes) all the way to gem5's server default — no
-rebuild needed.
-
-We deliberately avoid pinning this to one specific commercial part —
-the goal is "plausibly representative of a low-end accelerator IOMMU",
-not "exact replica of vendor X's product". Reviewers who want a
-specific vendor target can re-run the sweep with that vendor's numbers.
-
-Note on naming: Arm "MMU-400/500/600/700" IP are **System MMUs (IOMMUs)**
-that sit between devices and memory, *not* CPU-side MMUs.
-
-### Per-cluster SMMU defaults
-Set in `src/hwacc/AccCluster.py::_connect_caches_smmu` and exposed as
-`--smmu-*` CLI flags by `fs_*.py`. Source for configurable ranges is
-the Arm MMU-400 / MMU-500 TRM (main TLB 16–1024, µTLB 4–32, walk-cache
-0–1024 per level, 1–8 PTW threads). Our defaults pick the *minimum*.
-
-| Knob | CLI | Low-end IoT default | gem5 server default |
-|---|---|---:|---:|
-| Translation slots (TCU) | `--smmu-xlate-slots` | 2 | 64 |
-| Page-table walk slots | `--smmu-ptw-slots` | 1 | 16 |
-| Walk-cache lookup slots | `--smmu-walk-slots` | 1 | 16 |
-| Config (STE/CD) cache | `--smmu-cfg-entries` | 4 | 64 |
-| Walk cache enabled | `--smmu-walk-enable` | **off (MMU-400)** | on |
-| Walk cache S1 (L0/L1/L2/L3) | `--smmu-walk-s1l{0..3}` | 0 / 0 / 0 / 0 | 4 / 28 / 348 / 4 |
-| Walk cache S2 (L0/L1/L2/L3) | (constants) | disabled | 4 / 28 / 92 / 4 |
-| IPA / stage-2 cache | (constant) | disabled | enabled |
-| Shared TLB at TCU | `--smmu-tlb-entries` | 16 | 2048 |
-| Shared TLB assoc / lat | `--smmu-tlb-assoc` / `--smmu-tlb-lat` | 2 / 3 cy | 4 / 3 cy |
-| Shared TLB lookup slots | `--smmu-tlb-slots` | 1 | – |
-| Per-TBU main TLB | `--smmu-ifctlb-entries` | 16 | 2048 |
-| Per-TBU micro-TLB | `--smmu-utlb-entries` | 4 (MMU-400/500 min) | 32 |
-| Per-TBU translate slots | `--smmu-tbu-xlate-slots` | 1 | 16 |
-| ifc↔smmu link latency | `--smmu-ifc-lat` | 12 cy | 8 cy |
-| Granule | `--smmu-granule-kib` | 4 KiB | – |
-
-**Cost model with the no-walk-cache default (4 KiB pages, 4-level walk):**
-every TBU miss pays a full 4-step walk = 4 × DRAM access ≈ 320 ns. With
-a 16-entry TLB and 4-entry µTLB the working set thrashes constantly,
-so most boundary accesses miss. This is the dominant cost we expect in
-`smmu-prog` runs on this profile.
-
-### Recipes for sweeping up the SoC tier
-
-Preferred: drive everything via the speedkills package — modes are
-named, profiles live in `tools/speedkills/profiles.py`, and
-`summary.tsv` / `deltas.tsv` are produced automatically.
-
-```bash
-# Full protection-mode comparison (mobilenetv2)
-python3 -m tools.speedkills compare \
-    --bench mobilenetv2 \
-    --outdir BM_ARM_OUT/mobilenetv2_smmu_compare \
-    --jobs 4
-# == plain, aia-kd, smmu-bypass, smmu-iot, smmu-mmu500, smmu-server
-
-# Just the three IOMMU SoC tiers
-python3 -m tools.speedkills compare --bench mobilenetv2 \
-    --outdir BM_ARM_OUT/iommu_tiers \
-    --modes "smmu-iot smmu-mmu500 smmu-server"
-
-# TLB sensitivity sweep at the IoT profile
-python3 -m tools.speedkills compare --bench mobilenetv2 \
-    --outdir BM_ARM_OUT/tlb_sweep \
-    --modes "plain smmu-tlb-sweep" \
-    --tlb-sweep "8 16 32 64 256 2048"
-```
-
-Equivalent raw-flag invocations (only useful if bypassing the package):
-
-```bash
-# (1) Low-end IoT (MMU-400 / no walk cache) — current default
-build/ARM/gem5.opt ... fs_mobilenetv2.py ... --enable-real-smmu \
-    --smmu-program-stream-table --smmu-granule-kib 4
-
-# (2) MMU-500 small-config (with walk cache)
-build/ARM/gem5.opt ... fs_mobilenetv2.py ... --enable-real-smmu \
-    --smmu-program-stream-table --smmu-granule-kib 4 \
-    --smmu-tlb-entries 32 --smmu-ifctlb-entries 32 \
-    --smmu-utlb-entries 4 --smmu-cfg-entries 8 \
-    --smmu-xlate-slots 4 --smmu-ptw-slots 2 \
-    --smmu-walk-enable \
-    --smmu-walk-s1l0 2 --smmu-walk-s1l1 4 \
-    --smmu-walk-s1l2 8 --smmu-walk-s1l3 4 \
-    --smmu-walk-slots 2 --smmu-walk-assoc 2 \
-    --smmu-ifc-lat 8
-
-# (3) Server-class (gem5 SMMUv3 defaults)
-build/ARM/gem5.opt ... fs_mobilenetv2.py ... --enable-real-smmu \
-    --smmu-program-stream-table --smmu-granule-kib 4 \
-    --smmu-tlb-entries 2048 --smmu-ifctlb-entries 2048 \
-    --smmu-utlb-entries 32 --smmu-cfg-entries 64 \
-    --smmu-xlate-slots 64 --smmu-ptw-slots 16 \
-    --smmu-walk-enable \
-    --smmu-walk-s1l0 4 --smmu-walk-s1l1 28 \
-    --smmu-walk-s1l2 348 --smmu-walk-s1l3 4 \
-    --smmu-walk-slots 16 --smmu-walk-assoc 4 \
-    --smmu-ifc-lat 8 --smmu-tbu-xlate-slots 16
-```
-
-### Latency envelopes (Arm MMU-500-class, sanity-check rubric)
-
-Order-of-magnitude bounds typical of small accelerator-side SMMUs:
-
-| Path | Expected | gem5 knob that drives it |
-|---|---|---|
-| TBU µTLB hit / TBU main-TLB hit | ≈ 1 access/cycle (no penalty) | `tlb_lat` (3 cy) |
-| TBU miss → TCU walk-cache hit | tens of cycles | `walk_lat` × walk-cache levels + IFC link |
-| TBU miss → TCU miss → full page-table walk | hundreds–thousands of cycles | above + 3–4 DRAM accesses |
-
-If a sweep ever shows the `smmu-prog` mode breaking through the
-~1000-cycle envelope on a per-access basis (after subtracting DRAM
-service time), revisit `walk_lat`, `walk_slots`, and the IFC link
-latency.
+### IOMMU (analytical, low-end IoT profile)
+Defaults model the **smallest realistic accelerator-side IOMMU shipped
+in low-power IoT / embedded SoCs** (Arm MMU-400-class band): 8-entry
+LRU IOTLB, 2 ns hit, 500 ns miss-walk. The model is per-`LLVMInterface`,
+charges every LLVM-IR load/store (including SPM-resident accesses), and
+lives entirely inside `launchRead`/`launchWrite`. All three knobs are
+CLI-overridable.
 
 ### AIA-KD parameters
 - Latency per check (`--kernel-validation-latency`): **8367 ns**
   (≈ matches the cumulative TOTAL SECURITY OVERHEAD observed on
-  mobilenetv2 with 1 µs latency × ~8K validations across all clusters)
+  mobilenetv2 with 1 µs latency × ~8K validations across all clusters).
 - IRQ to GIC: **disabled** in `llvm_interface.cc` (`gic->sendInt`/
   `clearInt` removed) — confirmed bit-identical sim_ticks with vs
   without IRQ, ISR was an empty stub.
 
-### Three modes we compare on mobilenetv2
+### Recipes
 
-1. **plain** — no protection. Baseline.
-2. **aia-kd** — `--enable-kernel-validation --kernel-validation-latency 8367`.
-3. **smmu-prog** — `--enable-real-smmu --smmu-program-stream-table
-   --smmu-granule-kib 4` with edge-IoT profile defaults above.
+Drive everything via the speedkills package; `summary.tsv` /
+`deltas.tsv` are produced automatically.
+
+```bash
+# Default 3-way comparison
+python3 -m tools.speedkills compare \
+    --bench mobilenetv2 \
+    --outdir BM_ARM_OUT/mobilenetv2_compare \
+    --jobs 3
+# == plain, aia-kd, iommu
+
+# All registered benchmarks, all 3 modes
+python3 -m tools.speedkills compare-all \
+    --outdir BM_ARM_OUT/all_compare --jobs 4
+```
 
 All runs: `DerivO3CPU --caches --l2cache --mem-size=4GB
---mem-type=DDR4_2400_8x8` on `VExpress_GEM5_V1` bare-metal with
-`benchmarks/mobilenetv2/sw/main.elf`.
+--mem-type=DDR4_2400_8x8` on `VExpress_GEM5_V1` bare-metal.

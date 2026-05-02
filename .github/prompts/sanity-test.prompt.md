@@ -101,18 +101,18 @@ Verify:
 3. The honest analytical pattern: enqueue the request **inline** (same
    call as `plain`), bump the stats counters, and let the report add
    `sim_runtime + accumulated_latency` for the "effective with-IOMMU"
-   number. For cycle-accurate request-path effects use
-   `--enable-real-smmu` (SMMUv3) — that's what it's for.
+   number. (The cycle-accurate SMMUv3 path is not available on the
+   `aia_cda_rel` branch.)
 
 ## Larger sweeps (after sanity passes)
 
 Only after both sanity tests pass should you run the production
-4-way comparison on bigger workloads:
+3-way comparison on bigger workloads:
 
 ```bash
 python3 -m tools.speedkills compare \
     --bench mobilenetv2 \
     --outdir "$PWD/BM_ARM_OUT/<run>" \
-    --modes "plain aia-kd iommu smmu-iot" \
-    --jobs 4
+    --modes "plain aia-kd iommu" \
+    --jobs 3
 ```
