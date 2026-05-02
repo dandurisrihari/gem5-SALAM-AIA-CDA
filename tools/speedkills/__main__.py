@@ -520,8 +520,8 @@ def add_sweep(sp: argparse._SubParsersAction) -> None:
 #   entries: 8 -> 2048 covers IoT (8) through DRAM-resident IOTLB (2048)
 #   miss_ns: 100 / 250 / 500 / 1000 ns covers fast on-die walker through
 #            slow DRAM-walking SMMUv3-class translation
-_DEFAULT_IOTLB_ENTRIES = (8, 16)
-_DEFAULT_IOMMU_MISS_NS = (100, 250)
+_DEFAULT_IOTLB_ENTRIES = (8, 16, 32, 64, 256, 2048)
+_DEFAULT_IOMMU_MISS_NS = (100, 250, 500, 1000)
 
 
 def _iommu_sweep_runs(bench, requested_entries, requested_miss_ns,
