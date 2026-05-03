@@ -50,6 +50,7 @@ LLVMInterface::LLVMInterface(const LLVMInterfaceParams &p):
     validationCacheHits(0),
     validationCoalescedWaits(0),
     totalCoalescedWaitLatency(0),
+    dmaCtrlValidations(0),
     // ----- IOMMU model init -----
     // The actual IOTLB / port deadline / stats live in the
     // AcceleratorIommu SimObject; we just hold a (possibly null)
@@ -789,9 +790,17 @@ LLVMInterface::ActiveFunction::launchWrite(
     // KERNEL VALIDATION (AIA -> KD) FAST-PATH FOR STORES
     // See launchRead() above for the three-case rationale; the store
     // path mirrors it. Page granularity = 4 KiB.
+    //
+    // DMA-control-reg write exception: writes whose target lies in
+    // any DMA's PIO range bypass the validated-page cache and the
+    // pending-page coalescing entirely. Every such store reprograms
+    // the engine with a (potentially new) (src, dst, len) triple, so
+    // the kernel must inspect each write individually. Reads are
+    // unaffected (status polling is benign).
     // ====================================================
     if (owner->isKernelValidationEnabled()) {
-        if (owner->isPageValidated(ptrAddr)) {
+        bool dmaCtrl = owner->isDmaCtrlAddr(ptrAddr);
+        if (!dmaCtrl && owner->isPageValidated(ptrAddr)) {
             // (a) Cache hit. Suppress counter for replays that already
             // paid validation latency (see launchRead comment).
             if (!owner->consumeRevalidatedUID(writeInst->getUID())) {
@@ -802,7 +811,7 @@ LLVMInterface::ActiveFunction::launchWrite(
                     "|| Cache HIT for WRITE: addr=0x%016lx - proceeding\n",
                     ptrAddr);
             // Fall through to launch the write normally.
-        } else if (owner->isPageValidationPending(ptrAddr)) {
+        } else if (!dmaCtrl && owner->isPageValidationPending(ptrAddr)) {
             // (b) Coalesce behind in-flight request.
             if (!owner->isValidationPending(writeInst->getUID())) {
                 owner->queueWaitingInstruction(
@@ -814,12 +823,16 @@ LLVMInterface::ActiveFunction::launchWrite(
             }
             return false;
         } else {
-            // (c) Cold miss.
+            // (c) Cold miss. For DMA-ctrl writes this branch is taken
+            // unconditionally (cache + coalescing bypassed above), so
+            // every store to a DMA control reg pays full latency.
+            if (dmaCtrl) owner->incrementDmaCtrlValidations();
             if (dbg)
                 DPRINTFS(RuntimeCompute, owner,
                     "|| Sending kernel validation for WRITE: "
-                    "addr=0x%016lx, size=%lu\n",
-                    ptrAddr, (unsigned long)reqSize);
+                    "addr=0x%016lx, size=%lu%s\n",
+                    ptrAddr, (unsigned long)reqSize,
+                    dmaCtrl ? " [DMA-CTRL]" : "");
             owner->sendValidationRequest(
                 ptrAddr, reqSize, false, writeInst, this);
             return false;
@@ -1392,7 +1405,15 @@ LLVMInterface::sendValidationRequest(uint64_t addr, size_t size, bool isRead,
     //      block comment below for why).
     uint64_t pageAddr = addr & ~0xFFFULL;
 
-    validator->pendingValidationPages.insert(pageAddr);
+    // DMA-control-reg pages are NEVER added to the chip-wide pending
+    // set. Doing so would let a sibling cold-miss store to the same
+    // page coalesce behind us and skip its own validation -- breaking
+    // the "every DMA program is independently inspected" invariant.
+    // Mirror block in AiaKdValidator::processResponse() also skips
+    // the validatedPagesPerProcess insertion for these addresses.
+    if (!validator->isDmaCtrl(addr)) {
+        validator->pendingValidationPages.insert(pageAddr);
+    }
 
     AiaKdValidator::PendingRequest req;
     req.addr = addr;
@@ -1689,9 +1710,14 @@ LLVMInterface::printKernelValidationStats()
     std::cout << "   --- Access Breakdown ---" << std::endl;
     std::cout << "   Total memory accesses (validated): " << totalMemAccesses << std::endl;
     std::cout << "   Cache hits (0 latency):          " << validationCacheHits << std::endl;
-    std::cout << "   Validation requests (full lat):  " << totalKernelValidations << std::endl;
-    std::cout << "   Coalesced waits (partial lat):   " << validationCoalescedWaits << std::endl;
-    std::cout << "   Validations denied:              " << kernelValidationDenied << std::endl;
+    std::cout << "   Validation requests (full lat):  "
+              << totalKernelValidations << std::endl;
+    std::cout << "     of which DMA-ctrl writes:      "
+              << dmaCtrlValidations << std::endl;
+    std::cout << "   Coalesced waits (partial lat):   "
+              << validationCoalescedWaits << std::endl;
+    std::cout << "   Validations denied:              "
+              << kernelValidationDenied << std::endl;
     std::cout << std::endl;
 
     // Latency breakdown

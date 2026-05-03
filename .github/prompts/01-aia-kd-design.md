@@ -20,9 +20,20 @@ paper's IRQ-driven kernel-driver path.
   AIA-KD paper's measured IRQ + driver round-trip), and the page is
   then cached in `validatedPagesPerProcess[PID]`. Subsequent
   accesses to the same page by the same process are free.
-- **Coalescing**: a burst of accesses to a fresh page pays the
+- **DMA control-reg exception (per-write re-validation)**: writes
+  whose target lies in any DMA engine's PIO range **bypass** both
+  the validated-page cache and pending-page coalescing. Every store
+  pays full `kernel_validation_latency`. Justification: each write
+  to `SRC` / `DST` / `LEN` / `START` reprograms the DMA with a new
+  (potentially adversarial) request, so the kernel must inspect
+  every program independently. Reads to those same pages are
+  unaffected (status polling is benign). The per-cluster set of
+  DMA PIO ranges is plumbed by the SALAM-Configurator into the
+  `AiaKdValidator.dma_pio_ranges` VectorParam at config time.
+- **Coalescing**: a burst of accesses to a fresh **non-DMA-ctrl** page pays the
   latency only once — followers register on `waitingForPage[page]`
-  and are dispatched together when the response fires.
+  and are dispatched together when the response fires. DMA-ctrl
+  writes do not coalesce: each store fires its own IRQ.
 - **What we expect to see**: high one-time overhead on first access
   to a page; near-zero steady-state cost once the working set is
   paged in.
@@ -101,6 +112,12 @@ the right CU without knowing its layout.
 ## Stats reported (`printKernelValidationStats`)
 
 - `totalKernelValidations` — full-latency requests
+- `dmaCtrlValidations` — subset of the above attributable to writes
+  into a DMA control-reg page (printed as
+  `"of which DMA-ctrl writes"`). For benchmarks that reprogram DMAs
+  many times (`bfs`, `mobilenetv2/body`), expect this to dominate
+  `totalKernelValidations` and the AIA-KD overhead to scale roughly
+  with `(num_dma_programs × writes_per_program × latency)`.
 - `validationCacheHits` — zero-latency hits
 - `validationCoalescedWaits` + `totalCoalescedWaitLatency` — partial-lat
 - `kernelValidationDenied` — currently always 0 (panic on deny)

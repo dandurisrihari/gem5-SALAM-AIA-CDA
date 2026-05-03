@@ -21,6 +21,7 @@ AiaKdValidator::AiaKdValidator(const Params &p)
       nextRequestId(0),
       enabledFlag(p.enabled),
       latencyTicks(p.latency),
+      dmaCtrlRanges(p.dma_pio_ranges.begin(), p.dma_pio_ranges.end()),
       responseEvent([this]{ processResponse(); }, name())
 {
 }
@@ -56,9 +57,17 @@ AiaKdValidator::processResponse()
         // sibling CU touching this page during the dispatch fan-out
         // sees a cache hit (matches the previous semantics where the
         // cache insert happened before launchRead/Write replay).
+        //
+        // Exception: DMA control-reg pages are NEVER cached and were
+        // never marked pending in the first place (see
+        // LLVMInterface::sendValidationRequest). Each store must pay
+        // full validation latency because every write reprograms the
+        // engine with a potentially new (src, dst, len) triple.
         uint64_t pageAddr = req.addr & ~0xFFFULL;
-        validatedPagesPerProcess[req.pid].insert(pageAddr);
-        pendingValidationPages.erase(pageAddr);
+        if (!isDmaCtrl(req.addr)) {
+            validatedPagesPerProcess[req.pid].insert(pageAddr);
+            pendingValidationPages.erase(pageAddr);
+        }
 
         // Dispatch to the originating CU. The validator never derefs
         // ActiveFunction or LLVMInterface itself; both pointers are

@@ -35,3 +35,14 @@ class AiaKdValidator(SimObject):
     # per-CU `kernel_validation_latency` Param on LLVMInterface is
     # cross-checked against this value at startup.
     latency = Param.Tick(0, "Per-cold-miss kernel validation latency")
+
+    # Address ranges of DMA-engine PIO control reg banks. Writes to a
+    # page that intersects any of these ranges are NEVER cached: each
+    # store re-fires a full validation, modeling the threat that any
+    # write to a DMA control reg can re-target the engine at a new
+    # source/destination. Reads are unaffected (status polling is
+    # benign). Populated by the SALAM-Configurator for every DMA in
+    # the cluster.
+    dma_pio_ranges = VectorParam.AddrRange([],
+        "DMA control reg PIO ranges -- writes here always pay full "
+        "validation latency (no cache, no coalescing)")

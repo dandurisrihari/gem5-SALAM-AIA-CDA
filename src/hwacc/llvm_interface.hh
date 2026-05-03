@@ -120,6 +120,13 @@ class LLVMInterface : public ComputeUnit {
     uint64_t validationCacheHits;           // True cache hits (page already validated)
     uint64_t validationCoalescedWaits;      // Instructions that waited for in-flight validation
     Tick totalCoalescedWaitLatency;         // Total latency for coalesced waits
+    // Subset of totalKernelValidations attributable to DMA control-reg
+    // writes (i.e. stores whose target address landed in any DMA's
+    // PIO range). Useful for separating the "static page" first-touch
+    // tax from the per-DMA-program inspection tax. See
+    // ActiveFunction::launchWrite for the bypass logic and
+    // .github/prompts/01-aia-kd-design.md for the threat-model split.
+    uint64_t dmaCtrlValidations;
 
     // Per-CU response event removed: the chip-wide validator owns
     // the single EventFunctionWrapper and drives completion via
@@ -318,6 +325,10 @@ class LLVMInterface : public ComputeUnit {
         return false;
     }
     void incrementValidationCacheHits() { validationCacheHits++; }
+    void incrementDmaCtrlValidations() { dmaCtrlValidations++; }
+    bool isDmaCtrlAddr(uint64_t addr) {
+        return validator && validator->isDmaCtrl(addr);
+    }
     // Returns true (and consumes the marker) if `uid` was just replayed
     // from a post-validation RAW deferral. Callers in launchRead/Write use
     // this to suppress double-counting that access as a cache hit.

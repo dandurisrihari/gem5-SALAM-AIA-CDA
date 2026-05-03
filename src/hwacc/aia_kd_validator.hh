@@ -39,6 +39,7 @@
 #include <memory>
 #include <set>
 
+#include "base/addr_range.hh"
 #include "base/types.hh"
 #include "params/AiaKdValidator.hh"
 #include "sim/eventq.hh"
@@ -72,6 +73,21 @@ class AiaKdValidator : public SimObject
 
     /** Per-cold-miss validation latency (chip-wide). */
     Tick latency() const { return latencyTicks; }
+
+    /**
+     * True if `addr` falls inside the PIO range of any DMA engine in
+     * the cluster. Used by `LLVMInterface::ActiveFunction::launchWrite`
+     * to bypass the validated-page cache for DMA control-reg writes:
+     * every store reprograms the engine, so the kernel must re-inspect
+     * each one. Reads are unaffected. Page-aligned input is fine; the
+     * check uses the raw byte address.
+     */
+    bool isDmaCtrl(Addr addr) const {
+        for (const auto &r : dmaCtrlRanges) {
+            if (r.contains(addr)) return true;
+        }
+        return false;
+    }
 
     /**
      * One waiter on an in-flight validation. `func` is the originating
@@ -159,6 +175,8 @@ class AiaKdValidator : public SimObject
 
     const bool enabledFlag;
     const Tick latencyTicks;
+    /** PIO ranges of DMA engines; writes here bypass the cache. */
+    const AddrRangeList dmaCtrlRanges;
     EventFunctionWrapper responseEvent;
 };
 

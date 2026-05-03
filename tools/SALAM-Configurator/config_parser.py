@@ -495,6 +495,14 @@ class StreamDMA:
         # DMA bursts to DRAM are translated by the same chip-wide
         # AcceleratorIommu used by CommInterface global egress.
         lines.append("clstr." + self.name + ".iommu = clstr.iommu")
+        # Register this DMA's PIO control-reg range with the chip-wide
+        # AIA-KD validator. Writes to a control-reg page bypass the
+        # validated-page cache and pay full validation latency on
+        # every store -- one IRQ per DMA program. See
+        # .github/prompts/01-aia-kd-design.md for the threat model.
+        lines.append("clstr.validator.dma_pio_ranges.append("
+                     "AddrRange(" + hex(self.address) +
+                     ", size=" + str(self.pio) + "))")
         if self.pio_masters is not None:
             for master in self.pio_masters:
                 lines.append("clstr." + master.lower() +
@@ -548,6 +556,11 @@ class DMA:
                      ".dma = clstr.coherency_bus.cpu_side_ports")
         # Wire cluster-shared SMMU onto the off-cluster `dma` port.
         lines.append("clstr." + self.name + ".iommu = clstr.iommu")
+        # Register this DMA's PIO control-reg range with the chip-wide
+        # AIA-KD validator (see StreamDMA.genConfig for rationale).
+        lines.append("clstr.validator.dma_pio_ranges.append("
+                     "AddrRange(" + hex(self.address) +
+                     ", size=" + str(self.pio) + "))")
         if self.pio_masters is not None:
             for master in self.pio_masters:
                 lines.append("clstr." + master.lower() +
