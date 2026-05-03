@@ -22,6 +22,7 @@ _IOTLB_MISSES_RE   = re.compile(r"IOTLB misses \(page walks\):\s+(\d+)")
 _SMID_REQS_RE      = re.compile(
     r"Total memory accesses \(validated\):\s+(\d+)")
 _SMID_VALS_RE      = re.compile(r"Validation requests \(full lat\):\s+(\d+)")
+_SMID_DMA_RE       = re.compile(r"of which DMA-ctrl writes:\s+(\d+)")
 
 
 @dataclass
@@ -54,6 +55,11 @@ class HarvestRow:
     iotlb_hit_rate_pct: str = "-"
     smid_requests: str = "-"
     smid_validations: str = "-"
+    # Subset of smid_validations attributable to writes into a DMA
+    # control-reg page (printed by AIA-KD as "of which DMA-ctrl
+    # writes"). 0 means the workload does not reprogram any DMA
+    # while validation is enabled.
+    smid_validations_dma_ctrl: str = "-"
 
     def as_tsv(self) -> str:
         return "\t".join((
@@ -62,13 +68,14 @@ class HarvestRow:
             self.iommu_overhead_us, self.iommu_checks,
             self.iotlb_hits, self.iotlb_misses, self.iotlb_hit_rate_pct,
             self.smid_requests, self.smid_validations,
+            self.smid_validations_dma_ctrl,
         ))
 
 
 HEADER = ("mode\truntime_us\tsim_ticks\tsim_seconds\tkernel_runtime_us"
           "\taia_kd_overhead_us\tiommu_overhead_us\tiommu_checks"
           "\tiotlb_hits\tiotlb_misses\tiotlb_hit_rate_pct"
-          "\tsmid_requests\tsmid_validations")
+          "\tsmid_requests\tsmid_validations\tsmid_validations_dma_ctrl")
 
 
 def harvest_run(label: str, outdir: Path) -> HarvestRow:
@@ -117,11 +124,42 @@ def harvest_run(label: str, outdir: Path) -> HarvestRow:
     smid_v = [int(x) for x in _SMID_VALS_RE.findall(log_text)]
     if smid_v:
         row.smid_validations = str(sum(smid_v))
+    smid_d = [int(x) for x in _SMID_DMA_RE.findall(log_text)]
+    if smid_d:
+        row.smid_validations_dma_ctrl = str(sum(smid_d))
     return row
 
 
 def write_summary(rows: Iterable[HarvestRow], path: Path) -> List[HarvestRow]:
     rows = list(rows)
+    # Canonical row order: plain first, then aia-kd, then iommu, then
+    # any remaining labels (e.g. iommu sweep configs) in their original
+    # arrival order. Within a multi-bench summary, "<bench>/<mode>"
+    # labels are sorted by bench first, then by mode-rank.
+    import re as _re
+    _sweep_re = _re.compile(r"^iommu_e(\d+)_m(\d+)ns$")
+
+    def _mode_rank(mode: str) -> tuple:
+        if mode == "plain":
+            return (0, 0, 0)
+        if mode == "aia-kd":
+            return (1, 0, 0)
+        if mode == "iommu":
+            return (2, 0, 0)
+        m = _sweep_re.match(mode)
+        if m:
+            return (3, int(m.group(1)), int(m.group(2)))
+        return (4, 0, 0)
+
+    def _row_key(idx_row):
+        idx, r = idx_row
+        if "/" in r.label:
+            bench, mode = r.label.split("/", 1)
+        else:
+            bench, mode = "", r.label
+        return (bench, _mode_rank(mode), idx)
+
+    rows = [r for _, r in sorted(enumerate(rows), key=_row_key)]
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w") as f:
         f.write(HEADER + "\n")
