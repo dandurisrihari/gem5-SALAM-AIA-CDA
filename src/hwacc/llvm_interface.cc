@@ -990,8 +990,10 @@ LLVMInterface::debug(uint64_t flags) {
 void
 LLVMInterface::startup() {
     // Register this CU with its CommInterface so the comm side can
-    // call back via cu->readCommit / cu->writeCommit and the IOMMU
-    // intercept can call cu->iommuLatencyForAccess().
+    // call back via cu->readCommit / cu->writeCommit. The IOMMU
+    // intercept is independent of the CU pointer -- it lives in
+    // CommInterface::tryIommuDelay() and DmaPort::tryIommuDelay()
+    // and consults the shared AcceleratorIommu SimObject directly.
     comm->registerCompUnit(this);
 
     // PID uniformity used to be enforced by a process-wide static

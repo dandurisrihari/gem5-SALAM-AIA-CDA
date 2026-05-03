@@ -37,13 +37,13 @@ class ComputeUnit : public SimObject {
     virtual void initialize() {}
     virtual void readCommit(MemoryRequest * req) {}
     virtual void writeCommit(MemoryRequest * req) {}
-    // Called by CommInterface from MemSidePort::recvTimingResp() to
-    // inject IOMMU translation latency on the response path. Default
-    // returns 0 (no IOMMU). Override to return the per-access latency
-    // (iotlb hit/miss) and update IOTLB stats. Called exactly once per
-    // committed packet, AFTER the request has already left the
-    // accelerator pipeline -- so latency is purely additive on the
-    // critical path and cannot perturb upstream tick alignment.
+    // Vestigial hook from an earlier IOMMU draft. The current model
+    // injects translation latency on the response path inside
+    // CommInterface::tryIommuDelay() / DmaPort::tryIommuDelay(),
+    // both of which call AcceleratorIommu::translate() directly --
+    // this virtual is no longer called from anywhere. Kept (and
+    // returning 0) only to preserve the ABI of any out-of-tree
+    // ComputeUnit subclass that may still override it.
     virtual Tick iommuLatencyForAccess(Addr addr, bool isRead) { return 0; }
     CommInterface * getCommInterface() { return comm; }
     HWInterface * getHWInterface() { return hw; }

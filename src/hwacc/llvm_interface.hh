@@ -134,11 +134,15 @@ class LLVMInterface : public ComputeUnit {
 
     // ----- IOMMU latency injection -----
     // The IOMMU sits on the accelerator's memory port (downstream of
-    // CommInterface). Latency is injected in MemSidePort::recvTimingResp
-    // by overriding ComputeUnit::iommuLatencyForAccess() below; this
-    // class only owns the IOTLB cache + stats, NOT a queue or event.
-    // See context-kernel-validation.md for why upstream injection
-    // (the previous design) produced negative sim_ticks deltas.
+    // CommInterface). Latency is injected in CommInterface::
+    // tryIommuDelay() (called from MemSidePort::recvTimingResp on the
+    // Global egress only) and in DmaPort::tryIommuDelay() (off-cluster
+    // DMA-engine egress). Both call iommu->translate() on the shared
+    // AcceleratorIommu SimObject; this class only retains the
+    // `iommu` pointer for stats reporting (printIommuStats).
+    // See 02-iommu-design.md and 06-gotchas-and-history.md for why
+    // upstream injection (the previous design) produced negative
+    // sim_ticks deltas.
 
     std::chrono::duration<float> setupTime;
     std::chrono::duration<float> simTotal;
