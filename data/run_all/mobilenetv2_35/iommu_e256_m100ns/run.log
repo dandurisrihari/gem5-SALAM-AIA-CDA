@@ -1,0 +1,4920 @@
+build/ARM/base/statistics.hh:277: warn: One of the stats is a legacy stat. Legacy stat is a stat that does not belong to any statistics::Group. Legacy stat is deprecated.
+Global frequency set at 1000000000000 ticks per second
+build/ARM/mem/mem_interface.cc:793: warn: DRAM device capacity (16384 Mbytes) does not match the address range assigned (4096 Mbytes)
+build/ARM/sim/kernel_workload.cc:46: info: kernel located at: /gem5-SALAM/benchmarks/mobilenetv2/sw/main.elf
+build/ARM/arch/arm/system.cc:95: warn: Highest ARM exception-level set to AArch64 but the workload is for AArch32. Assuming you wanted these to match.
+build/ARM/base/vnc/vncserver.cc:163: warn: Sockets disabled, not accepting vnc client connections
+build/ARM/dev/serial/terminal.cc:170: warn: Sockets disabled, not accepting terminal connections
+build/ARM/mem/coherent_xbar.cc:140: warn: CoherentXBar system.body.coherency_bus has no snooping ports attached!
+build/ARM/mem/coherent_xbar.cc:140: warn: CoherentXBar system.classifier.coherency_bus has no snooping ports attached!
+build/ARM/base/remote_gdb.cc:377: warn: Sockets disabled, not accepting gdb connections
+build/ARM/mem/coherent_xbar.cc:140: warn: CoherentXBar system.head.coherency_bus has no snooping ports attached!
+build/ARM/mem/coherent_xbar.cc:140: warn: CoherentXBar system.tail.coherency_bus has no snooping ports attached!
+build/ARM/dev/arm/energy_ctrl.cc:252: warn: Existing EnergyCtrl, but no enabled DVFSHandler found.
+gem5 Simulator System.  http://gem5.org
+gem5 is copyrighted software; use the --copyright option for details.
+
+gem5 version 21.1.0.1
+gem5 compiled May  2 2026 19:55:51
+gem5 started May  3 2026 03:40:19
+gem5 executing on 3b7fb6fd27b8, pid 1232101
+command line: /gem5-SALAM/build/ARM/gem5.opt --listener-mode=off --outdir=/gem5-SALAM/BM_ARM_OUT/run_all/mobilenetv2_35/iommu_e256_m100ns /gem5-SALAM/configs/SALAM/fs_mobilenetv2_35.py --mem-size=4GB --mem-type=DDR4_2400_8x8 --machine-type=VExpress_GEM5_V1 --dtb-file=none --bare-metal --cpu-type=DerivO3CPU --caches --l2cache --kernel=/gem5-SALAM/benchmarks/mobilenetv2/sw/main.elf --disk-image=/gem5-SALAM/benchmarks/common/fake.iso --accpath=/gem5-SALAM/benchmarks/mobilenetv2 --accbench=mobilenetv2_35 --enable-iommu --iotlb-entries 256 --iotlb-hit-latency 2000 --iotlb-miss-latency 100000
+
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+head_top Profile Loaded
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+head_NormalConv Profile Loaded
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+head_DWConv Profile Loaded
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+head_PWConv Profile Loaded
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+body_top Profile Loaded
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+body_Residual Profile Loaded
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+body_PWConv0 Profile Loaded
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+body_DWConv Profile Loaded
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+body_PWConv1 Profile Loaded
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+tail_top Profile Loaded
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+tail_PWConv Profile Loaded
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+tail_Reshape Profile Loaded
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+tail_AvgPool Profile Loaded
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+classifier_top Profile Loaded
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=100000
+classifier_Linear Profile Loaded
+**** REAL SIMULATION ****
+warn: iobus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: bridge.master is deprecated. `master` is now called `mem_side_port`
+warn: membus.master is deprecated. `master` is now called `mem_side_ports`
+warn: bridge.slave is deprecated. `slave` is now called `cpu_side_port`
+warn: membus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.master is deprecated. `master` is now called `mem_side_ports`
+warn: membus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: membus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: coherency_bus.master is deprecated. `master` is now called `mem_side_ports`
+warn: membus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: coherency_bus.master is deprecated. `master` is now called `mem_side_ports`
+warn: membus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: coherency_bus.master is deprecated. `master` is now called `mem_side_ports`
+warn: membus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: coherency_bus.master is deprecated. `master` is now called `mem_side_ports`
+warn: No dot file generated. Please install pydot to generate the dot file and pdf.
+build/ARM/sim/simulate.cc:107: info: Entering event queue @ 0.  Starting simulation...
+********************************************************************************
+system.head.head_top.llvm_interface
+Total Area: 3799.78
+Total Power Static: 155.288
+
+Total Power Dynamic: 763.149
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 3ms 864us
+   Simulation Time (Total):         0h 25m 47s 642ms
+   Simulation Time (Active):        0h 0m 1s 649ms
+        Queue Processing Time:      0h 0m 1s 480ms
+             Scheduling Time:       0h 0m 0s 666ms
+             Computation Time:      0h 0m 0s 251ms
+   System Clock:                    0.1GHz
+   Runtime:                         2193886 cycles
+   Runtime:                         21938.9 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  2193885 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.head.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              10356150
+   IOTLB hits:                      10356148
+   IOTLB misses (page walks):       2
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            20712.5 us
+   Avg latency per access:          0.00200002 us
+
+********************************************************************************
+system.head.head_pwconv.llvm_interface
+Total Area: 11678.9
+Total Power Static: 2554.71
+
+Total Power Dynamic: 61491.8
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 562us
+   Simulation Time (Total):         0h 35m 51s 958ms
+   Simulation Time (Active):        0h 0m 50s 857ms
+        Queue Processing Time:      0h 0m 50s 817ms
+             Scheduling Time:       0h 0m 19s 366ms
+             Computation Time:      0h 0m 0s 411ms
+   System Clock:                    0.1GHz
+   Runtime:                         2477498 cycles
+   Runtime:                         24775 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  2477497 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.head.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              11677570
+   IOTLB hits:                      11677568
+   IOTLB misses (page walks):       2
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            23355.3 us
+   Avg latency per access:          0.00200002 us
+
+********************************************************************************
+system.head.head_dwconv.llvm_interface
+Total Area: 116081
+Total Power Static: 72931.3
+
+Total Power Dynamic: 869084
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 4ms 652us
+   Simulation Time (Total):         0h 35m 51s 995ms
+   Simulation Time (Active):        0h 4m 23s 923ms
+        Queue Processing Time:      0h 4m 23s 904ms
+             Scheduling Time:       0h 3m 45s 445ms
+             Computation Time:      0h 0m 4s 182ms
+   System Clock:                    0.1GHz
+   Runtime:                         2477540 cycles
+   Runtime:                         24775.4 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  2477539 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.head.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              11677702
+   IOTLB hits:                      11677700
+   IOTLB misses (page walks):       2
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            23355.6 us
+   Avg latency per access:          0.00200002 us
+
+********************************************************************************
+system.head.head_normalconv.llvm_interface
+Total Area: 200127
+Total Power Static: 259429
+
+Total Power Dynamic: 6.41728e+06
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 11ms 222us
+   Simulation Time (Total):         0h 36m 5s 612ms
+   Simulation Time (Active):        0h 23m 9s 256ms
+        Queue Processing Time:      0h 23m 9s 423ms
+             Scheduling Time:       0h 20m 28s 605ms
+             Computation Time:      0h 0m 18s 252ms
+   System Clock:                    0.1GHz
+   Runtime:                         2483126 cycles
+   Runtime:                         24831.3 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  2483125 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.head.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              11702153
+   IOTLB hits:                      11702151
+   IOTLB misses (page walks):       2
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            23404.5 us
+   Avg latency per access:          0.00200002 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 538.329
+Total Power Static: 87.7635
+
+Total Power Dynamic: 263.175
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 606us
+   Simulation Time (Total):         0h 43m 6s 564ms
+   Simulation Time (Active):        0h 0m 0s 560ms
+        Queue Processing Time:      0h 0m 0s 418ms
+             Scheduling Time:       0h 0m 0s 193ms
+             Computation Time:      0h 0m 0s 16ms
+   System Clock:                    0.1GHz
+   Runtime:                         1813255 cycles
+   Runtime:                         18132.5 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  1813254 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              8594634
+   IOTLB hits:                      8594625
+   IOTLB misses (page walks):       9
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            17190.1 us
+   Avg latency per access:          0.0020001 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 12037.8
+Total Power Static: 15393.1
+
+Total Power Dynamic: 366196
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 960us
+   Simulation Time (Total):         0h 43m 18s 883ms
+   Simulation Time (Active):        0h 5m 21s 393ms
+        Queue Processing Time:      0h 5m 21s 243ms
+             Scheduling Time:       0h 3m 30s 656ms
+             Computation Time:      0h 0m 2s 976ms
+   System Clock:                    0.1GHz
+   Runtime:                         1823380 cycles
+   Runtime:                         18233.8 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  1823379 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              8644396
+   IOTLB hits:                      8644387
+   IOTLB misses (page walks):       9
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            17289.7 us
+   Avg latency per access:          0.0020001 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 749685
+Total Power Static: 185773
+
+Total Power Dynamic: 1.83603e+06
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 131ms 880us
+   Simulation Time (Total):         0h 43m 43s 594ms
+   Simulation Time (Active):        0h 10m 13s 286ms
+        Queue Processing Time:      0h 10m 13s 210ms
+             Scheduling Time:       0h 8m 29s 589ms
+             Computation Time:      0h 0m 11s 402ms
+   System Clock:                    0.1GHz
+   Runtime:                         1845820 cycles
+   Runtime:                         18458.2 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  1845819 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              8740621
+   IOTLB hits:                      8740612
+   IOTLB misses (page walks):       9
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            17482.1 us
+   Avg latency per access:          0.0020001 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 129609
+Total Power Static: 229952
+
+Total Power Dynamic: 2.63548e+06
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 9ms 389us
+   Simulation Time (Total):         0h 43m 43s 769ms
+   Simulation Time (Active):        0h 22m 42s 148ms
+        Queue Processing Time:      0h 22m 42s 496ms
+             Scheduling Time:       0h 20m 59s 995ms
+             Computation Time:      0h 0m 14s 206ms
+   System Clock:                    0.1GHz
+   Runtime:                         1846251 cycles
+   Runtime:                         18462.5 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  1846250 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              8742354
+   IOTLB hits:                      8742345
+   IOTLB misses (page walks):       9
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            17485.6 us
+   Avg latency per access:          0.0020001 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 3749.41
+Total Power Static: 0.957346
+
+Total Power Dynamic: 4.74324
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 8ms 951us
+   Simulation Time (Total):         0h 43m 56s 656ms
+   Simulation Time (Active):        0h 0m 0s 990ms
+        Queue Processing Time:      0h 0m 0s 828ms
+             Scheduling Time:       0h 0m 0s 369ms
+             Computation Time:      0h 0m 0s 96ms
+   System Clock:                    0.1GHz
+   Runtime:                         1864744 cycles
+   Runtime:                         18647.4 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  1864743 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              8742357
+   IOTLB hits:                      8742348
+   IOTLB misses (page walks):       9
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            17485.6 us
+   Avg latency per access:          0.0020001 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 1076.66
+Total Power Static: 21.9391
+
+Total Power Dynamic: 65.7937
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 357us
+   Simulation Time (Total):         0h 15m 42s 201ms
+   Simulation Time (Active):        0h 0m 0s 187ms
+        Queue Processing Time:      0h 0m 0s 117ms
+             Scheduling Time:       0h 0m 0s 40ms
+             Computation Time:      0h 0m 0s 3ms
+   System Clock:                    0.1GHz
+   Runtime:                         1035706 cycles
+   Runtime:                         10357.1 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  1035705 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              12595897
+   IOTLB hits:                      12595888
+   IOTLB misses (page walks):       9
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            25192.7 us
+   Avg latency per access:          0.00200007 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 24075.6
+Total Power Static: 3848.3
+
+Total Power Dynamic: 91549.2
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 743us
+   Simulation Time (Total):         0h 16m 2s 587ms
+   Simulation Time (Active):        0h 1m 6s 320ms
+        Queue Processing Time:      0h 1m 6s 301ms
+             Scheduling Time:       0h 0m 44s 45ms
+             Computation Time:      0h 0m 0s 692ms
+   System Clock:                    0.1GHz
+   Runtime:                         1051886 cycles
+   Runtime:                         10518.9 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  1051885 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              12676067
+   IOTLB hits:                      12676058
+   IOTLB misses (page walks):       9
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            25353 us
+   Avg latency per access:          0.00200007 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 259219
+Total Power Static: 56863.8
+
+Total Power Dynamic: 649870
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 8ms 377us
+   Simulation Time (Total):         0h 16m 39s 290ms
+   Simulation Time (Active):        0h 5m 30s 549ms
+        Queue Processing Time:      0h 5m 30s 520ms
+             Scheduling Time:       0h 5m 3s 901ms
+             Computation Time:      0h 0m 3s 660ms
+   System Clock:                    0.1GHz
+   Runtime:                         1096124 cycles
+   Runtime:                         10961.2 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  1096123 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              12831609
+   IOTLB hits:                      12831600
+   IOTLB misses (page walks):       9
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            25664.1 us
+   Avg latency per access:          0.00200007 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 1.49937e+06
+Total Power Static: 185773
+
+Total Power Dynamic: 1.83603e+06
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 141ms 601us
+   Simulation Time (Total):         0h 16m 39s 855ms
+   Simulation Time (Active):        0h 9m 13s 181ms
+        Queue Processing Time:      0h 9m 13s 179ms
+             Scheduling Time:       0h 8m 3s 300ms
+             Computation Time:      0h 0m 10s 635ms
+   System Clock:                    0.1GHz
+   Runtime:                         1103011 cycles
+   Runtime:                         11030.1 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  1103010 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              12839112
+   IOTLB hits:                      12839103
+   IOTLB misses (page walks):       9
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            25679.1 us
+   Avg latency per access:          0.00200007 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 7498.83
+Total Power Static: 0.95918
+
+Total Power Dynamic: 4.75225
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 299us
+   Simulation Time (Total):         0h 16m 40s 493ms
+   Simulation Time (Active):        0h 0m 0s 387ms
+        Queue Processing Time:      0h 0m 0s 313ms
+             Scheduling Time:       0h 0m 0s 133ms
+             Computation Time:      0h 0m 0s 32ms
+   System Clock:                    0.1GHz
+   Runtime:                         1121511 cycles
+   Runtime:                         11215.1 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  1121510 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              12839114
+   IOTLB hits:                      12839105
+   IOTLB misses (page walks):       9
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            25679.1 us
+   Avg latency per access:          0.00200007 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 1614.99
+Total Power Static: 32.9098
+
+Total Power Dynamic: 131.587
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 392us
+   Simulation Time (Total):         0h 10m 6s 25ms
+   Simulation Time (Active):        0h 0m 0s 150ms
+        Queue Processing Time:      0h 0m 0s 113ms
+             Scheduling Time:       0h 0m 0s 57ms
+             Computation Time:      0h 0m 0s 7ms
+   System Clock:                    0.1GHz
+   Runtime:                         537445 cycles
+   Runtime:                         5374.45 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  537444 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              15427009
+   IOTLB hits:                      15426999
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            30855 us
+   Avg latency per access:          0.00200006 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 36113.4
+Total Power Static: 3848.3
+
+Total Power Dynamic: 91549.2
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 747us
+   Simulation Time (Total):         0h 10m 28s 818ms
+   Simulation Time (Active):        0h 1m 2s 824ms
+        Queue Processing Time:      0h 1m 2s 802ms
+             Scheduling Time:       0h 0m 42s 949ms
+             Computation Time:      0h 0m 0s 676ms
+   System Clock:                    0.1GHz
+   Runtime:                         557723 cycles
+   Runtime:                         5577.23 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  557722 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              15527866
+   IOTLB hits:                      15527856
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            31056.7 us
+   Avg latency per access:          0.00200006 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 2.24905e+06
+Total Power Static: 92541.7
+
+Total Power Dynamic: 914996
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 138ms 649us
+   Simulation Time (Total):         0h 10m 41s 549ms
+   Simulation Time (Active):        0h 3m 45s 394ms
+        Queue Processing Time:      0h 3m 45s 372ms
+             Scheduling Time:       0h 3m 20s 428ms
+             Computation Time:      0h 0m 5s 574ms
+   System Clock:                    0.1GHz
+   Runtime:                         569387 cycles
+   Runtime:                         5693.87 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  569386 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              15578182
+   IOTLB hits:                      15578172
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            31157.3 us
+   Avg latency per access:          0.00200006 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 388828
+Total Power Static: 56814.8
+
+Total Power Dynamic: 649870
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 9ms 237us
+   Simulation Time (Total):         0h 10m 41s 741ms
+   Simulation Time (Active):        0h 5m 22s 72ms
+        Queue Processing Time:      0h 5m 22s 45ms
+             Scheduling Time:       0h 4m 58s 597ms
+             Computation Time:      0h 0m 3s 590ms
+   System Clock:                    0.1GHz
+   Runtime:                         569810 cycles
+   Runtime:                         5698.1 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  569809 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              15579881
+   IOTLB hits:                      15579871
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            31160.7 us
+   Avg latency per access:          0.00200006 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 11248.2
+Total Power Static: 0.960402
+
+Total Power Dynamic: 4.75826
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 383us
+   Simulation Time (Total):         0h 10m 42s 239ms
+   Simulation Time (Active):        0h 0m 0s 226ms
+        Queue Processing Time:      0h 0m 0s 177ms
+             Scheduling Time:       0h 0m 0s 78ms
+             Computation Time:      0h 0m 0s 19ms
+   System Clock:                    0.1GHz
+   Runtime:                         588335 cycles
+   Runtime:                         5883.35 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  588334 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              15579884
+   IOTLB hits:                      15579874
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            31160.7 us
+   Avg latency per access:          0.00200006 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 2153.32
+Total Power Static: 10.9684
+
+Total Power Dynamic: 32.8969
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 398us
+   Simulation Time (Total):         0h 6m 14s 644ms
+   Simulation Time (Active):        0h 0m 0s 75ms
+        Queue Processing Time:      0h 0m 0s 49ms
+             Scheduling Time:       0h 0m 0s 19ms
+             Computation Time:      0h 0m 0s 1ms
+   System Clock:                    0.1GHz
+   Runtime:                         390434 cycles
+   Runtime:                         3904.34 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  390433 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              17270604
+   IOTLB hits:                      17270594
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            34542.2 us
+   Avg latency per access:          0.00200006 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 48151.2
+Total Power Static: 1866.67
+
+Total Power Dynamic: 45269.9
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 753us
+   Simulation Time (Total):         0h 6m 41s 613ms
+   Simulation Time (Active):        0h 0m 25s 556ms
+        Queue Processing Time:      0h 0m 25s 545ms
+             Scheduling Time:       0h 0m 15s 397ms
+             Computation Time:      0h 0m 0s 322ms
+   System Clock:                    0.1GHz
+   Runtime:                         414588 cycles
+   Runtime:                         4145.88 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  414587 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              17391093
+   IOTLB hits:                      17391083
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            34783.2 us
+   Avg latency per access:          0.00200006 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 518438
+Total Power Static: 27794.7
+
+Total Power Dynamic: 316697
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 9ms 190us
+   Simulation Time (Total):         0h 7m 15s 727ms
+   Simulation Time (Active):        0h 2m 43s 561ms
+        Queue Processing Time:      0h 2m 43s 545ms
+             Scheduling Time:       0h 2m 30s 676ms
+             Computation Time:      0h 0m 1s 769ms
+   System Clock:                    0.1GHz
+   Runtime:                         452510 cycles
+   Runtime:                         4525.1 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  452509 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              17549255
+   IOTLB hits:                      17549245
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            35099.5 us
+   Avg latency per access:          0.00200006 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 2.99874e+06
+Total Power Static: 92541.7
+
+Total Power Dynamic: 914996
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 141ms 973us
+   Simulation Time (Total):         0h 7m 15s 729ms
+   Simulation Time (Active):        0h 3m 43s 496ms
+        Queue Processing Time:      0h 3m 43s 480ms
+             Scheduling Time:       0h 3m 19s 22ms
+             Computation Time:      0h 0m 5s 494ms
+   System Clock:                    0.1GHz
+   Runtime:                         455344 cycles
+   Runtime:                         4553.44 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  455343 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              17552350
+   IOTLB hits:                      17552340
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            35105.7 us
+   Avg latency per access:          0.00200006 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 14997.7
+Total Power Static: 0.95918
+
+Total Power Dynamic: 4.75225
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 14ms 189us
+   Simulation Time (Total):         0h 7m 16s 309ms
+   Simulation Time (Active):        0h 0m 0s 151ms
+        Queue Processing Time:      0h 0m 0s 120ms
+             Scheduling Time:       0h 0m 0s 50ms
+             Computation Time:      0h 0m 0s 13ms
+   System Clock:                    0.1GHz
+   Runtime:                         473837 cycles
+   Runtime:                         4738.37 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  473836 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              17552351
+   IOTLB hits:                      17552341
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            35105.7 us
+   Avg latency per access:          0.00200006 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 2691.64
+Total Power Static: 16.4537
+
+Total Power Dynamic: 65.7937
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 380us
+   Simulation Time (Total):         0h 6m 15s 847ms
+   Simulation Time (Active):        0h 0m 0s 83ms
+        Queue Processing Time:      0h 0m 0s 57ms
+             Scheduling Time:       0h 0m 0s 24ms
+             Computation Time:      0h 0m 0s 3ms
+   System Clock:                    0.1GHz
+   Runtime:                         390277 cycles
+   Runtime:                         3902.77 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  390276 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              19245415
+   IOTLB hits:                      19245405
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            38491.8 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 60189
+Total Power Static: 1866.67
+
+Total Power Dynamic: 45269.9
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 758us
+   Simulation Time (Total):         0h 6m 43s 122ms
+   Simulation Time (Active):        0h 0m 25s 420ms
+        Queue Processing Time:      0h 0m 25s 407ms
+             Scheduling Time:       0h 0m 15s 283ms
+             Computation Time:      0h 0m 0s 322ms
+   System Clock:                    0.1GHz
+   Runtime:                         414384 cycles
+   Runtime:                         4143.84 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  414383 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              19365901
+   IOTLB hits:                      19365891
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            38732.8 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 648047
+Total Power Static: 27794.7
+
+Total Power Dynamic: 316697
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 9ms 141us
+   Simulation Time (Total):         0h 7m 17s 506ms
+   Simulation Time (Active):        0h 2m 44s 790ms
+        Queue Processing Time:      0h 2m 44s 775ms
+             Scheduling Time:       0h 2m 31s 882ms
+             Computation Time:      0h 0m 1s 771ms
+   System Clock:                    0.1GHz
+   Runtime:                         452306 cycles
+   Runtime:                         4523.06 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  452305 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              19524063
+   IOTLB hits:                      19524053
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            39049.1 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 3.74842e+06
+Total Power Static: 92541.7
+
+Total Power Dynamic: 914996
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 145ms 378us
+   Simulation Time (Total):         0h 7m 17s 485ms
+   Simulation Time (Active):        0h 3m 43s 882ms
+        Queue Processing Time:      0h 3m 43s 867ms
+             Scheduling Time:       0h 3m 19s 314ms
+             Computation Time:      0h 0m 5s 511ms
+   System Clock:                    0.1GHz
+   Runtime:                         455140 cycles
+   Runtime:                         4551.4 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  455139 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              19527158
+   IOTLB hits:                      19527148
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            39055.3 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 18747.1
+Total Power Static: 0.960402
+
+Total Power Dynamic: 4.75826
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 417us
+   Simulation Time (Total):         0h 7m 18s 104ms
+   Simulation Time (Active):        0h 0m 0s 158ms
+        Queue Processing Time:      0h 0m 0s 120ms
+             Scheduling Time:       0h 0m 0s 50ms
+             Computation Time:      0h 0m 0s 12ms
+   System Clock:                    0.1GHz
+   Runtime:                         473657 cycles
+   Runtime:                         4736.57 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  473656 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              19527159
+   IOTLB hits:                      19527149
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  99.9999%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            39055.3 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 3229.97
+Total Power Static: 16.4537
+
+Total Power Dynamic: 65.7937
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 385us
+   Simulation Time (Total):         0h 4m 0s 95ms
+   Simulation Time (Active):        0h 0m 0s 59ms
+        Queue Processing Time:      0h 0m 0s 44ms
+             Scheduling Time:       0h 0m 0s 21ms
+             Computation Time:      0h 0m 0s 3ms
+   System Clock:                    0.1GHz
+   Runtime:                         214124 cycles
+   Runtime:                         2141.24 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  214123 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              20575054
+   IOTLB hits:                      20575044
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            41151.1 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 72226.8
+Total Power Static: 1866.67
+
+Total Power Dynamic: 45269.9
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 752us
+   Simulation Time (Total):         0h 4m 20s 210ms
+   Simulation Time (Active):        0h 0m 24s 229ms
+        Queue Processing Time:      0h 0m 24s 217ms
+             Scheduling Time:       0h 0m 15s 140ms
+             Computation Time:      0h 0m 0s 317ms
+   System Clock:                    0.1GHz
+   Runtime:                         232859 cycles
+   Runtime:                         2328.59 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  232858 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              20667144
+   IOTLB hits:                      20667134
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            41335.3 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 4.49811e+06
+Total Power Static: 34660
+
+Total Power Dynamic: 342746
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 144ms 448us
+   Simulation Time (Total):         0h 4m 27s 271ms
+   Simulation Time (Active):        0h 1m 18s 77ms
+        Queue Processing Time:      0h 1m 18s 71ms
+             Scheduling Time:       0h 1m 9s 712ms
+             Computation Time:      0h 0m 2s 56ms
+   System Clock:                    0.1GHz
+   Runtime:                         239155 cycles
+   Runtime:                         2391.55 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  239154 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              20694665
+   IOTLB hits:                      20694655
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            41390.3 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 777657
+Total Power Static: 27770.1
+
+Total Power Dynamic: 316697
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 8ms 114us
+   Simulation Time (Total):         0h 4m 34s 838ms
+   Simulation Time (Active):        0h 2m 39s 442ms
+        Queue Processing Time:      0h 2m 39s 426ms
+             Scheduling Time:       0h 2m 28s 69ms
+             Computation Time:      0h 0m 1s 744ms
+   System Clock:                    0.1GHz
+   Runtime:                         246045 cycles
+   Runtime:                         2460.45 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  246044 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              20724294
+   IOTLB hits:                      20724284
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            41449.6 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 22496.5
+Total Power Static: 0.962847
+
+Total Power Dynamic: 4.77027
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 318us
+   Simulation Time (Total):         0h 4m 35s 289ms
+   Simulation Time (Active):        0h 0m 0s 103ms
+        Queue Processing Time:      0h 0m 0s 81ms
+             Scheduling Time:       0h 0m 0s 34ms
+             Computation Time:      0h 0m 0s 9ms
+   System Clock:                    0.1GHz
+   Runtime:                         264612 cycles
+   Runtime:                         2646.12 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  264611 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              20724297
+   IOTLB hits:                      20724287
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            41449.6 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 3768.3
+Total Power Static: 4.11165
+
+Total Power Dynamic: 12.3363
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 377us
+   Simulation Time (Total):         0h 1m 42s 319ms
+   Simulation Time (Active):        0h 0m 0s 22ms
+        Queue Processing Time:      0h 0m 0s 14ms
+             Scheduling Time:       0h 0m 0s 6ms
+             Computation Time:      0h 0m 0s 0ms
+   System Clock:                    0.1GHz
+   Runtime:                         102569 cycles
+   Runtime:                         1025.69 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  102568 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              21210628
+   IOTLB hits:                      21210618
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            42422.2 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 84264.5
+Total Power Static: 692.817
+
+Total Power Dynamic: 16913.1
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 747us
+   Simulation Time (Total):         0h 2m 6s 518ms
+   Simulation Time (Active):        0h 0m 7s 581ms
+        Queue Processing Time:      0h 0m 7s 574ms
+             Scheduling Time:       0h 0m 4s 321ms
+             Computation Time:      0h 0m 0s 110ms
+   System Clock:                    0.1GHz
+   Runtime:                         126273 cycles
+   Runtime:                         1262.73 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  126272 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              21324595
+   IOTLB hits:                      21324585
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            42650.2 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 907266
+Total Power Static: 10000
+
+Total Power Dynamic: 113736
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 9ms 171us
+   Simulation Time (Total):         0h 2m 32s 762ms
+   Simulation Time (Active):        0h 0m 59s 985ms
+        Queue Processing Time:      0h 0m 59s 979ms
+             Scheduling Time:       0h 0m 55s 320ms
+             Computation Time:      0h 0m 0s 635ms
+   System Clock:                    0.1GHz
+   Runtime:                         152731 cycles
+   Runtime:                         1527.31 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  152730 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              21447357
+   IOTLB hits:                      21447347
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            42895.7 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 5.24779e+06
+Total Power Static: 34660
+
+Total Power Dynamic: 342746
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 143ms 414us
+   Simulation Time (Total):         0h 2m 32s 634ms
+   Simulation Time (Active):        0h 1m 17s 74ms
+        Queue Processing Time:      0h 1m 17s 69ms
+             Scheduling Time:       0h 1m 8s 992ms
+             Computation Time:      0h 0m 2s 21ms
+   System Clock:                    0.1GHz
+   Runtime:                         153772 cycles
+   Runtime:                         1537.72 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  153771 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              21448501
+   IOTLB hits:                      21448491
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            42898 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 26245.9
+Total Power Static: 0.960402
+
+Total Power Dynamic: 4.75826
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 438us
+   Simulation Time (Total):         0h 2m 33s 223ms
+   Simulation Time (Active):        0h 0m 0s 56ms
+        Queue Processing Time:      0h 0m 0s 42ms
+             Scheduling Time:       0h 0m 0s 17ms
+             Computation Time:      0h 0m 0s 4ms
+   System Clock:                    0.1GHz
+   Runtime:                         172294 cycles
+   Runtime:                         1722.94 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  172293 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              21448503
+   IOTLB hits:                      21448493
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            42898 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 4306.63
+Total Power Static: 6.16866
+
+Total Power Dynamic: 24.6726
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 383us
+   Simulation Time (Total):         0h 1m 42s 532ms
+   Simulation Time (Active):        0h 0m 0s 25ms
+        Queue Processing Time:      0h 0m 0s 18ms
+             Scheduling Time:       0h 0m 0s 8ms
+             Computation Time:      0h 0m 0s 1ms
+   System Clock:                    0.1GHz
+   Runtime:                         102636 cycles
+   Runtime:                         1026.36 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  102635 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              21935714
+   IOTLB hits:                      21935704
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            43872.4 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 96302.3
+Total Power Static: 692.817
+
+Total Power Dynamic: 16913.1
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 782us
+   Simulation Time (Total):         0h 2m 7s 215ms
+   Simulation Time (Active):        0h 0m 7s 675ms
+        Queue Processing Time:      0h 0m 7s 668ms
+             Scheduling Time:       0h 0m 4s 444ms
+             Computation Time:      0h 0m 0s 113ms
+   System Clock:                    0.1GHz
+   Runtime:                         126331 cycles
+   Runtime:                         1263.31 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  126330 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              22049681
+   IOTLB hits:                      22049671
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            44100.3 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 1.03688e+06
+Total Power Static: 10000
+
+Total Power Dynamic: 113736
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 9ms 163us
+   Simulation Time (Total):         0h 2m 33s 280ms
+   Simulation Time (Active):        0h 1m 0s 40ms
+        Queue Processing Time:      0h 1m 0s 33ms
+             Scheduling Time:       0h 0m 55s 381ms
+             Computation Time:      0h 0m 0s 638ms
+   System Clock:                    0.1GHz
+   Runtime:                         152859 cycles
+   Runtime:                         1528.59 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  152858 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              22172457
+   IOTLB hits:                      22172447
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            44345.9 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 5.99748e+06
+Total Power Static: 34660
+
+Total Power Dynamic: 342746
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 137ms 806us
+   Simulation Time (Total):         0h 2m 33s 158ms
+   Simulation Time (Active):        0h 1m 17s 415ms
+        Queue Processing Time:      0h 1m 17s 410ms
+             Scheduling Time:       0h 1m 9s 347ms
+             Computation Time:      0h 0m 2s 33ms
+   System Clock:                    0.1GHz
+   Runtime:                         153900 cycles
+   Runtime:                         1539 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  153899 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              22173601
+   IOTLB hits:                      22173591
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            44348.2 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 29995.3
+Total Power Static: 0.958569
+
+Total Power Dynamic: 4.74925
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 392us
+   Simulation Time (Total):         0h 2m 33s 737ms
+   Simulation Time (Active):        0h 0m 0s 55ms
+        Queue Processing Time:      0h 0m 0s 42ms
+             Scheduling Time:       0h 0m 0s 17ms
+             Computation Time:      0h 0m 0s 4ms
+   System Clock:                    0.1GHz
+   Runtime:                         172389 cycles
+   Runtime:                         1723.89 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  172388 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              22173603
+   IOTLB hits:                      22173593
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            44348.2 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 4844.96
+Total Power Static: 6.16866
+
+Total Power Dynamic: 24.6726
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 391us
+   Simulation Time (Total):         0h 1m 42s 323ms
+   Simulation Time (Active):        0h 0m 0s 24ms
+        Queue Processing Time:      0h 0m 0s 17ms
+             Scheduling Time:       0h 0m 0s 8ms
+             Computation Time:      0h 0m 0s 1ms
+   System Clock:                    0.1GHz
+   Runtime:                         102636 cycles
+   Runtime:                         1026.36 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  102635 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              22660814
+   IOTLB hits:                      22660804
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            45322.6 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 108340
+Total Power Static: 692.817
+
+Total Power Dynamic: 16913.1
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 764us
+   Simulation Time (Total):         0h 2m 6s 842ms
+   Simulation Time (Active):        0h 0m 7s 542ms
+        Queue Processing Time:      0h 0m 7s 535ms
+             Scheduling Time:       0h 0m 4s 338ms
+             Computation Time:      0h 0m 0s 111ms
+   System Clock:                    0.1GHz
+   Runtime:                         126331 cycles
+   Runtime:                         1263.31 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  126330 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              22774781
+   IOTLB hits:                      22774771
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            45550.5 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 1.16649e+06
+Total Power Static: 10000
+
+Total Power Dynamic: 113736
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 8ms 288us
+   Simulation Time (Total):         0h 2m 32s 887ms
+   Simulation Time (Active):        0h 1m 0s 158ms
+        Queue Processing Time:      0h 1m 0s 152ms
+             Scheduling Time:       0h 0m 55s 503ms
+             Computation Time:      0h 0m 0s 632ms
+   System Clock:                    0.1GHz
+   Runtime:                         152859 cycles
+   Runtime:                         1528.59 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  152858 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              22897557
+   IOTLB hits:                      22897547
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            45796.1 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 6.74716e+06
+Total Power Static: 34660
+
+Total Power Dynamic: 342746
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 133ms 133us
+   Simulation Time (Total):         0h 2m 32s 771ms
+   Simulation Time (Active):        0h 1m 17s 22ms
+        Queue Processing Time:      0h 1m 17s 17ms
+             Scheduling Time:       0h 1m 8s 975ms
+             Computation Time:      0h 0m 2s 20ms
+   System Clock:                    0.1GHz
+   Runtime:                         153900 cycles
+   Runtime:                         1539 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  153899 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              22898701
+   IOTLB hits:                      22898691
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            45798.4 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 33744.7
+Total Power Static: 0.958569
+
+Total Power Dynamic: 4.74925
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 262us
+   Simulation Time (Total):         0h 2m 33s 342ms
+   Simulation Time (Active):        0h 0m 0s 55ms
+        Queue Processing Time:      0h 0m 0s 42ms
+             Scheduling Time:       0h 0m 0s 17ms
+             Computation Time:      0h 0m 0s 4ms
+   System Clock:                    0.1GHz
+   Runtime:                         172389 cycles
+   Runtime:                         1723.89 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  172388 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              22898703
+   IOTLB hits:                      22898693
+   IOTLB misses (page walks):       10
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            45798.4 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 5383.29
+Total Power Static: 6.16866
+
+Total Power Dynamic: 24.6726
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 392us
+   Simulation Time (Total):         0h 1m 59s 490ms
+   Simulation Time (Active):        0h 0m 0s 27ms
+        Queue Processing Time:      0h 0m 0s 18ms
+             Scheduling Time:       0h 0m 0s 8ms
+             Computation Time:      0h 0m 0s 1ms
+   System Clock:                    0.1GHz
+   Runtime:                         121240 cycles
+   Runtime:                         1212.4 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  121239 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              23479612
+   IOTLB hits:                      23479601
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            46960.3 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 120378
+Total Power Static: 692.817
+
+Total Power Dynamic: 16913.1
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 770us
+   Simulation Time (Total):         0h 2m 27s 927ms
+   Simulation Time (Active):        0h 0m 7s 707ms
+        Queue Processing Time:      0h 0m 7s 699ms
+             Scheduling Time:       0h 0m 4s 327ms
+             Computation Time:      0h 0m 0s 114ms
+   System Clock:                    0.1GHz
+   Runtime:                         149611 cycles
+   Runtime:                         1496.11 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  149610 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              23616996
+   IOTLB hits:                      23616985
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            47235.1 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 1.29609e+06
+Total Power Static: 10000
+
+Total Power Dynamic: 113736
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 8ms 783us
+   Simulation Time (Total):         0h 2m 57s 843ms
+   Simulation Time (Active):        0h 1m 0s 440ms
+        Queue Processing Time:      0h 1m 0s 433ms
+             Scheduling Time:       0h 0m 55s 411ms
+             Computation Time:      0h 0m 0s 637ms
+   System Clock:                    0.1GHz
+   Runtime:                         180819 cycles
+   Runtime:                         1808.19 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  180818 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              23763228
+   IOTLB hits:                      23763217
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            47527.5 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 7.49685e+06
+Total Power Static: 46184.6
+
+Total Power Dynamic: 456743
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 133ms 186us
+   Simulation Time (Total):         0h 2m 57s 737ms
+   Simulation Time (Active):        0h 1m 39s 772ms
+        Queue Processing Time:      0h 1m 39s 766ms
+             Scheduling Time:       0h 1m 29s 338ms
+             Computation Time:      0h 0m 2s 715ms
+   System Clock:                    0.1GHz
+   Runtime:                         182913 cycles
+   Runtime:                         1829.13 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  182912 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              23764466
+   IOTLB hits:                      23764455
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            47530 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 37494.1
+Total Power Static: 0.958569
+
+Total Power Dynamic: 4.74925
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 281us
+   Simulation Time (Total):         0h 2m 58s 314ms
+   Simulation Time (Active):        0h 0m 0s 60ms
+        Queue Processing Time:      0h 0m 0s 44ms
+             Scheduling Time:       0h 0m 0s 18ms
+             Computation Time:      0h 0m 0s 4ms
+   System Clock:                    0.1GHz
+   Runtime:                         201401 cycles
+   Runtime:                         2014.01 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  201400 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              23764468
+   IOTLB hits:                      23764457
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            47530 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 5921.62
+Total Power Static: 5.48299
+
+Total Power Dynamic: 16.4484
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 385us
+   Simulation Time (Total):         0h 2m 17s 966ms
+   Simulation Time (Active):        0h 0m 0s 30ms
+        Queue Processing Time:      0h 0m 0s 20ms
+             Scheduling Time:       0h 0m 0s 9ms
+             Computation Time:      0h 0m 0s 0ms
+   System Clock:                    0.1GHz
+   Runtime:                         136683 cycles
+   Runtime:                         1366.83 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  136682 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              24417616
+   IOTLB hits:                      24417605
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            48836.3 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 132416
+Total Power Static: 918.962
+
+Total Power Dynamic: 22508.7
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 754us
+   Simulation Time (Total):         0h 2m 48s 819ms
+   Simulation Time (Active):        0h 0m 10s 435ms
+        Queue Processing Time:      0h 0m 10s 428ms
+             Scheduling Time:       0h 0m 5s 852ms
+             Computation Time:      0h 0m 0s 152ms
+   System Clock:                    0.1GHz
+   Runtime:                         166317 cycles
+   Runtime:                         1663.17 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  166316 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              24562479
+   IOTLB hits:                      24562468
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            49126 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 1.4257e+06
+Total Power Static: 13333.2
+
+Total Power Dynamic: 151645
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 8ms 683us
+   Simulation Time (Total):         0h 3m 23s 110ms
+   Simulation Time (Active):        0h 1m 20s 862ms
+        Queue Processing Time:      0h 1m 20s 853ms
+             Scheduling Time:       0h 1m 14s 505ms
+             Computation Time:      0h 0m 0s 854ms
+   System Clock:                    0.1GHz
+   Runtime:                         201299 cycles
+   Runtime:                         2012.99 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  201298 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              24723792
+   IOTLB hits:                      24723781
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            49448.7 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 8.24653e+06
+Total Power Static: 46184.6
+
+Total Power Dynamic: 456743
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 133ms 714us
+   Simulation Time (Total):         0h 3m 22s 982ms
+   Simulation Time (Active):        0h 1m 40s 901ms
+        Queue Processing Time:      0h 1m 40s 894ms
+             Scheduling Time:       0h 1m 30s 8ms
+             Computation Time:      0h 0m 2s 726ms
+   System Clock:                    0.1GHz
+   Runtime:                         201988 cycles
+   Runtime:                         2019.88 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  201987 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              24724553
+   IOTLB hits:                      24724542
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            49450.2 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 41243.6
+Total Power Static: 0.959791
+
+Total Power Dynamic: 4.75526
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 367us
+   Simulation Time (Total):         0h 3m 23s 539ms
+   Simulation Time (Active):        0h 0m 0s 70ms
+        Queue Processing Time:      0h 0m 0s 53ms
+             Scheduling Time:       0h 0m 0s 21ms
+             Computation Time:      0h 0m 0s 5ms
+   System Clock:                    0.1GHz
+   Runtime:                         220497 cycles
+   Runtime:                         2204.97 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  220496 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              24724555
+   IOTLB hits:                      24724544
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            49450.2 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 6459.95
+Total Power Static: 8.22567
+
+Total Power Dynamic: 32.8969
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 376us
+   Simulation Time (Total):         0h 2m 18s 579ms
+   Simulation Time (Active):        0h 0m 0s 34ms
+        Queue Processing Time:      0h 0m 0s 24ms
+             Scheduling Time:       0h 0m 0s 11ms
+             Computation Time:      0h 0m 0s 1ms
+   System Clock:                    0.1GHz
+   Runtime:                         137027 cycles
+   Runtime:                         1370.27 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  137026 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              25378877
+   IOTLB hits:                      25378866
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            50758.8 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 144454
+Total Power Static: 918.962
+
+Total Power Dynamic: 22508.7
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 750us
+   Simulation Time (Total):         0h 2m 48s 792ms
+   Simulation Time (Active):        0h 0m 10s 386ms
+        Queue Processing Time:      0h 0m 10s 378ms
+             Scheduling Time:       0h 0m 5s 780ms
+             Computation Time:      0h 0m 0s 151ms
+   System Clock:                    0.1GHz
+   Runtime:                         166661 cycles
+   Runtime:                         1666.61 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  166660 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              25523740
+   IOTLB hits:                      25523729
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            51048.6 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 1.55531e+06
+Total Power Static: 13333.2
+
+Total Power Dynamic: 151645
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 8ms 677us
+   Simulation Time (Total):         0h 3m 22s 671ms
+   Simulation Time (Active):        0h 1m 20s 734ms
+        Queue Processing Time:      0h 1m 20s 725ms
+             Scheduling Time:       0h 1m 14s 387ms
+             Computation Time:      0h 0m 0s 851ms
+   System Clock:                    0.1GHz
+   Runtime:                         201643 cycles
+   Runtime:                         2016.43 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  201642 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              25685053
+   IOTLB hits:                      25685042
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            51371.2 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 8.99621e+06
+Total Power Static: 46184.6
+
+Total Power Dynamic: 456743
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 136ms 631us
+   Simulation Time (Total):         0h 3m 22s 540ms
+   Simulation Time (Active):        0h 1m 40s 591ms
+        Queue Processing Time:      0h 1m 40s 584ms
+             Scheduling Time:       0h 1m 29s 762ms
+             Computation Time:      0h 0m 2s 697ms
+   System Clock:                    0.1GHz
+   Runtime:                         202332 cycles
+   Runtime:                         2023.32 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  202331 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              25685814
+   IOTLB hits:                      25685803
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            51372.7 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 44993
+Total Power Static: 0.959791
+
+Total Power Dynamic: 4.75526
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 286us
+   Simulation Time (Total):         0h 3m 23s 112ms
+   Simulation Time (Active):        0h 0m 0s 70ms
+        Queue Processing Time:      0h 0m 0s 52ms
+             Scheduling Time:       0h 0m 0s 21ms
+             Computation Time:      0h 0m 0s 5ms
+   System Clock:                    0.1GHz
+   Runtime:                         220842 cycles
+   Runtime:                         2208.42 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  220841 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              25685816
+   IOTLB hits:                      25685805
+   IOTLB misses (page walks):       11
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            51372.7 us
+   Avg latency per access:          0.00200004 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 6998.28
+Total Power Static: 8.22567
+
+Total Power Dynamic: 32.8969
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 307us
+   Simulation Time (Total):         0h 1m 34s 460ms
+   Simulation Time (Active):        0h 0m 0s 26ms
+        Queue Processing Time:      0h 0m 0s 19ms
+             Scheduling Time:       0h 0m 0s 9ms
+             Computation Time:      0h 0m 0s 1ms
+   System Clock:                    0.1GHz
+   Runtime:                         89782 cycles
+   Runtime:                         897.82 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  89781 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              26112919
+   IOTLB hits:                      26112906
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            52227.1 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 156491
+Total Power Static: 918.962
+
+Total Power Dynamic: 22508.7
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 752us
+   Simulation Time (Total):         0h 2m 2s 182ms
+   Simulation Time (Active):        0h 0m 9s 558ms
+        Queue Processing Time:      0h 0m 9s 551ms
+             Scheduling Time:       0h 0m 5s 450ms
+             Computation Time:      0h 0m 0s 148ms
+   System Clock:                    0.1GHz
+   Runtime:                         116045 cycles
+   Runtime:                         1160.45 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  116044 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              26243283
+   IOTLB hits:                      26243270
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            52487.8 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 9.7459e+06
+Total Power Static: 20189.6
+
+Total Power Dynamic: 199684
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 132ms 484us
+   Simulation Time (Total):         0h 2m 5s 213ms
+   Simulation Time (Active):        0h 0m 43s 185ms
+        Queue Processing Time:      0h 0m 43s 181ms
+             Scheduling Time:       0h 0m 38s 577ms
+             Computation Time:      0h 0m 1s 194ms
+   System Clock:                    0.1GHz
+   Runtime:                         118927 cycles
+   Runtime:                         1189.27 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  118926 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              26255940
+   IOTLB hits:                      26255927
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            52513.2 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 1.68492e+06
+Total Power Static: 13321
+
+Total Power Dynamic: 151645
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 8ms 614us
+   Simulation Time (Total):         0h 2m 18s 96ms
+   Simulation Time (Active):        0h 1m 18s 678ms
+        Queue Processing Time:      0h 1m 18s 669ms
+             Scheduling Time:       0h 1m 13s 40ms
+             Computation Time:      0h 0m 0s 838ms
+   System Clock:                    0.1GHz
+   Runtime:                         130483 cycles
+   Runtime:                         1304.83 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  130482 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              26304556
+   IOTLB hits:                      26304543
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            52610.4 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 48742.4
+Total Power Static: 0.959791
+
+Total Power Dynamic: 4.75526
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 157us
+   Simulation Time (Total):         0h 2m 18s 508ms
+   Simulation Time (Active):        0h 0m 0s 52ms
+        Queue Processing Time:      0h 0m 0s 40ms
+             Scheduling Time:       0h 0m 0s 16ms
+             Computation Time:      0h 0m 0s 4ms
+   System Clock:                    0.1GHz
+   Runtime:                         148990 cycles
+   Runtime:                         1489.9 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  148989 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              26304559
+   IOTLB hits:                      26304546
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            52610.4 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 7536.61
+Total Power Static: 2.39747
+
+Total Power Dynamic: 7.19619
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 377us
+   Simulation Time (Total):         0h 0m 23s 728ms
+   Simulation Time (Active):        0h 0m 0s 7ms
+        Queue Processing Time:      0h 0m 0s 5ms
+             Scheduling Time:       0h 0m 0s 2ms
+             Computation Time:      0h 0m 0s 0ms
+   System Clock:                    0.1GHz
+   Runtime:                         29544 cycles
+   Runtime:                         295.44 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  29543 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              26434823
+   IOTLB hits:                      26434810
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            52870.9 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 168529
+Total Power Static: 399.351
+
+Total Power Dynamic: 9823.92
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 751us
+   Simulation Time (Total):         0h 0m 49s 864ms
+   Simulation Time (Active):        0h 0m 2s 956ms
+        Queue Processing Time:      0h 0m 2s 952ms
+             Scheduling Time:       0h 0m 1s 698ms
+             Computation Time:      0h 0m 0s 53ms
+   System Clock:                    0.1GHz
+   Runtime:                         55654 cycles
+   Runtime:                         556.54 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  55653 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              26562448
+   IOTLB hits:                      26562435
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            53126.2 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 1.04956e+07
+Total Power Static: 20189.6
+
+Total Power Dynamic: 199684
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 129ms 20us
+   Simulation Time (Total):         0h 1m 22s 97ms
+   Simulation Time (Active):        0h 0m 40s 311ms
+        Queue Processing Time:      0h 0m 40s 307ms
+             Scheduling Time:       0h 0m 35s 972ms
+             Computation Time:      0h 0m 1s 127ms
+   System Clock:                    0.1GHz
+   Runtime:                         87370 cycles
+   Runtime:                         873.7 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  87369 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              26711566
+   IOTLB hits:                      26711553
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            53424.4 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 1.81453e+06
+Total Power Static: 5467.5
+
+Total Power Dynamic: 63163.1
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 8ms 545us
+   Simulation Time (Total):         0h 1m 22s 405ms
+   Simulation Time (Active):        0h 0m 34s 645ms
+        Queue Processing Time:      0h 0m 34s 640ms
+             Scheduling Time:       0h 0m 31s 644ms
+             Computation Time:      0h 0m 0s 340ms
+   System Clock:                    0.1GHz
+   Runtime:                         88467 cycles
+   Runtime:                         884.67 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  88466 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              26715745
+   IOTLB hits:                      26715732
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            53432.8 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 52491.8
+Total Power Static: 0.961624
+
+Total Power Dynamic: 4.76427
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 17ms 943us
+   Simulation Time (Total):         0h 1m 22s 783ms
+   Simulation Time (Active):        0h 0m 0s 33ms
+        Queue Processing Time:      0h 0m 0s 25ms
+             Scheduling Time:       0h 0m 0s 10ms
+             Computation Time:      0h 0m 0s 2ms
+   System Clock:                    0.1GHz
+   Runtime:                         107007 cycles
+   Runtime:                         1070.07 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  107006 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              26715748
+   IOTLB hits:                      26715735
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            53432.8 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_residual.llvm_interface
+Total Area: 8074.94
+Total Power Static: 3.59739
+
+Total Power Dynamic: 14.3924
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 377us
+   Simulation Time (Total):         0h 0m 24s 453ms
+   Simulation Time (Active):        0h 0m 0s 8ms
+        Queue Processing Time:      0h 0m 0s 6ms
+             Scheduling Time:       0h 0m 0s 3ms
+             Computation Time:      0h 0m 0s 0ms
+   System Clock:                    0.1GHz
+   Runtime:                         30349 cycles
+   Runtime:                         303.49 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  30348 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              26846591
+   IOTLB hits:                      26846578
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            53694.5 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_pwconv0.llvm_interface
+Total Area: 180567
+Total Power Static: 399.351
+
+Total Power Dynamic: 9823.92
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 753us
+   Simulation Time (Total):         0h 0m 51s 564ms
+   Simulation Time (Active):        0h 0m 3s 73ms
+        Queue Processing Time:      0h 0m 3s 68ms
+             Scheduling Time:       0h 0m 1s 781ms
+             Computation Time:      0h 0m 0s 55ms
+   System Clock:                    0.1GHz
+   Runtime:                         56454 cycles
+   Runtime:                         564.54 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  56453 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              26974217
+   IOTLB hits:                      26974204
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            53949.7 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_pwconv1.llvm_interface
+Total Area: 1.12453e+07
+Total Power Static: 20189.6
+
+Total Power Dynamic: 199684
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 130ms 815us
+   Simulation Time (Total):         0h 1m 23s 549ms
+   Simulation Time (Active):        0h 0m 41s 237ms
+        Queue Processing Time:      0h 0m 41s 233ms
+             Scheduling Time:       0h 0m 36s 909ms
+             Computation Time:      0h 0m 1s 129ms
+   System Clock:                    0.1GHz
+   Runtime:                         88170 cycles
+   Runtime:                         881.7 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  88169 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              27123335
+   IOTLB hits:                      27123322
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            54247.9 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_dwconv.llvm_interface
+Total Area: 1.94414e+06
+Total Power Static: 5467.5
+
+Total Power Dynamic: 63163.1
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 8ms 581us
+   Simulation Time (Total):         0h 1m 23s 863ms
+   Simulation Time (Active):        0h 0m 35s 27ms
+        Queue Processing Time:      0h 0m 35s 22ms
+             Scheduling Time:       0h 0m 32s 26ms
+             Computation Time:      0h 0m 0s 341ms
+   System Clock:                    0.1GHz
+   Runtime:                         89267 cycles
+   Runtime:                         892.67 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  89266 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              27127514
+   IOTLB hits:                      27127501
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            54256.3 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 56241.2
+Total Power Static: 0.960402
+
+Total Power Dynamic: 4.75826
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 16ms 609us
+   Simulation Time (Total):         0h 1m 24s 245ms
+   Simulation Time (Active):        0h 0m 0s 34ms
+        Queue Processing Time:      0h 0m 0s 25ms
+             Scheduling Time:       0h 0m 0s 10ms
+             Computation Time:      0h 0m 0s 2ms
+   System Clock:                    0.1GHz
+   Runtime:                         107786 cycles
+   Runtime:                         1077.86 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  107785 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.body.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              27127517
+   IOTLB hits:                      27127504
+   IOTLB misses (page walks):       13
+   IOTLB hit rate:                  100%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            54256.3 us
+   Avg latency per access:          0.00200005 us
+
+********************************************************************************
+system.tail.tail_pwconv.llvm_interface
+Total Area: 11678.9
+Total Power Static: 1439.58
+
+Total Power Dynamic: 37038.2
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 704us
+   Simulation Time (Total):         0h 0m 16s 568ms
+   Simulation Time (Active):        0h 0m 6s 921ms
+        Queue Processing Time:      0h 0m 6s 915ms
+             Scheduling Time:       0h 0m 2s 663ms
+             Computation Time:      0h 0m 0s 167ms
+   System Clock:                    0.1GHz
+   Runtime:                         35490 cycles
+   Runtime:                         354.9 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  35489 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.tail.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              138236
+   IOTLB hits:                      138229
+   IOTLB misses (page walks):       7
+   IOTLB hit rate:                  99.9949%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            277.158 us
+   Avg latency per access:          0.00200496 us
+
+********************************************************************************
+system.tail.tail_reshape.llvm_interface
+Total Area: 10278.6
+Total Power Static: 692.426
+
+Total Power Dynamic: 17462.9
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 363us
+   Simulation Time (Total):         0h 0m 16s 531ms
+   Simulation Time (Active):        0h 0m 7s 176ms
+        Queue Processing Time:      0h 0m 7s 171ms
+             Scheduling Time:       0h 0m 3s 908ms
+             Computation Time:      0h 0m 0s 27ms
+   System Clock:                    0.1GHz
+   Runtime:                         35467 cycles
+   Runtime:                         354.67 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  35466 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.tail.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              138252
+   IOTLB hits:                      138245
+   IOTLB misses (page walks):       7
+   IOTLB hit rate:                  99.9949%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            277.19 us
+   Avg latency per access:          0.00200496 us
+
+********************************************************************************
+system.tail.tail_avgpool.llvm_interface
+Total Area: 5554.55
+Total Power Static: 178.864
+
+Total Power Dynamic: 2910.95
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 0ms 358us
+   Simulation Time (Total):         0h 0m 21s 254ms
+   Simulation Time (Active):        0h 0m 6s 89ms
+        Queue Processing Time:      0h 0m 6s 83ms
+             Scheduling Time:       0h 0m 3s 859ms
+             Computation Time:      0h 0m 0s 38ms
+   System Clock:                    0.1GHz
+   Runtime:                         54664 cycles
+   Runtime:                         546.64 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  54663 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.tail.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              158526
+   IOTLB hits:                      158519
+   IOTLB misses (page walks):       7
+   IOTLB hit rate:                  99.9956%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            317.738 us
+   Avg latency per access:          0.00200433 us
+
+********************************************************************************
+system.tail.tail_top.llvm_interface
+Total Area: 1300.17
+Total Power Static: 17.4136
+
+Total Power Dynamic: 85.5861
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 10ms 540us
+   Simulation Time (Total):         0h 0m 21s 917ms
+   Simulation Time (Active):        0h 0m 0s 110ms
+        Queue Processing Time:      0h 0m 0s 103ms
+             Scheduling Time:       0h 0m 0s 50ms
+             Computation Time:      0h 0m 0s 15ms
+   System Clock:                    0.1GHz
+   Runtime:                         94694 cycles
+   Runtime:                         946.94 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  94693 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.tail.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              158529
+   IOTLB hits:                      158522
+   IOTLB misses (page walks):       7
+   IOTLB hit rate:                  99.9956%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            317.744 us
+   Avg latency per access:          0.00200433 us
+
+********************************************************************************
+system.classifier.classifier_linear.llvm_interface
+Total Area: 1.83064e+06
+Total Power Static: 149974
+
+Total Power Dynamic: 2.0398e+06
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 561ms 887us
+   Simulation Time (Total):         0h 20m 39s 673ms
+   Simulation Time (Active):        0h 17m 24s 32ms
+        Queue Processing Time:      0h 17m 24s 21ms
+             Scheduling Time:       0h 17m 0s 422ms
+             Computation Time:      0h 0m 6s 836ms
+   System Clock:                    0.1GHz
+   Runtime:                         1036868 cycles
+   Runtime:                         10368.7 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  1036867 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.classifier.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              5168385
+   IOTLB hits:                      5168069
+   IOTLB misses (page walks):       316
+   IOTLB hit rate:                  99.9939%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            10367.7 us
+   Avg latency per access:          0.00200599 us
+
+********************************************************************************
+system.classifier.classifier_top.llvm_interface
+Total Area: 1350.54
+Total Power Static: 23.4494
+
+Total Power Dynamic: 115.247
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 9ms 385us
+   Simulation Time (Total):         0h 20m 45s 360ms
+   Simulation Time (Active):        0h 0m 0s 307ms
+        Queue Processing Time:      0h 0m 0s 215ms
+             Scheduling Time:       0h 0m 0s 83ms
+             Computation Time:      0h 0m 0s 26ms
+   System Clock:                    0.1GHz
+   Runtime:                         1374468 cycles
+   Runtime:                         13744.7 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  1374467 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.classifier.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              5168387
+   IOTLB hits:                      5168071
+   IOTLB misses (page walks):       316
+   IOTLB hit rate:                  99.9939%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            10367.7 us
+   Avg latency per access:          0.00200599 us
+
+Exiting @ tick 101630098000 because m5_exit instruction encountered

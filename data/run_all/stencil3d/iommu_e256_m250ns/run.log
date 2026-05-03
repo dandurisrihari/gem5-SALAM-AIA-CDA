@@ -1,0 +1,152 @@
+build/ARM/base/statistics.hh:277: warn: One of the stats is a legacy stat. Legacy stat is a stat that does not belong to any statistics::Group. Legacy stat is deprecated.
+Global frequency set at 1000000000000 ticks per second
+build/ARM/mem/mem_interface.cc:793: warn: DRAM device capacity (16384 Mbytes) does not match the address range assigned (4096 Mbytes)
+build/ARM/sim/kernel_workload.cc:46: info: kernel located at: /gem5-SALAM/benchmarks/sys_validation/stencil3d/sw/main.elf
+build/ARM/arch/arm/system.cc:95: warn: Highest ARM exception-level set to AArch64 but the workload is for AArch32. Assuming you wanted these to match.
+build/ARM/base/vnc/vncserver.cc:163: warn: Sockets disabled, not accepting vnc client connections
+build/ARM/dev/serial/terminal.cc:170: warn: Sockets disabled, not accepting terminal connections
+build/ARM/base/remote_gdb.cc:377: warn: Sockets disabled, not accepting gdb connections
+build/ARM/mem/coherent_xbar.cc:140: warn: CoherentXBar system.stencil3d_clstr.coherency_bus has no snooping ports attached!
+build/ARM/dev/arm/energy_ctrl.cc:252: warn: Existing EnergyCtrl, but no enabled DVFSHandler found.
+gem5 Simulator System.  http://gem5.org
+gem5 is copyrighted software; use the --copyright option for details.
+
+gem5 version 21.1.0.1
+gem5 compiled May  2 2026 19:55:51
+gem5 started May  3 2026 00:10:53
+gem5 executing on 3b7fb6fd27b8, pid 1113803
+command line: /gem5-SALAM/build/ARM/gem5.opt --listener-mode=off --outdir=/gem5-SALAM/BM_ARM_OUT/run_all/stencil3d/iommu_e256_m250ns /gem5-SALAM/configs/SALAM/fs_stencil3d.py --mem-size=4GB --mem-type=DDR4_2400_8x8 --machine-type=VExpress_GEM5_V1 --dtb-file=none --bare-metal --cpu-type=DerivO3CPU --caches --l2cache --kernel=/gem5-SALAM/benchmarks/sys_validation/stencil3d/sw/main.elf --disk-image=/gem5-SALAM/benchmarks/common/fake.iso --accpath=/gem5-SALAM/benchmarks/sys_validation/stencil3d --accbench=stencil3d --enable-iommu --iotlb-entries 256 --iotlb-hit-latency 2000 --iotlb-miss-latency 250000
+
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=250000
+[HWAccConfig] IOMMU ENABLED: entries=256, hit_lat=2000, miss_lat=250000
+**** REAL SIMULATION ****
+warn: iobus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: bridge.master is deprecated. `master` is now called `mem_side_port`
+warn: membus.master is deprecated. `master` is now called `mem_side_ports`
+warn: bridge.slave is deprecated. `slave` is now called `cpu_side_port`
+warn: membus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.master is deprecated. `master` is now called `mem_side_ports`
+warn: membus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: membus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: coherency_bus.master is deprecated. `master` is now called `mem_side_ports`
+warn: No dot file generated. Please install pydot to generate the dot file and pdf.
+build/ARM/sim/simulate.cc:107: info: Entering event queue @ 0.  Starting simulation...
+********************************************************************************
+system.stencil3d_clstr.stencil3d.llvm_interface
+Total Area: 189683
+Total Power Static: 1924.05
+
+Total Power Dynamic: 43712.4
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 23ms 589us
+   Simulation Time (Total):         0h 0m 5s 212ms
+   Simulation Time (Active):        0h 0m 2s 569ms
+        Queue Processing Time:      0h 0m 2s 562ms
+             Scheduling Time:       0h 0m 1s 419ms
+             Computation Time:      0h 0m 0s 232ms
+   System Clock:                    0.1GHz
+   Runtime:                         53500 cycles
+   Runtime:                         535 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  53499 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.stencil3d_clstr.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              137989
+   IOTLB hits:                      137956
+   IOTLB misses (page walks):       33
+   IOTLB hit rate:                  99.9761%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            284.162 us
+   Avg latency per access:          0.00205931 us
+
+********************************************************************************
+system.stencil3d_clstr.top.llvm_interface
+Total Area: 201.48
+Total Power Static: 2.95314
+
+Total Power Dynamic: 14.5122
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 1ms 115us
+   Simulation Time (Total):         0h 0m 5s 712ms
+   Simulation Time (Active):        0h 0m 0s 52ms
+        Queue Processing Time:      0h 0m 0s 45ms
+             Scheduling Time:       0h 0m 0s 20ms
+             Computation Time:      0h 0m 0s 3ms
+   System Clock:                    0.1GHz
+   Runtime:                         68637 cycles
+   Runtime:                         686.37 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  68636 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.stencil3d_clstr.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              138413
+   IOTLB hits:                      138380
+   IOTLB misses (page walks):       33
+   IOTLB hit rate:                  99.9762%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            285.01 us
+   Avg latency per access:          0.00205913 us
+
+Exiting @ tick 13945189000 because m5_exit instruction encountered

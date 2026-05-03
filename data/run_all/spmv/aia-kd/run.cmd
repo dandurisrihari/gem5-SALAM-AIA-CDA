@@ -1,0 +1,2 @@
+label: spmv/aia-kd
+cmd:   /gem5-SALAM/build/ARM/gem5.opt --listener-mode=off --outdir=/gem5-SALAM/BM_ARM_OUT/run_all/spmv/aia-kd /gem5-SALAM/configs/SALAM/fs_spmv.py --mem-size=4GB --mem-type=DDR4_2400_8x8 --machine-type=VExpress_GEM5_V1 --dtb-file=none --bare-metal --cpu-type=DerivO3CPU --caches --l2cache --kernel=/gem5-SALAM/benchmarks/sys_validation/spmv/sw/main.elf --disk-image=/gem5-SALAM/benchmarks/common/fake.iso --accpath=/gem5-SALAM/benchmarks/sys_validation/spmv --accbench=spmv --enable-kernel-validation --kernel-validation-latency 8367000

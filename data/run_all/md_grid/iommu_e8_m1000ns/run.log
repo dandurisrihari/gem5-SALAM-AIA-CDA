@@ -1,0 +1,152 @@
+build/ARM/base/statistics.hh:277: warn: One of the stats is a legacy stat. Legacy stat is a stat that does not belong to any statistics::Group. Legacy stat is deprecated.
+Global frequency set at 1000000000000 ticks per second
+build/ARM/mem/mem_interface.cc:793: warn: DRAM device capacity (16384 Mbytes) does not match the address range assigned (4096 Mbytes)
+build/ARM/sim/kernel_workload.cc:46: info: kernel located at: /gem5-SALAM/benchmarks/sys_validation/md_grid/sw/main.elf
+build/ARM/arch/arm/system.cc:95: warn: Highest ARM exception-level set to AArch64 but the workload is for AArch32. Assuming you wanted these to match.
+build/ARM/base/vnc/vncserver.cc:163: warn: Sockets disabled, not accepting vnc client connections
+build/ARM/dev/serial/terminal.cc:170: warn: Sockets disabled, not accepting terminal connections
+build/ARM/base/remote_gdb.cc:377: warn: Sockets disabled, not accepting gdb connections
+build/ARM/mem/coherent_xbar.cc:140: warn: CoherentXBar system.md_grid_clstr.coherency_bus has no snooping ports attached!
+build/ARM/dev/arm/energy_ctrl.cc:252: warn: Existing EnergyCtrl, but no enabled DVFSHandler found.
+gem5 Simulator System.  http://gem5.org
+gem5 is copyrighted software; use the --copyright option for details.
+
+gem5 version 21.1.0.1
+gem5 compiled May  2 2026 19:55:51
+gem5 started May  3 2026 00:10:50
+gem5 executing on 3b7fb6fd27b8, pid 1113635
+command line: /gem5-SALAM/build/ARM/gem5.opt --listener-mode=off --outdir=/gem5-SALAM/BM_ARM_OUT/run_all/md_grid/iommu_e8_m1000ns /gem5-SALAM/configs/SALAM/fs_md_grid.py --mem-size=4GB --mem-type=DDR4_2400_8x8 --machine-type=VExpress_GEM5_V1 --dtb-file=none --bare-metal --cpu-type=DerivO3CPU --caches --l2cache --kernel=/gem5-SALAM/benchmarks/sys_validation/md_grid/sw/main.elf --disk-image=/gem5-SALAM/benchmarks/common/fake.iso --accpath=/gem5-SALAM/benchmarks/sys_validation/md_grid --accbench=md_grid --enable-iommu --iotlb-entries 8 --iotlb-hit-latency 2000 --iotlb-miss-latency 1000000
+
+[HWAccConfig] IOMMU ENABLED: entries=8, hit_lat=2000, miss_lat=1000000
+[HWAccConfig] IOMMU ENABLED: entries=8, hit_lat=2000, miss_lat=1000000
+**** REAL SIMULATION ****
+warn: iobus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: bridge.master is deprecated. `master` is now called `mem_side_port`
+warn: membus.master is deprecated. `master` is now called `mem_side_ports`
+warn: bridge.slave is deprecated. `slave` is now called `cpu_side_port`
+warn: membus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.master is deprecated. `master` is now called `mem_side_ports`
+warn: membus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: tol2bus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: membus.slave is deprecated. `slave` is now called `cpu_side_ports`
+warn: coherency_bus.master is deprecated. `master` is now called `mem_side_ports`
+warn: No dot file generated. Please install pydot to generate the dot file and pdf.
+build/ARM/sim/simulate.cc:107: info: Entering event queue @ 0.  Starting simulation...
+********************************************************************************
+system.md_grid_clstr.md_grid.llvm_interface
+Total Area: 4718.41
+Total Power Static: 322.876
+
+Total Power Dynamic: 3862.24
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 9ms 279us
+   Simulation Time (Total):         0h 0m 29s 863ms
+   Simulation Time (Active):        0h 0m 5s 357ms
+        Queue Processing Time:      0h 0m 5s 257ms
+             Scheduling Time:       0h 0m 3s 53ms
+             Computation Time:      0h 0m 0s 472ms
+   System Clock:                    0.1GHz
+   Runtime:                         474137 cycles
+   Runtime:                         4741.37 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  474136 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.md_grid_clstr.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              119184
+   IOTLB hits:                      119176
+   IOTLB misses (page walks):       8
+   IOTLB hit rate:                  99.9933%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            246.352 us
+   Avg latency per access:          0.00206699 us
+
+********************************************************************************
+system.md_grid_clstr.top.llvm_interface
+Total Area: 201.48
+Total Power Static: 20.7979
+
+Total Power Dynamic: 102.204
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 260us
+   Simulation Time (Total):         0h 0m 30s 45ms
+   Simulation Time (Active):        0h 0m 0s 761ms
+        Queue Processing Time:      0h 0m 0s 687ms
+             Scheduling Time:       0h 0m 0s 292ms
+             Computation Time:      0h 0m 0s 42ms
+   System Clock:                    0.1GHz
+   Runtime:                         477307 cycles
+   Runtime:                         4773.07 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  477306 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       NO
+   Configured latency per check:    0 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 0
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  0
+   Coalesced waits (partial lat):   0
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      0 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         0 us
+   Avg latency per validation:      0 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 0 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     0
+   Unique pages validated (total):  0
+   Cache hit rate:                  0%
+
+   ========= IOMMU Stats =====================
+   IOMMU enabled:                   YES
+   IOMMU SimObject:                 system.md_grid_clstr.iommu
+
+   --- Access Breakdown ---
+   Total IOMMU checks:              119285
+   IOTLB hits:                      119277
+   IOTLB misses (page walks):       8
+   IOTLB hit rate:                  99.9933%
+
+   --- Latency Breakdown ---
+   TOTAL IOMMU OVERHEAD:            246.554 us
+   Avg latency per access:          0.00206693 us
+
+Exiting @ tick 5291768000 because m5_exit instruction encountered
