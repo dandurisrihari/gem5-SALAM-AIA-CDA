@@ -31,6 +31,12 @@ NoncoherentDma::NoncoherentDma(const NoncoherentDmaParams &p)
     DST = (uint64_t *)(mmreg+9);
     LEN = (int *)(mmreg+17);
     running = false;
+
+    // Wire the cluster-shared SMMU into the off-cluster `dma` port
+    // (DmaDevice::dmaPort goes to coherency_bus → DRAM). The
+    // on-cluster `accPort` (cluster_dma → local xbar) is NOT
+    // translated -- it never leaves the cluster.
+    if (p.iommu) dmaPort.setIommu(p.iommu);
 }
 
 AddrRangeList

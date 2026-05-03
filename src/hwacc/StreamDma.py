@@ -27,3 +27,9 @@ class StreamDma(DmaDevice) :
     wr_int = Param.UInt32(211, "Interrupt for write buffer")
 
     bandwidth = Param.MemoryBandwidth('12.6GB/s', "Combined read and write bandwidth")
+
+    # Shared device-wide IOMMU SimObject (one per AccCluster). When
+    # set, the off-cluster `dma` port (coherency_bus -> DRAM) defers
+    # each response through iommu->translate(). NULL == disabled.
+    iommu = Param.AcceleratorIommu(NULL,
+        "Cluster-shared accelerator IOMMU (NULL when disabled)")

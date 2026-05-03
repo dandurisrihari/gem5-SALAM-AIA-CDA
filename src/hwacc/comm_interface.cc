@@ -74,15 +74,17 @@ CommInterface::tryIommuDelay(PacketPtr pkt) {
     //
     // All IOMMU bookkeeping (IOTLB cache, chip-wide port deadline,
     // stats) lives in the AcceleratorIommu SimObject pointed to by
-    // `iommu`. The SimObject is shared by every CommInterface in
-    // this AccCluster, so cross-CU translations queue serially
+    // `iommu`. The SimObject is shared by every CommInterface AND
+    // every off-cluster DMA engine (NoncoherentDma / StreamDma) in
+    // this AccCluster, so cross-master translations queue serially
     // behind one chip-wide port -- matching a centralized SMMU
     // edge-IoT design with one TBU/TCU.
     //
-    // Called from every recvTimingResp path because in real hardware
-    // every transaction crossing the accelerator's master interface
-    // is translated by the SMMU (we do NOT distinguish on-chip vs
-    // off-chip destinations in this model).
+    // Called only on the cluster's egress path to the system bus:
+    // MemSidePort with Role::Global (the coherency_bus / `acp`
+    // port). Local-xbar, stream-FIFO, SPM and RegPort traffic all
+    // stay on-cluster (or are host-PIO inbound) and so bypass the
+    // SMMU, matching real Arm SMMUv2/SMMUv3 placement.
     if (!iommu || !iommu->enabled()) return false;
 
     uint64_t page = pkt->req->getPaddr() & ~0xFFFULL;
@@ -104,7 +106,10 @@ CommInterface::tryIommuDelay(PacketPtr pkt) {
 
 bool
 CommInterface::MemSidePort::recvTimingResp(PacketPtr pkt) {
-    if (owner->tryIommuDelay(pkt)) return true;
+    // Only Global (coherency_bus / acp) egress reaches DRAM and is
+    // therefore translated. Local-xbar and stream-FIFO MemSidePorts
+    // stay inside the cluster.
+    if (role_ == Role::Global && owner->tryIommuDelay(pkt)) return true;
     owner->recvPacket(pkt);
     return true;
 }
@@ -136,7 +141,8 @@ CommInterface::MemSidePort::sendPacket(PacketPtr pkt) {
 
 bool
 CommInterface::SPMPort::recvTimingResp(PacketPtr pkt) {
-    if (owner->tryIommuDelay(pkt)) return true;
+    // SPM is on-cluster SRAM; its address never leaves the cluster
+    // master interface, so a real SMMU never sees it. No IOMMU hook.
     owner->recvPacket(pkt);
     return true;
 }
@@ -168,7 +174,9 @@ CommInterface::SPMPort::sendPacket(PacketPtr pkt) {
 
 bool
 CommInterface::RegPort::recvTimingResp(PacketPtr pkt) {
-    if (owner->tryIommuDelay(pkt)) return true;
+    // RegPort traffic targets the device's own MMIO register bank
+    // (host-CPU-issued PIO, not CU egress). Not an SMMU-translated
+    // path.
     owner->recvPacket(pkt);
     return true;
 }
@@ -961,7 +969,8 @@ CommInterface::getPort(const std::string& if_name, PortID idx) {
         }
         if (localPorts[idx] == nullptr) {
             const std::string portName = name() + ".local[" + std::to_string(idx) + "]";
-            localPorts[idx] = new MemSidePort(portName, this, idx);
+            localPorts[idx] = new MemSidePort(portName, this,
+                MemSidePort::Role::Local, idx);
         }
         return *localPorts[idx];
     } else if (if_name == "acp") {
@@ -970,7 +979,8 @@ CommInterface::getPort(const std::string& if_name, PortID idx) {
         }
         if (globalPorts[idx] == nullptr) {
             const std::string portName = name() + ".acp[" + std::to_string(idx) + "]";
-            globalPorts[idx] = new MemSidePort(portName, this, idx);
+            globalPorts[idx] = new MemSidePort(portName, this,
+                MemSidePort::Role::Global, idx);
         }
         return *globalPorts[idx];
     } else if (if_name == "stream") {
@@ -979,7 +989,8 @@ CommInterface::getPort(const std::string& if_name, PortID idx) {
         }
         if (streamPorts[idx] == nullptr) {
             const std::string portName = name() + ".stream[" + std::to_string(idx) + "]";
-            streamPorts[idx] = new MemSidePort(portName, this, idx);
+            streamPorts[idx] = new MemSidePort(portName, this,
+                MemSidePort::Role::Stream, idx);
         }
         return *streamPorts[idx];
     } else if (if_name == "spm") {

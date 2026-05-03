@@ -16,3 +16,11 @@ class NoncoherentDma(DmaDevice) :
     gic = Param.BaseGic(Parent.any, "Gic on which to trigger interrupts")
     int_num = Param.UInt32(200, "Interrupt number that connects to GIC")
     clock_period = Param.Int(10, "Clock period in ns")
+
+    # Shared device-wide IOMMU SimObject (one per AccCluster). When
+    # set, the off-cluster `dma` port (which goes to coherency_bus
+    # -> DRAM) defers each response through iommu->translate(). NULL
+    # == IOMMU disabled. The on-cluster `cluster_dma` (accPort) is
+    # never translated -- it stays inside the local xbar.
+    iommu = Param.AcceleratorIommu(NULL,
+        "Cluster-shared accelerator IOMMU (NULL when disabled)")

@@ -491,6 +491,10 @@ class StreamDMA:
             lines.append(dmaPath + "wr_int = " + str(self.wr_int))
         lines.append("clstr." + self.name +
                      ".dma = clstr.coherency_bus.cpu_side_ports")
+        # Wire cluster-shared SMMU onto the off-cluster `dma` port so
+        # DMA bursts to DRAM are translated by the same chip-wide
+        # AcceleratorIommu used by CommInterface global egress.
+        lines.append("clstr." + self.name + ".iommu = clstr.iommu")
         if self.pio_masters is not None:
             for master in self.pio_masters:
                 lines.append("clstr." + master.lower() +
@@ -542,6 +546,8 @@ class DMA:
         lines.append(dmaPath + "buffer_size = " + str(self.size))
         lines.append("clstr." + self.name +
                      ".dma = clstr.coherency_bus.cpu_side_ports")
+        # Wire cluster-shared SMMU onto the off-cluster `dma` port.
+        lines.append("clstr." + self.name + ".iommu = clstr.iommu")
         if self.pio_masters is not None:
             for master in self.pio_masters:
                 lines.append("clstr." + master.lower() +

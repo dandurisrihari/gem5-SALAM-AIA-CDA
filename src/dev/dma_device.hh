@@ -42,6 +42,7 @@
 #define __DEV_DMA_DEVICE_HH__
 
 #include <deque>
+#include <list>
 #include <memory>
 
 #include "base/addr_range_map.hh"
@@ -57,6 +58,7 @@ namespace gem5
 {
 
 class ClockedObject;
+class AcceleratorIommu;
 
 class DmaPort : public RequestPort, public Drainable
 {
@@ -177,6 +179,26 @@ class DmaPort : public RequestPort, public Drainable
 
     const int cacheLineSize;
 
+    // ----- Optional accelerator-IOMMU hook (SALAM extension) -----
+    // When non-null, every response packet on this DMA port crosses
+    // the shared chip-wide AcceleratorIommu before being delivered
+    // to its completion event. This is what models a real Arm
+    // SMMUv3 sitting on the cluster master interface translating
+    // DMA-engine egress to DRAM (the dominant traffic class on
+    // SALAM benches). Forward-declared to avoid a layering inversion
+    // between src/dev and src/hwacc; the real header is included in
+    // dma_device.cc only.
+    AcceleratorIommu *iommu = nullptr;
+    struct PendingIommuResp
+    {
+        PacketPtr pkt;
+        Tick readyTick;
+    };
+    std::list<PendingIommuResp> pendingIommuResps;
+    EventFunctionWrapper iommuRespEvent;
+    void processIommuRespQueue();
+    bool tryIommuDelay(PacketPtr pkt);
+
   protected:
 
     bool recvTimingResp(PacketPtr pkt) override;
@@ -185,6 +207,12 @@ class DmaPort : public RequestPort, public Drainable
   public:
 
     DmaPort(ClockedObject *dev, System *s, uint32_t sid=0, uint32_t ssid=0);
+
+    /** Wire the cluster-shared AcceleratorIommu onto this DMA port.
+     *  Called by SALAM DMA SimObjects (NoncoherentDma / StreamDma)
+     *  in their constructor when the `iommu` Param is set. Null
+     *  pointer == IOMMU disabled. */
+    void setIommu(AcceleratorIommu *i) { iommu = i; }
 
     void
     dmaAction(Packet::Command cmd, Addr addr, int size, Event *event,

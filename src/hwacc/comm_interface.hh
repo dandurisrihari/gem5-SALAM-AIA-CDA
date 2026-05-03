@@ -44,6 +44,15 @@ class CommInterface : public BasicPioDevice
     {
       friend class CommInterface;
 
+      public:
+        // Which fabric this MemSidePort attaches to. Only `Global`
+        // (the cluster's coherency-bus / `acp` port) actually crosses
+        // the cluster master interface and reaches DRAM, so a
+        // realistic SMMU only translates transactions on Global
+        // ports. Local (cluster xbar) and Stream (in-cluster FIFOs)
+        // are intra-cluster and bypass the SMMU.
+        enum class Role { Local, Global, Stream };
+
       private:
         CommInterface *owner;
         std::queue<PacketPtr> outstandingPkts;
@@ -51,15 +60,18 @@ class CommInterface : public BasicPioDevice
         MemoryRequest *writeReq;
         bool readActive;
         bool writeActive;
+        Role role_;
 
       public:
-        MemSidePort(const std::string& name, CommInterface *owner, PortID id=InvalidPortID) :
-          StreamRequestPort(name, owner, id), owner(owner) {
+        MemSidePort(const std::string& name, CommInterface *owner,
+                    Role role, PortID id=InvalidPortID) :
+          StreamRequestPort(name, owner, id), owner(owner), role_(role) {
           readActive = false;
           writeActive = false;
           readReq = NULL;
           writeReq = NULL;
         }
+        Role role() const { return role_; }
         MemoryRequest * getReadReq() { return readReq; }
         MemoryRequest * getWriteReq() { return writeReq; }
         void setReadReq(MemoryRequest * req = nullptr) { readReq = req; }
@@ -265,11 +277,12 @@ class CommInterface : public BasicPioDevice
     void processIommuRespQueue();
     // Returns true if the response was deferred (caller must NOT
     // touch pkt afterwards); false if no IOMMU latency applies and
-    // the caller should dispatch the packet inline. Called from every
-    // recvTimingResp path (MemSidePort / SPMPort / RegPort) because in
-    // a real SMMU every transaction crossing the accelerator's master
-    // interface is translated, regardless of on-chip vs off-chip
-    // destination.
+    // the caller should dispatch the packet inline. Called only from
+    // MemSidePort::recvTimingResp on the Global (coherency_bus / acp)
+    // role -- that is the only CommInterface egress that actually
+    // crosses the cluster master interface to reach DRAM. SPM, Reg,
+    // local-xbar and stream-FIFO traffic all stay on-cluster and
+    // bypass the SMMU, matching real-HW behaviour.
     bool tryIommuDelay(PacketPtr pkt);
 
   public:

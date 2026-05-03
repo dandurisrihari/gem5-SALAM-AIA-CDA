@@ -47,6 +47,10 @@ StreamDma::StreamDma(const StreamDmaParams &p)
     running = false;
 
     endian = sys->getGuestByteOrder();
+
+    // Wire the cluster-shared SMMU into the off-cluster `dma` port
+    // (DmaDevice::dmaPort goes to coherency_bus → DRAM).
+    if (p.iommu) dmaPort.setIommu(p.iommu);
 }
 
 AddrRangeList

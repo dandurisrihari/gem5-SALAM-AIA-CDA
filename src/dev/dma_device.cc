@@ -49,6 +49,7 @@
 #include "base/trace.hh"
 #include "debug/DMA.hh"
 #include "debug/Drain.hh"
+#include "hwacc/accelerator_iommu.hh"
 #include "sim/clocked_object.hh"
 #include "sim/system.hh"
 
@@ -60,7 +61,9 @@ DmaPort::DmaPort(ClockedObject *dev, System *s,
     : RequestPort(dev->name() + ".dma", dev),
       device(dev), sys(s), requestorId(s->getRequestorId(dev)),
       sendEvent([this]{ sendDma(); }, dev->name()),
-      defaultSid(sid), defaultSSid(ssid), cacheLineSize(s->cacheLineSize())
+      defaultSid(sid), defaultSSid(ssid), cacheLineSize(s->cacheLineSize()),
+      iommuRespEvent([this]{ processIommuRespQueue(); },
+                     dev->name() + ".dmaIommuRespEvent")
 { }
 
 void
@@ -135,9 +138,52 @@ DmaPort::recvTimingResp(PacketPtr pkt)
     assert(pkt->req->isUncacheable() ||
            !(pkt->cacheResponding() && !pkt->hasSharers()));
 
+    // SALAM extension: defer through the chip-wide AcceleratorIommu
+    // when wired. This models a real Arm SMMU sitting on the cluster
+    // master interface translating DMA-engine egress to DRAM.
+    if (tryIommuDelay(pkt)) return true;
+
     handleRespPacket(pkt);
 
     return true;
+}
+
+bool
+DmaPort::tryIommuDelay(PacketPtr pkt)
+{
+    if (!iommu || !iommu->enabled()) return false;
+
+    uint64_t page = pkt->req->getPaddr() & ~0xFFFULL;
+    Tick ready = iommu->translate(page, pkt->isRead());
+
+    // translate() returns curTick() when latency is zero (disabled
+    // fast path or both hit/miss latencies = 0); skip deferral so
+    // behavior is bit-identical to plain mode.
+    if (ready <= curTick()) return false;
+
+    pendingIommuResps.push_back({pkt, ready});
+    if (!iommuRespEvent.scheduled()) {
+        device->schedule(iommuRespEvent, ready);
+    } else if (iommuRespEvent.when() > ready) {
+        device->reschedule(iommuRespEvent, ready);
+    }
+    return true;
+}
+
+void
+DmaPort::processIommuRespQueue()
+{
+    Tick now = curTick();
+    while (!pendingIommuResps.empty() &&
+           pendingIommuResps.front().readyTick <= now) {
+        PacketPtr pkt = pendingIommuResps.front().pkt;
+        pendingIommuResps.pop_front();
+        handleRespPacket(pkt);
+    }
+    if (!pendingIommuResps.empty() && !iommuRespEvent.scheduled()) {
+        device->schedule(iommuRespEvent,
+                         pendingIommuResps.front().readyTick);
+    }
 }
 
 DmaDevice::DmaDevice(const Params &p)

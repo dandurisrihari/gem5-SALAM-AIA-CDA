@@ -17,21 +17,25 @@ same shared IOTLB and the same chip-wide port deadline — there is
 **no** per-CU IOTLB on this branch (the cluster-shared model
 matches what Stage A intentionally collapsed to).
 
-- **Cost model**: per-access tax, *not* per-page. Every memory
-  transaction the accelerator emits (off-chip DRAM, on-chip SPM, or
-  RegBank/MMR) crosses the SMMU and pays an IOTLB lookup latency:
-  `iotlb_hit_latency` (default 2 ns) on hit,
-  `iotlb_miss_latency` (default 500 ns, for a 4-level walk to slow
-  DRAM) on miss with LRU install. The IOTLB is small (default 8
-  entries) reflecting an edge-class uTLB.
+- **Cost model**: per-access tax, *not* per-page. Every
+  **off-cluster** memory transaction (transactions that egress the
+  cluster toward `coherency_bus` -> system DRAM/IO) crosses the SMMU
+  and pays an IOTLB lookup latency: `iotlb_hit_latency` (default
+  2 ns) on hit, `iotlb_miss_latency` (default 500 ns, for a 4-level
+  walk to slow DRAM) on miss with LRU install. The IOTLB is small
+  (default 8 entries) reflecting an edge-class uTLB. **On-cluster**
+  traffic (SPM, RegBank/MMR, local-xbar, stream FIFOs) does **not**
+  cross the SMMU — that traffic never leaves the cluster's local
+  address space and a real SMMU would not see it.
 - **Sharing semantics**: a translation request from any CU reserves
   a serial slot on the shared SMMU timeline; subsequent
   translations (from this or any other CU) cannot start until the
   current one finishes. Membus / DRAM serialization is unchanged
   from `plain` (already exists downstream of the SMMU).
-- **What we expect to see**: cost scales with **system-wide**
-  access count, not page count; high IOTLB hit-rate workloads pay
-  only the hit latency on every access; many-CU workloads
+- **What we expect to see**: cost scales with the **off-cluster**
+  access count (CommInterface global egress + DMA-engine bursts to
+  DRAM), not page count; high IOTLB hit-rate workloads pay only the
+  hit latency on every off-cluster access; many-CU workloads
   (MobileNet, GEMM-large) see measured ≈ analytical projection
   because there is no parallel-CU savings.
 
@@ -64,30 +68,54 @@ short-circuits, so the runtime cost is one early-return per access.
   - `miss_latency`  (Tick, default 500 000)
 - Per-CU hook: [src/hwacc/comm_interface.cc](../../src/hwacc/comm_interface.cc)
   - `CommInterface::tryIommuDelay(pkt)`
-  - Called from **all three** response-port paths:
-    - `MemSidePort::recvTimingResp` (off-chip / global)
-    - `SPMPort::recvTimingResp`     (on-chip scratchpad)
-    - `RegPort::recvTimingResp`     (RegBank / MMR)
+  - Called **only** from off-cluster response paths:
+    - `MemSidePort::recvTimingResp` **iff** `role_ == Role::Global`
+      (the `acp` port that egresses the cluster toward
+      `coherency_bus`). The `local` and `stream` MemSidePort
+      instances bypass.
+  - `SPMPort::recvTimingResp` and `RegPort::recvTimingResp` no
+    longer call `tryIommuDelay` (they target on-cluster targets).
+  - The `Role` enum (`Local | Global | Stream`) is set at
+    `MemSidePort` construction in `CommInterface::getPort` based on
+    the python port name.
+- DMA-engine hook: [src/dev/dma_device.cc](../../src/dev/dma_device.cc)
+  - `DmaPort::tryIommuDelay(pkt)` deferred-response path; same
+    page-aligned single-deadline serialisation as the CommInterface
+    hook. Used by both `NoncoherentDma` and `StreamDma` for their
+    inherited `dma` port (the off-cluster master that goes to
+    `coherency_bus` -> DRAM). `NoncoherentDma`'s private `accPort`
+    (the cluster-local `cluster_dma`) is **not** wired and bypasses.
+  - Wiring: [src/hwacc/noncoherent_dma.cc](../../src/hwacc/noncoherent_dma.cc)
+    and [src/hwacc/stream_dma.cc](../../src/hwacc/stream_dma.cc) call
+    `dmaPort.setIommu(p.iommu)` in their ctor when the python `iommu`
+    Param is non-NULL. The Param is emitted by the configurator
+    (`tools/SALAM-Configurator/config_parser.py`,
+    `DMA.genConfig` and `StreamDMA.genConfig`).
 - Stats reporter: `LLVMInterface::printIommuStats()` in
   [src/hwacc/llvm_interface.cc](../../src/hwacc/llvm_interface.cc)
 
 ## Coverage caveats (traffic that bypasses the IOMMU intercept)
 
-The intercept lives in `CommInterface`. Two non-`CommInterface`
-master paths exist in SALAM and currently bypass the IOMMU:
+The intercepts live in (a) `CommInterface::MemSidePort` for
+`Role::Global` only and (b) `DmaPort` for `NoncoherentDma` /
+`StreamDma`. Traffic paths that intentionally bypass:
 
-- `ScratchpadRequestPort` ([src/hwacc/scratchpad_memory.hh](../../src/hwacc/scratchpad_memory.hh))
-  — when the SPM itself acts as a DMA master ("SPM-fill"), that
-  traffic does not flow through any accelerator's `CommInterface`.
-  Real hardware *would* translate it (the DMA carries a StreamID).
+- `MemSidePort` with `Role::Local` or `Role::Stream`, plus
+  `SPMPort` and `RegPort` — by design: these target on-cluster
+  scratchpads, register banks and stream FIFOs. A real SMMU sits
+  between the cluster master interface and the system bus, not
+  inside the cluster.
+- `NoncoherentDma::accPort` (the `cluster_dma` master into the
+  cluster-local xbar) — same reason; intra-cluster traffic.
 - `IOAcc::MemSidePort` ([src/hwacc/io_acc.hh](../../src/hwacc/io_acc.hh))
   — separate hand-coded I/O accelerator hierarchy parallel to
   `CommInterface`/`LLVMInterface`. Not currently routed through the
-  IOMMU.
+  IOMMU; would need an analogous `Role::Global` hook if used.
 
-Standard `LLVMInterface`-based accelerators using `CommInterface`
-are fully covered. If you add an `IOAcc`-based accelerator or
-enable SPM-DMA-fill mode, those packets will not be counted.
+Standard `LLVMInterface`-based accelerators using `CommInterface`,
+`NoncoherentDma`, and `StreamDma` are fully covered for their
+off-cluster traffic. If you add an `IOAcc`-based accelerator,
+its DRAM-bound packets will not be counted.
 
 ## Design rationale (response-path injection)
 
@@ -107,10 +135,10 @@ where the accelerator waits for `cu->readCommit/writeCommit`.
 - **lat=0 invariant** ([tests/aia_cda_tests/run_sanity.py](../../tests/aia_cda_tests/run_sanity.py)
   `run_iommu_lat0_check`): with both `hit_latency=0` and
   `miss_latency=0`, `translate()` returns `curTick()` for every
-  packet → `tryIommuDelay` returns false → all three ports take the
-  inline `recvPacket(pkt)` fast path → iommu `sim_ticks` is
-  **bit-identical** to plain. This proves the bookkeeping is inert
-  when latency is zero.
+  packet → `tryIommuDelay` returns false on every site (CommInterface
+  global port and DmaPort) → the inline fast path runs → iommu
+  `sim_ticks` is **bit-identical** to plain. This proves the
+  bookkeeping is inert when latency is zero.
 - **No structural "iommu_overhead_us >= 0" guarantee.** The IOMMU
   stage itself only adds ticks, but downstream side-effects (DRAM
   bank scheduling, see "behavior classes" below) can produce
@@ -148,10 +176,15 @@ Reporting recommendation: for Class C workloads, report
 or alongside `iommu_overhead_us`. For Class A/B, the two columns
 should agree to within DRAM-controller noise.
 
-Stat note: `iommu_checks` counts **response packets** (one per
-memory transaction across all three ports). After the SPM/Reg
-inclusion fix it is ~1-2 orders of magnitude larger than the old
-MemSidePort-only count seen in pre-2026-05 logs.
+Stat note: `iommu_checks` counts **off-cluster response packets**:
+the `CommInterface` `acp`/global port plus `NoncoherentDma`/
+`StreamDma` `dma`-port responses. The earlier 2026-05 model that
+included SPM and RegPort is **gone** (it over-counted by routing
+on-cluster traffic through the SMMU); `iommu_checks` is now
+typically dominated by DMA-engine bursts on streaming workloads
+(see e.g. `bfs`: 585 checks, ~98 % IOTLB hit-rate after the
+refactor) and aligns much more closely with the AIA-KD
+`smid_requests` count (which has always been off-cluster only).
 
 ## Things to be careful about
 

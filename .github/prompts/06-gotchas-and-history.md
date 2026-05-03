@@ -95,16 +95,31 @@ to upstream injection; only response-path placement (current
 design — `CommInterface::tryIommuDelay`) avoids it. See git log
 on `src/hwacc/llvm_interface.{cc,hh}`.
 
-### MemSidePort-only IOMMU intercept (pre-2026-05)
+### "All-three-ports" IOMMU intercept (mid-2026-05, superseded)
 
-For a brief window the IOMMU intercept lived only in
-`MemSidePort::recvTimingResp`, leaving SPMPort and RegPort traffic
-untranslated. Result: `iommu_overhead_us ≈ 0` on SPM-resident
-workloads (most of the suite) and `iommu_checks` under-counted by
-~25× on workloads like `nw`. Fix: factored the intercept into
-`CommInterface::tryIommuDelay()` and called from all three
-`recvTimingResp` paths. The lat=0 invariant continues to hold
-bit-identically.
+For a window the IOMMU intercept fired on **all** of `MemSidePort`,
+`SPMPort`, and `RegPort`. That model **over**-counted: it treated
+on-cluster scratchpad and register-bank traffic as if it crossed
+the SMMU, which a real SMMU sitting between the cluster master
+interface and the system bus would never see. Result: on `nw`
+`iommu_checks` ballooned to ~241k while AIA-KD (which has always
+been off-cluster only) reported `smid_requests` ≈ 121k, leaving the
+two mechanisms misaligned by ~2×.
+
+**Current model (post-2026-05 refactor)**: intercept is gated to
+**off-cluster** traffic only — `MemSidePort` with `Role::Global`
+(the `acp` egress port) plus a new `DmaPort::tryIommuDelay` hook on
+the inherited `dma` ports of `NoncoherentDma` and `StreamDma`. The
+`Role` enum (`Local | Global | Stream`) is set in
+`CommInterface::getPort` based on the python port name. `SPMPort`,
+`RegPort`, `MemSidePort`'s `Local`/`Stream` instances, and
+`NoncoherentDma::accPort` (`cluster_dma`) all bypass. The `iommu`
+SimObject pointer is plumbed to the DMA engines via a new python
+`Param.AcceleratorIommu` on `NoncoherentDma`/`StreamDma`, emitted by
+`DMA.genConfig`/`StreamDMA.genConfig` in the configurator. The
+lat=0 invariant continues to hold bit-identically. Sanity post-
+refactor: `nw` iommu_checks dropped 16, `bfs` 585 (DMA-dominated,
+98 % IOTLB hit-rate).
 
 ### Extra `EventFunctionWrapper` per access (early IOMMU rework)
 
