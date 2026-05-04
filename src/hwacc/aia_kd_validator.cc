@@ -58,11 +58,13 @@ AiaKdValidator::processResponse()
         // sees a cache hit (matches the previous semantics where the
         // cache insert happened before launchRead/Write replay).
         //
-        // Exception: DMA control-reg pages are NEVER cached and were
-        // never marked pending in the first place (see
-        // LLVMInterface::sendValidationRequest). Each store must pay
-        // full validation latency because every write reprograms the
-        // engine with a potentially new (src, dst, len) triple.
+        // Exception: DMA control-reg pages are NEVER cached
+        // (validatedPagesPerProcess) and were never added to the
+        // coalescing set (pendingValidationPages) — see
+        // LLVMInterface::sendValidationRequest. They ARE enqueued into
+        // pendingRequests (this FIFO) and pay full latency here; each
+        // DMA program writes a potentially new (src, dst, len) triple
+        // so every store must be independently inspected.
         uint64_t pageAddr = req.addr & ~0xFFFULL;
         if (!isDmaCtrl(req.addr)) {
             validatedPagesPerProcess[req.pid].insert(pageAddr);

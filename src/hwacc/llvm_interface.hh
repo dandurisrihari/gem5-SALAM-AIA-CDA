@@ -333,6 +333,31 @@ class LLVMInterface : public ComputeUnit {
     bool isDmaCtrlAddr(uint64_t addr) {
         return validator && validator->isDmaCtrl(addr);
     }
+    /**
+     * Post-hoc AIA-KD accounting (Option A). Charges one cold-miss
+     * validation worth of latency to this CU's analytical budget and
+     * mirrors the side-effects of a real cold miss WITHOUT stalling
+     * the LLVM-IR scheduler. Mirrors the IOMMU model
+     * (CommInterface::tryIommuDelay): the protection cost is summed
+     * for reporting only, and `simTicks` stay aligned with `plain`
+     * so cluster-level deltas reflect the protection cost rather
+     * than DDR contention reshaping under in-sim stalls.
+     *
+     * When `dmaCtrl` is set, the per-process page cache update is
+     * skipped so the next store to the same DMA control-reg page
+     * also charges (every DMA program must be inspected).
+     */
+    void accountValidation(uint64_t addr, bool dmaCtrl) {
+        if (!validator) return;
+        totalKernelValidations++;
+        totalKernelValidationLatency += validator->latency();
+        if (dmaCtrl) {
+            dmaCtrlValidations++;
+        } else {
+            uint64_t pageAddr = addr & ~0xFFFULL;
+            validator->validatedPagesPerProcess[processId].insert(pageAddr);
+        }
+    }
     // Returns true (and consumes the marker) if `uid` was just replayed
     // from a post-validation RAW deferral. Callers in launchRead/Write use
     // this to suppress double-counting that access as a cache hit.

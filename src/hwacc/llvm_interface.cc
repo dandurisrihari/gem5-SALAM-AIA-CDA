@@ -705,57 +705,43 @@ LLVMInterface::ActiveFunction::launchRead(
 
         // ====================================================
         // KERNEL VALIDATION (AIA -> KD) FAST-PATH FOR LOADS
-        // Three cases, evaluated in order:
-        //   (a) Cache hit  : page already validated for this PID -> 0 lat
-        //   (b) In-flight  : another access is validating this page ->
-        //                    coalesce, no extra IRQ
-        //   (c) Cold miss  : raise IRQ to KD, schedule deferred response
+        // POST-HOC ACCOUNTING (Option A): mirror the IOMMU model.
+        // We never stall the scheduler on a validation result. On a
+        // page first-touch we charge one cold-miss latency into the
+        // per-CU analytical budget and immediately mark the page
+        // validated, then fall through to launch the read the same
+        // tick. Rationale: the previous in-sim stall (return false +
+        // FIFO + replay) coupled to DDR queue dynamics across the
+        // many parallel CUs in this cluster and could push aia-kd
+        // simTicks BELOW plain (negative abs_overhead_us) by
+        // staggering DDR pressure. Post-hoc accounting keeps
+        // simTicks aligned with plain so cluster-level deltas
+        // reflect the protection cost only.
+        //
         // Page granularity is 4 KiB. Accesses that straddle a page
-        // boundary only validate the first page (acceptable for SALAM
-        // accelerators which use word-aligned scalar/vector accesses).
+        // boundary only validate the first page (acceptable for
+        // SALAM accelerators which use word-aligned scalar/vector
+        // accesses).
         // ====================================================
         if (owner->isKernelValidationEnabled()) {
             if (owner->isPageValidated(ptrAddr)) {
-                // (a) Cache hit. Suppress the counter when this UID was
-                // just replayed out of a post-validation RAW deferral --
-                // it already paid full latency once and was counted as
-                // totalKernelValidations / validationCoalescedWaits.
-                if (!owner->consumeRevalidatedUID(readInst->getUID())) {
-                    owner->incrementValidationCacheHits();
-                }
+                owner->incrementValidationCacheHits();
                 if (dbg)
                     DPRINTFS(RuntimeCompute, owner,
                         "|| Cache HIT for READ: addr=0x%016lx - proceeding\n",
                         ptrAddr);
-                // Fall through to launch the read normally.
-            } else if (owner->isPageValidationPending(ptrAddr)) {
-                // (b) Coalesce behind the in-flight request. Guard against
-                // double-queueing the same UID across reservation passes.
-                if (!owner->isValidationPending(readInst->getUID())) {
-                    owner->queueWaitingInstruction(
-                        ptrAddr, readInst, this, true, reqSize);
-                    if (dbg)
-                        DPRINTFS(RuntimeCompute, owner,
-                            "|| Queuing READ for pending page validation: "
-                            "addr=0x%016lx\n", ptrAddr);
-                }
-                // Returning false leaves the instruction in reservation;
-                // uidActive() will skip it next tick via
-                // isValidationPending().
-                return false;
             } else {
-                // (c) Cold miss: raise IRQ + schedule response. The
-                // instruction stays in reservation and will be re-driven
-                // from processValidationResponse() when KD replies.
+                // Cold miss (first touch this PID): post-hoc charge
+                // the configured per-cold-miss latency and cache the
+                // page so siblings see a hit.
+                owner->accountValidation(ptrAddr, /*dmaCtrl=*/false);
                 if (dbg)
                     DPRINTFS(RuntimeCompute, owner,
-                        "|| Sending kernel validation for READ: "
+                        "|| Post-hoc validation for READ: "
                         "addr=0x%016lx, size=%lu\n",
                         ptrAddr, (unsigned long)reqSize);
-                owner->sendValidationRequest(
-                    ptrAddr, reqSize, true, readInst, this);
-                return false;
             }
+            // Fall through to launch the read normally.
         }
 
         auto memReq = (readInst)->createMemoryRequest();
@@ -788,55 +774,37 @@ LLVMInterface::ActiveFunction::launchWrite(
 
     // ====================================================
     // KERNEL VALIDATION (AIA -> KD) FAST-PATH FOR STORES
-    // See launchRead() above for the three-case rationale; the store
-    // path mirrors it. Page granularity = 4 KiB.
+    // POST-HOC ACCOUNTING (Option A); see launchRead() above for
+    // the rationale. Page granularity = 4 KiB.
     //
     // DMA-control-reg write exception: writes whose target lies in
-    // any DMA's PIO range bypass the validated-page cache and the
-    // pending-page coalescing entirely. Every such store reprograms
-    // the engine with a (potentially new) (src, dst, len) triple, so
-    // the kernel must inspect each write individually. Reads are
-    // unaffected (status polling is benign).
+    // any DMA's PIO range bypass the validated-page cache. Every
+    // such store reprograms the engine with a (potentially new)
+    // (src, dst, len) triple, so the kernel must inspect each write
+    // individually and we charge a cold-miss latency every time.
+    // Reads are unaffected (status polling is benign).
     // ====================================================
     if (owner->isKernelValidationEnabled()) {
         bool dmaCtrl = owner->isDmaCtrlAddr(ptrAddr);
         if (!dmaCtrl && owner->isPageValidated(ptrAddr)) {
-            // (a) Cache hit. Suppress counter for replays that already
-            // paid validation latency (see launchRead comment).
-            if (!owner->consumeRevalidatedUID(writeInst->getUID())) {
-                owner->incrementValidationCacheHits();
-            }
+            owner->incrementValidationCacheHits();
             if (dbg)
                 DPRINTFS(RuntimeCompute, owner,
                     "|| Cache HIT for WRITE: addr=0x%016lx - proceeding\n",
                     ptrAddr);
-            // Fall through to launch the write normally.
-        } else if (!dmaCtrl && owner->isPageValidationPending(ptrAddr)) {
-            // (b) Coalesce behind in-flight request.
-            if (!owner->isValidationPending(writeInst->getUID())) {
-                owner->queueWaitingInstruction(
-                    ptrAddr, writeInst, this, false, reqSize);
-                if (dbg)
-                    DPRINTFS(RuntimeCompute, owner,
-                        "|| Queuing WRITE for pending page validation: "
-                        "addr=0x%016lx\n", ptrAddr);
-            }
-            return false;
         } else {
-            // (c) Cold miss. For DMA-ctrl writes this branch is taken
-            // unconditionally (cache + coalescing bypassed above), so
-            // every store to a DMA control reg pays full latency.
-            if (dmaCtrl) owner->incrementDmaCtrlValidations();
+            // Cold miss (first touch this PID), or DMA-ctrl write
+            // (always charges). Post-hoc account the latency and
+            // for non-DMA-ctrl writes also cache the page.
+            owner->accountValidation(ptrAddr, dmaCtrl);
             if (dbg)
                 DPRINTFS(RuntimeCompute, owner,
-                    "|| Sending kernel validation for WRITE: "
+                    "|| Post-hoc validation for WRITE: "
                     "addr=0x%016lx, size=%lu%s\n",
                     ptrAddr, (unsigned long)reqSize,
                     dmaCtrl ? " [DMA-CTRL]" : "");
-            owner->sendValidationRequest(
-                ptrAddr, reqSize, false, writeInst, this);
-            return false;
         }
+        // Fall through to launch the write normally.
     }
 
     auto memReq = (writeInst)->createMemoryRequest();
