@@ -19,7 +19,8 @@ exclusive); plain is the unprotected baseline.
 | `aia-kd`  | first touch of a 4 KiB page | 8.367 µs (default)       | Host CPU via GIC IRQ |
 | `iommu`   | every memory transaction    | 2 ns hit / 500 ns miss   | One shared SMMU port |
 
-**IOMMU coverage (strict / all-ports enforcement):** every response
+**IOMMU coverage (strict per-transaction enforcement across all
+memory ports):** every response
 delivered to a CU pays one IOTLB lookup -- all five CommInterface
 port types (MemSidePort Local, Global, Stream; SPMPort; RegPort)
 plus the off-cluster DmaPort on NoncoherentDma / StreamDma engines.

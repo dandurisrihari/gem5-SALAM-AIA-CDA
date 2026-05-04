@@ -25,7 +25,8 @@ matches what Stage A intentionally collapsed to).
   `iotlb_miss_latency` (default 500 ns, for a 4-level walk to slow
   DRAM) on miss with LRU install. The IOTLB is small (default 8
   entries) reflecting an edge-class uTLB. This is the
-  **strict / all-ports enforcement** model: a single chip-wide
+  **strict per-transaction IOMMU enforcement across all memory
+  ports**: a single chip-wide
   IOMMU sits in front of *all* accelerator memory traffic --
   including intra-cluster SPM and register-bank responses, which a
   textbook Arm SMMU would not translate (an SMMU normally sits on
@@ -109,7 +110,8 @@ short-circuits, so the runtime cost is one early-return per access.
 
 ## Coverage caveats (traffic that bypasses the IOMMU intercept)
 
-All five CommInterface intercept sites are active (all-ports model):
+All five CommInterface intercept sites are active (strict
+per-transaction enforcement across all memory ports):
 `MemSidePort` **all three roles** (`Local`, `Global`, `Stream`),
 `SPMPort`, and `RegPort`. Additionally `DmaPort` covers
 `NoncoherentDma` / `StreamDma` off-cluster egress. Traffic paths
@@ -191,9 +193,11 @@ should agree to within DRAM-controller noise.
 Stat note: `iommu_checks` counts **all CU response packets**:
 every CommInterface response port (`MemSidePort` all three roles,
 `SPMPort`, `RegPort`) plus `NoncoherentDma`/`StreamDma` `dma`-port
-responses. Under all-ports coverage `iommu_checks` is typically
-much larger than the AIA-KD `smid_requests` count (which only
-counts off-cluster requests).
+responses. Under strict per-transaction enforcement across all
+memory ports, `iommu_checks` typically exceeds the AIA-KD
+`Validation requests (full lat)` count: AIA-KD only charges at
+launch time and only when the outcome is `ColdMiss` or `DmaCtrl`,
+whereas the IOMMU charges every response packet on every port.
 
 ## Things to be careful about
 
