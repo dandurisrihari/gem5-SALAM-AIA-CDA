@@ -10,6 +10,7 @@
 #include "hwacc/LLVMRead/src/debug_flags.hh"
 #include "hwacc/LLVMRead/src/mem_request.hh"
 #include "hwacc/accelerator_iommu.hh"
+#include "hwacc/aia_kd_validator.hh"
 #include "hwacc/compute_unit.hh"
 #include "hwacc/scratchpad_memory.hh"
 #include "hwacc/stream_port.hh"
@@ -283,6 +284,26 @@ class CommInterface : public BasicPioDevice
     // and RegPort -- so every CU memory access pays the single
     // chip-wide SMMU translation tax (all-ports coverage).
     bool tryIommuDelay(PacketPtr pkt);
+
+    // ----- AIA-KD response-path latency injection (Option C) -----
+    // Mirrors the IOMMU mechanism above but with two key differences:
+    //   1. The per-access cost is decided at LAUNCH time inside
+    //      LLVMInterface::ActiveFunction::launchRead/launchWrite,
+    //      which calls validator->checkAndCharge() and stamps the
+    //      returned tick delta onto MemoryRequest::aiaKdDefer.
+    //   2. tryAiaKdDelay reads the stamp (one MemoryRequest may be
+    //      split into N cache-line packets; only the FIRST packet
+    //      carries the defer, then the field is zeroed so subsequent
+    //      packets pass through unmodified -- one validation tax per
+    //      LLVM-IR access, not per packet).
+    // Mutually exclusive with the IOMMU mechanism (enforced by
+    // LLVMInterface ctor panic): only one of the two queues will
+    // ever hold work in a given run.
+    AiaKdValidator *validator;
+    std::list<PendingIommuResp> pendingAiaKdResps;
+    EventFunctionWrapper aiaKdRespEvent;
+    void processAiaKdRespQueue();
+    bool tryAiaKdDelay(PacketPtr pkt, bool isRead);
 
   public:
     PARAMS(CommInterface);

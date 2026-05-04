@@ -42,7 +42,8 @@
 #include "hwacc/compute_unit.hh"
 #include "params/LLVMInterface.hh"
 
-class LLVMInterface : public ComputeUnit {
+class LLVMInterface : public ComputeUnit
+{
   private:
     std::string filename;
     std::string topName;
@@ -87,39 +88,30 @@ class LLVMInterface : public ComputeUnit {
     bool enableIommu;
     AcceleratorIommu *iommu;
 
-    // Pending validation tracking. The FIFO + response event used
-    // to live here per-CU; they now live on the chip-wide
-    // AiaKdValidator SimObject (one per AccCluster). Only this CU's
-    // "in-flight UID" set stays here -- it is consumed by the
-    // launchRead/Write fast path to skip pages this CU already has
-    // a request for, and is not visible to sibling CUs.
-    std::set<uint64_t> pendingValidationUIDs;
+    // Pending validation tracking. In Option C the per-CU FIFO and
+    // response event are gone: the launch-time decision is captured
+    // as a tick delta on MemoryRequest::aiaKdDefer and realized at
+    // the response port (CommInterface::tryAiaKdDelay). All shared
+    // state (cache, in-flight set, kernel-driver deadline) lives on
+    // the chip-wide AiaKdValidator SimObject.
 
     // Device-wide AIA-KD validator SimObject (null when AIA-KD
     // disabled). One shared instance per AccCluster owns the cross-CU
-    // validated-pages cache, pending-pages set, and waiter queues --
-    // see src/hwacc/aia_kd_validator.{hh,cc}. The validation protocol
-    // (responseEvent, GIC IRQ raise, FIFO bookkeeping, scheduler
-    // re-dispatch) still lives in this class because it touches
-    // per-CU machinery; the SimObject is just the shared storage
-    // that used to be process-static.
+    // validated-pages cache, pending-pages set, and chip-wide
+    // kernel-driver deadline counter -- see
+    // src/hwacc/aia_kd_validator.{hh,cc} for the Option C design.
     AiaKdValidator *validator;
-
-    // UIDs of instructions that completed kernel validation but were sent
-    // back to the reservation queue because of a RAW hazard discovered at
-    // dispatch time. When such an instruction is re-launched it will hit
-    // the validated-pages cache and would otherwise be miscounted as a
-    // free cache hit. We consume the entry here so the cache-hit counter
-    // stays consistent with "accesses that never paid validation latency".
-    std::set<uint64_t> revalidatedUIDs;
 
     // Validation statistics
     uint64_t totalKernelValidations;
     Tick totalKernelValidationLatency;
     uint64_t kernelValidationDenied;
-    uint64_t validationCacheHits;           // True cache hits (page already validated)
-    uint64_t validationCoalescedWaits;      // Instructions that waited for in-flight validation
-    Tick totalCoalescedWaitLatency;         // Total latency for coalesced waits
+    uint64_t validationCacheHits;
+    // True cache hits (page already validated).
+    uint64_t validationCoalescedWaits;
+    // Instructions that waited for in-flight validation.
+    Tick totalCoalescedWaitLatency;
+    // Total latency for coalesced waits.
     // Subset of totalKernelValidations attributable to DMA control-reg
     // writes (i.e. stores whose target address landed in any DMA's
     // PIO range). Useful for separating the "static page" first-touch
@@ -156,7 +148,8 @@ class LLVMInterface : public ComputeUnit {
     std::chrono::high_resolution_clock::time_point timeStart;
 
 
-    class ActiveFunction {
+  class ActiveFunction
+  {
       friend class LLVMInterface;
     private:
         LLVMInterface * owner;
@@ -177,12 +170,15 @@ class LLVMInterface : public ComputeUnit {
         bool dbg;
 
         inline bool uidActive(uint64_t id) {
-          return computeUIDActive(id) || readUIDActive(id) || writeUIDActive(id) ||
-                 owner->isValidationPending(id);
+          return computeUIDActive(id) || readUIDActive(id) ||
+                 writeUIDActive(id);
         }
 
         std::map<Addr, std::shared_ptr<SALAM::Instruction>> activeWrites;
-        inline void trackWrite(Addr writeAddr, std::shared_ptr<SALAM::Instruction> writeInst) {
+        inline void
+        trackWrite(Addr writeAddr,
+                   std::shared_ptr<SALAM::Instruction> writeInst)
+        {
           activeWrites.insert({writeAddr, writeInst});
         }
         inline void untrackWrite(uint64_t writeAddr) {
@@ -193,11 +189,17 @@ class LLVMInterface : public ComputeUnit {
           return (activeWrites.find(writeAddr) != activeWrites.end());
         }
 
-        inline std::shared_ptr<SALAM::Instruction> getActiveWrite(uint64_t writeAddr) {
+        inline std::shared_ptr<SALAM::Instruction>
+        getActiveWrite(uint64_t writeAddr)
+        {
           return activeWrites.find(writeAddr)->second;
         }
-        // std::map<Addr, std::shared_ptr<SALAM::Instruction>> activeReads;
-        // inline void trackRead(Addr readAddr, std::shared_ptr<SALAM::Instruction> readInst) {
+        // std::map<Addr, std::shared_ptr<SALAM::Instruction>>
+        // activeReads;
+        // inline void trackRead(
+        //     Addr readAddr,
+        //     std::shared_ptr<SALAM::Instruction> readInst)
+        // {
         //   activeReads.insert({readAddr, readInst});
         // }
         // inline void untrackRead(uint64_t readAddr) {
@@ -207,7 +209,8 @@ class LLVMInterface : public ComputeUnit {
         // inline bool readActive(uint64_t readAddr) {
         //   return (activeReads.find(readAddr) != activeReads.end());
         // }
-        // inline std::shared_ptr<SALAM::Instruction> getActiveRead(uint64_t readAddr) {
+        // inline std::shared_ptr<SALAM::Instruction>
+        // getActiveRead(uint64_t readAddr) {
         //   return activeReads.find(readAddr)->second;
         // }
         inline bool writeUIDActive(uint64_t uid) {
@@ -229,16 +232,22 @@ class LLVMInterface : public ComputeUnit {
           }
           return false;
         }
-        // Add instruction back to reservation queue (for deferred operations)
-        inline void addToReservation(std::shared_ptr<SALAM::Instruction> inst) {
+        // Add instruction back to reservation queue for deferred
+        // operations.
+        inline void
+        addToReservation(std::shared_ptr<SALAM::Instruction> inst)
+        {
           reservation.push_back(inst);
         }
     public:
-        ActiveFunction(LLVMInterface * _owner, std::shared_ptr<SALAM::Function> _func,
-                       std::shared_ptr<SALAM::Instruction> _caller):
-                       owner(_owner), func(_func), caller(_caller),
-                       previousBB(nullptr) {
-                          scheduling_threshold = owner->getSchedulingThreshold();
+        ActiveFunction(LLVMInterface * _owner,
+                       std::shared_ptr<SALAM::Function> _func,
+                       std::shared_ptr<SALAM::Instruction> _caller)
+            : owner(_owner), func(_func), caller(_caller),
+              previousBB(nullptr)
+        {
+                          scheduling_threshold =
+                              owner->getSchedulingThreshold();
                           lockstep = (owner->getLockstepStatus());
                           dbg = owner->debug();
                        }
@@ -249,7 +258,8 @@ class LLVMInterface : public ComputeUnit {
         void processQueues();
         void launch();
         inline bool queuesClear() {
-          return readQueue.empty() && writeQueue.empty() && computeQueue.empty();
+          return readQueue.empty() && writeQueue.empty() &&
+                 computeQueue.empty();
         }
         inline bool lockstepReady() {
           return !lockstep || queuesClear();
@@ -292,8 +302,8 @@ class LLVMInterface : public ComputeUnit {
     void endFunction(ActiveFunction * afunc);
     void launchRead(MemoryRequest * memReq, ActiveFunction * func);
     void launchWrite(MemoryRequest * memReq, ActiveFunction * func);
-    std::shared_ptr<SALAM::Instruction> createInstruction(llvm::Instruction *inst,
-                                                          uint64_t id);
+    std::shared_ptr<SALAM::Instruction>
+    createInstruction(llvm::Instruction *inst, uint64_t id);
     void dumpQueues();
     uint32_t getSchedulingThreshold() { return scheduling_threshold; }
     void addSchedulingTime(std::chrono::duration<float> timeDelta) {
@@ -311,77 +321,29 @@ class LLVMInterface : public ComputeUnit {
 
     // Kernel validation functions
     bool isKernelValidationEnabled() { return enableKernelValidation; }
-    bool isValidationPending(uint64_t uid) {
-        return pendingValidationUIDs.count(uid) > 0;
-    }
-    bool isPageValidationPending(uint64_t addr) {
-        if (!validator) return false;
-        uint64_t pageAddr = addr & ~0xFFFULL;
-        return validator->pendingValidationPages.count(pageAddr) > 0;
-    }
-    bool isPageValidated(uint64_t addr) {
-        if (!validator) return false;
-        uint64_t pageAddr = addr & ~0xFFFULL;
-        auto it = validator->validatedPagesPerProcess.find(processId);
-        if (it != validator->validatedPagesPerProcess.end()) {
-            return it->second.find(pageAddr) != it->second.end();
-        }
-        return false;
-    }
-    void incrementValidationCacheHits() { validationCacheHits++; }
-    void incrementDmaCtrlValidations() { dmaCtrlValidations++; }
-    bool isDmaCtrlAddr(uint64_t addr) {
-        return validator && validator->isDmaCtrl(addr);
-    }
     /**
-     * Post-hoc AIA-KD accounting (Option A). Charges one cold-miss
-     * validation worth of latency to this CU's analytical budget and
-     * mirrors the side-effects of a real cold miss WITHOUT stalling
-     * the LLVM-IR scheduler. Mirrors the IOMMU model
-     * (CommInterface::tryIommuDelay): the protection cost is summed
-     * for reporting only, and `simTicks` stay aligned with `plain`
-     * so cluster-level deltas reflect the protection cost rather
-     * than DDR contention reshaping under in-sim stalls.
+     * Option C launch-time AIA-KD decision + bookkeeping.
      *
-     * When `dmaCtrl` is set, the per-process page cache update is
-     * skipped so the next store to the same DMA control-reg page
-     * also charges (every DMA program must be inspected).
+     * Called from ActiveFunction::launchRead/launchWrite for every
+     * LLVM-IR memory access when AIA-KD is enabled. Delegates the
+     * decision (cache hit / coalesced wait / cold miss / DMA-ctrl
+     * write) to the chip-wide AiaKdValidator (which owns all shared
+     * state: per-PID page cache, in-flight set, kernel-driver
+     * deadline) and returns the per-access tick delta to stamp onto
+     * MemoryRequest::aiaKdDefer. The CommInterface response path
+     * (tryAiaKdDelay) realizes that delta as a true wall-clock
+     * stall by holding the response packet for `defer` ticks.
+     *
+     * Per-CU mirror counters (totalKernelValidations,
+     * validationCacheHits, validationCoalescedWaits, dmaCtrl-
+     * Validations, totalKernelValidationLatency, totalCoalesced-
+     * WaitLatency) are updated based on the Outcome so
+     * printKernelValidationStats can render the harvested-string
+     * report ("Validation requests (full lat): ...", "of which
+     * DMA-ctrl writes: ...") that tools/speedkills/harvest.py
+     * binds to.
      */
-    void accountValidation(uint64_t addr, bool dmaCtrl) {
-        if (!validator) return;
-        totalKernelValidations++;
-        totalKernelValidationLatency += validator->latency();
-        if (dmaCtrl) {
-            dmaCtrlValidations++;
-        } else {
-            uint64_t pageAddr = addr & ~0xFFFULL;
-            validator->validatedPagesPerProcess[processId].insert(pageAddr);
-        }
-    }
-    // Returns true (and consumes the marker) if `uid` was just replayed
-    // from a post-validation RAW deferral. Callers in launchRead/Write use
-    // this to suppress double-counting that access as a cache hit.
-    bool consumeRevalidatedUID(uint64_t uid) {
-        auto it = revalidatedUIDs.find(uid);
-        if (it == revalidatedUIDs.end()) return false;
-        revalidatedUIDs.erase(it);
-        return true;
-    }
-    void queueWaitingInstruction(uint64_t addr,
-                                 std::shared_ptr<SALAM::Instruction> inst,
-                                 ActiveFunction* func, bool isRead,
-                                 size_t size);
-    void sendValidationRequest(uint64_t addr, size_t size, bool isRead,
-                               std::shared_ptr<SALAM::Instruction> inst,
-                               ActiveFunction* func);
-    // Per-request dispatch invoked by AiaKdValidator::processResponse()
-    // when this CU is the originator of a completed cold-miss request.
-    // Performs RAW re-check + launchRead/Write replay for the
-    // originator and fans out to coalesced waiters in
-    // validator->waitingForPage[pageAddr].
-    void completeValidation(const AiaKdValidator::PendingRequest &req,
-                            Tick now);
-    bool validateWithKernel(uint64_t addr, size_t size, uint64_t pid);
+    Tick chargeValidation(uint64_t addr, bool isWrite);
     void printKernelValidationStats();
 
     // ----- IOMMU helpers -----

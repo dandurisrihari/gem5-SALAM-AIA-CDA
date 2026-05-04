@@ -31,6 +31,22 @@ class MemoryRequest {
     PacketPtr pkt;
     RequestPort * port;
   public:
+    // ----- AIA-KD response-side defer stamp (Option C) -----
+    // Set by LLVMInterface::ActiveFunction::launchRead/launchWrite at
+    // the moment the access is launched: number of ticks the
+    // chip-wide AIA-KD validator wants to stall this access on the
+    // RESPONSE path (cold-miss latency, or a coalesced share of an
+    // in-flight cold miss, or zero on a cache hit / DMA-ctrl bypass
+    // is irrelevant since DMA-ctrl always charges full latency).
+    //
+    // CommInterface::tryAiaKdDelay() reads this field on the first
+    // response packet for this MemoryRequest, queues the packet for
+    // `curTick() + aiaKdDefer`, and ZEROS the field so subsequent
+    // packets of the same multi-packet request pass through
+    // unmodified -- this preserves "one validation tax per LLVM-IR
+    // load/store" rather than "per cache-line packet".
+    Tick aiaKdDefer = 0;
+  public:
     MemoryRequest(Addr add, size_t len);
     MemoryRequest(Addr add, const void *data, size_t len);
     ~MemoryRequest() {

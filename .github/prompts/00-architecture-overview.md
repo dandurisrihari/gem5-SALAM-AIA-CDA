@@ -25,6 +25,16 @@ Local, Global, Stream; SPMPort; RegPort) plus the off-cluster DmaPort
 on NoncoherentDma / StreamDma engines. On-cluster and off-cluster
 traffic are both translated by the single chip-wide AcceleratorIommu.
 
+**AIA-KD coverage (response-side defer; Option C):** every LLVM-IR
+load/store decides its validation cost at launch time
+(`LLVMInterface::chargeValidation`) and stamps the resulting tick
+delta on `MemoryRequest::aiaKdDefer`. The same five CommInterface
+response ports realize that cost via `tryAiaKdDelay()`, mirroring
+the IOMMU mechanism so both protections produce comparable
+`abs_overhead_us`. AIA-KD does NOT touch the off-cluster DmaPort —
+DMA engines do not execute LLVM IR, so there is no launch-time
+decision to realize.
+
 **Key insight (the whole reason this comparison exists):** AIA-KD pays
 once per **page**; IOMMU pays once per **access**. AIA-KD wins on
 access-heavy workloads with small page footprints; IOMMU wins on
@@ -43,8 +53,9 @@ SimObjects**, one shared per-`AccCluster`:
   │       wired into:  every CommInterface  via  acc.iommu = clstr.iommu
   │       wired into:  every LLVMInterface via  acc.llvm_interface.iommu = clstr.iommu
   │
-  ├── validator : AiaKdValidator         ← shared validated-pages cache + pending set + waiters
-  │       wired into:  every LLVMInterface via  AccConfig(... validator=clstr.validator)
+  ├── validator : AiaKdValidator         ← shared per-PID validated-page cache + in-flight set + chip-wide kernel-driver deadline (`nextReadyTick`)
+  │       wired into:  every CommInterface  via  acc.validator = clstr.validator     (response defer)
+  │       wired into:  every LLVMInterface via  AccConfig(... validator=clstr.validator)  (launch decision)
   │
   └── <accel_0>, <accel_1>, ...   (each has llvm_interface + comm_interface)
 ```
@@ -67,33 +78,36 @@ generator contract, why some things stay per-CU), see
 
 ## Architecture diagrams
 
-### AIA-KD: per-page first-touch tax through the host CPU
+### AIA-KD: per-page first-touch tax, realised on the response port
 
 ```
   ┌──────────┐  ┌──────────┐  ┌──────────┐ ... ┌──────────┐
   │   CU 0   │  │   CU 1   │  │   CU 2   │     │  CU N-1  │
   │ (LLVM IF)│  │ (LLVM IF)│  │ (LLVM IF)│     │ (LLVM IF)│
   └────┬─────┘  └────┬─────┘  └────┬─────┘     └────┬─────┘
-       │             │             │                │
-       │  every CU consults the SAME AiaKdValidator SimObject
+       │  At launch each CU calls validator->checkAndCharge()
+       │  and stamps memReq->aiaKdDefer (0 / partial / full).
        ▼             ▼             ▼                ▼
   ┌─────────────────────────────────────────────────────────┐
   │  AiaKdValidator (one per AccCluster)                    │
   │   * validatedPagesPerProcess[pid] : set<pageAddr>       │
-  │   * pendingValidationPages        : set<pageAddr>       │
-  │   * waitingForPage[pageAddr]      : list<waiters>       │
+  │   * pendingValidationPages[page]  : {readyTick, pid}    │
+  │   * nextReadyTick                 : chip-wide deadline  │
   │                                                         │
-  │  cache HIT  ──► fast path: 0 ticks, run kernel          │
-  │  cache MISS ──► slow path:                              │
-  │                  1. originator CU raises GIC IRQ        │
-  │                  2. host kernel "validates" (no-op)     │
-  │                  3. inject 8.367 µs stall (per-CU evt)  │
-  │                  4. originator wakes; install in cache  │
-  │                  5. dispatch coalesced waiters          │
+  │  CacheHit  ──► defer = 0                                │
+  │  Coalesced ──► defer = readyTick - now (tail of wait)   │
+  │  ColdMiss  ──► defer = latency, bump nextReadyTick      │
+  │  DmaCtrl   ──► defer = latency, no caching, bump deadline│
   └─────────────────────────────────────────────────────────┘
-              │                          ▲
-              ▼                          │
-         GIC ──► host CPU (one IRQ at a time)
+       │
+       ▼  Then the request flows through the CommInterface ports
+          exactly as in plain mode. On the response side:
+  ┌─────────────────────────────────────────────────────────┐
+  │  CommInterface::tryAiaKdDelay(pkt)                      │
+  │    if (defer > 0) { hold pkt for `defer` ticks; }       │
+  │    one defer per LLVM-IR access (zeroed after first pkt)│
+  │    pendingAiaKdResps  +  aiaKdRespEvent  drains FIFO    │
+  └─────────────────────────────────────────────────────────┘
 ```
 
 ### IOMMU: per-access tax through one shared SMMU port
@@ -182,10 +196,12 @@ pays the 8.367 µs first-touch tax **four times** (once per cluster's
 validator). Within a cluster:
 
 - `body` is the heaviest case (5 CUs racing on cold pages). Multiple
-  body CUs cold-missing on **different** pages now serialize through
-  the chip-wide FIFO on `body.validator` — they no longer issue 5
-  parallel IRQs. Multiple body CUs cold-missing on the **same** page
-  still coalesce on `waitingForPage[page]` (free).
+  body CUs cold-missing on **different** pages serialize through the
+  chip-wide `nextReadyTick` deadline on `body.validator` — concurrent
+  cold misses across CUs queue behind the one kernel-driver thread
+  rather than firing N parallel IRQs. Multiple body CUs hitting the
+  **same** in-flight page coalesce ("lazy promotion"): the late-comer
+  pays only the tail of the existing wait.
 - `classifier` (2 CUs) behaves like sys_validation — barely any
   cross-CU contention.
 - `head` and `tail` (4 CUs each) are intermediate.

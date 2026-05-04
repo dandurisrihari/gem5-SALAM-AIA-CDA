@@ -186,8 +186,15 @@ counts off-cluster requests).
 
 - The IOMMU is mutually exclusive with AIA-KD (enforced first in
   the fs-config layer, re-checked in the `LLVMInterface` ctor with
-  a `panic`). Both share the `launchRead`/`launchWrite` hook and
-  would double-count overhead.
+  a `panic`). Both now sit on the **same response-port hook** — in
+  every `recvTimingResp` lambda we call `tryIommuDelay(pkt)` first,
+  then `tryAiaKdDelay(pkt, isRead)`, then `recvPacket(pkt)`. The
+  mutual exclusion guarantees only one of the two ever returns
+  true in a given run, so they cannot stack.
+- AIA-KD now uses the same response-side defer pattern (Option C).
+  When changing the IOMMU response-path code, mirror the change
+  on the AIA-KD side (`tryAiaKdDelay` / `processAiaKdRespQueue` /
+  `pendingAiaKdResps`). See [01-aia-kd-design.md](01-aia-kd-design.md).
 - Do **not** re-introduce upstream-of-`CommInterface` injection.
   Five earlier attempts (deferring at `launchRead`/`launchWrite` or
   anywhere before `comm->enqueueRead`) all produced

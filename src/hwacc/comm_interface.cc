@@ -42,7 +42,10 @@ CommInterface::CommInterface(const CommInterfaceParams &p) :
     reset_spm(p.reset_spm),
     iommu(p.iommu),
     iommuRespEvent([this]{ processIommuRespQueue(); },
-                   name() + ".iommuRespEvent") {
+                   name() + ".iommuRespEvent"),
+    validator(p.validator),
+    aiaKdRespEvent([this]{ processAiaKdRespQueue(); },
+                   name() + ".aiaKdRespEvent") {
     processDelay = 1000 * clock_period;
     FLAG_OFFSET = 0;
     CONFIG_OFFSET = flag_size;
@@ -108,11 +111,63 @@ CommInterface::tryIommuDelay(PacketPtr pkt) {
 }
 
 bool
+CommInterface::tryAiaKdDelay(PacketPtr pkt, bool isRead) {
+    // Realize the launch-time AIA-KD validator decision on the
+    // response path. The decision (page cache hit / coalesced wait /
+    // cold miss / DMA-ctrl) was made by AiaKdValidator::checkAndCharge
+    // inside LLVMInterface::ActiveFunction::launchRead/launchWrite,
+    // which stamped the resulting tick delta onto MemoryRequest::
+    // aiaKdDefer. Here we look up the MemoryRequest for `pkt`, read
+    // (and immediately CLEAR) the stamp, and queue the packet for
+    // `curTick() + defer` if non-zero.
+    //
+    // The clear-after-first-defer semantics enforce "one validation
+    // tax per LLVM-IR load/store" rather than "per cache-line
+    // packet": a multi-cache-line MemoryRequest fires its packets
+    // sequentially (the second packet only issues from
+    // recvPacket -> readQueue.push_front -> tickEvent -> tryRead),
+    // so deferring the FIRST response by D ticks pushes every
+    // subsequent issue back by D, and the access commits at
+    // (last_packet_arrival + D) -- mirroring real "validate then
+    // execute" hardware semantics.
+    //
+    // All AIA-KD bookkeeping (per-PID page cache, in-flight set,
+    // chip-wide kernel-driver deadline, stats) lives in the
+    // AiaKdValidator SimObject pointed to by `validator`. The
+    // SimObject is shared across every CommInterface in the
+    // AccCluster, so cluster-wide coalescing already happened at
+    // launch time.
+    //
+    // Mutually exclusive with the IOMMU mechanism: enforced by
+    // LLVMInterface ctor panic. A run is either IOMMU OR AIA-KD,
+    // never both, so only one of pendingIommuResps /
+    // pendingAiaKdResps is ever non-empty.
+    if (!validator || !validator->enabled()) return false;
+
+    MemoryRequest *req = findMemRequest(pkt, isRead);
+    if (!req || req->aiaKdDefer == 0) return false;
+
+    Tick defer = req->aiaKdDefer;
+    req->aiaKdDefer = 0;  // one-shot per LLVM-IR access
+
+    Tick ready = curTick() + defer;
+    pendingAiaKdResps.push_back({pkt, ready});
+    if (!aiaKdRespEvent.scheduled()) {
+        schedule(aiaKdRespEvent, ready);
+    } else if (aiaKdRespEvent.when() > ready) {
+        reschedule(aiaKdRespEvent, ready);
+    }
+    return true;
+}
+
+bool
 CommInterface::MemSidePort::recvTimingResp(PacketPtr pkt) {
     // All MemSidePort roles (Local, Global, Stream) route through
-    // the shared IOMMU: every CU-issued memory access is translated
-    // by the single chip-wide SMMU.
+    // the shared IOMMU and AIA-KD validator: every CU-issued memory
+    // access pays the chip-wide protection tax (whichever is
+    // active; the two are mutually exclusive at runtime).
     if (owner->tryIommuDelay(pkt)) return true;
+    if (owner->tryAiaKdDelay(pkt, pkt->isRead())) return true;
     owner->recvPacket(pkt);
     return true;
 }
@@ -144,10 +199,10 @@ CommInterface::MemSidePort::sendPacket(PacketPtr pkt) {
 
 bool
 CommInterface::SPMPort::recvTimingResp(PacketPtr pkt) {
-    // All-ports coverage: SPM responses also pay the IOMMU tax so
-    // every CU memory access is uniformly translated through the
-    // single chip-wide SMMU.
+    // All-ports coverage: SPM responses also pay the IOMMU /
+    // AIA-KD tax so every CU memory access is uniformly accounted.
     if (owner->tryIommuDelay(pkt)) return true;
+    if (owner->tryAiaKdDelay(pkt, pkt->isRead())) return true;
     owner->recvPacket(pkt);
     return true;
 }
@@ -180,9 +235,9 @@ CommInterface::SPMPort::sendPacket(PacketPtr pkt) {
 bool
 CommInterface::RegPort::recvTimingResp(PacketPtr pkt) {
     // All-ports coverage: register-bank responses also flow through
-    // the IOMMU so every memory access seen by a CU is accounted
-    // for by the single chip-wide SMMU.
+    // the IOMMU and AIA-KD validator.
     if (owner->tryIommuDelay(pkt)) return true;
+    if (owner->tryAiaKdDelay(pkt, pkt->isRead())) return true;
     owner->recvPacket(pkt);
     return true;
 }
@@ -272,6 +327,23 @@ CommInterface::processIommuRespQueue() {
     }
     if (!pendingIommuResps.empty()) {
         schedule(iommuRespEvent, pendingIommuResps.front().readyTick);
+    }
+}
+
+void
+CommInterface::processAiaKdRespQueue() {
+    // Drain ready entries (FIFO, in-order: front is always earliest).
+    // Symmetric with processIommuRespQueue -- see tryAiaKdDelay() for
+    // the design rationale.
+    Tick now = curTick();
+    while (!pendingAiaKdResps.empty()
+           && pendingAiaKdResps.front().readyTick <= now) {
+        PacketPtr pkt = pendingAiaKdResps.front().pkt;
+        pendingAiaKdResps.pop_front();
+        recvPacket(pkt);
+    }
+    if (!pendingAiaKdResps.empty()) {
+        schedule(aiaKdRespEvent, pendingAiaKdResps.front().readyTick);
     }
 }
 

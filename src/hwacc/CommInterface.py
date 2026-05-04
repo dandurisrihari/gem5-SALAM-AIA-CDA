@@ -33,3 +33,14 @@ class CommInterface(BasicPioDevice):
     iommu = Param.AcceleratorIommu(NULL,
         "Device-wide accelerator IOMMU shared with sibling CUs "
         "(NULL when IOMMU disabled)")
+
+    # Shared device-wide AIA-KD validator SimObject (one per
+    # AccCluster). When set, every response port calls
+    # tryAiaKdDelay() to realize per-load/store kernel-validator
+    # latency that LLVMInterface decided at launch time and stamped
+    # onto MemoryRequest::aiaKdDefer. Mutually exclusive with the
+    # IOMMU param at runtime (LLVMInterface's ctor panics if both
+    # are enabled). NULL == AIA-KD disabled.
+    validator = Param.AiaKdValidator(NULL,
+        "Device-wide AIA-KD validator shared with sibling CUs "
+        "(NULL when AIA-KD disabled)")

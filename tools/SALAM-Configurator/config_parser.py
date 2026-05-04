@@ -363,10 +363,15 @@ class Accelerator:
         # short-circuits.
         lines.append("clstr." + self.name + ".iommu = clstr.iommu")
 
-        # NOTE: AiaKdValidator wiring is NOT emitted here because
-        # llvm_interface is created inside AccConfig() (called below);
-        # the validator pointer is therefore handed in via the
-        # `validator=` kwarg and assigned by AccConfig.
+        # Wire the cluster-shared AiaKdValidator into the CommInterface
+        # too: in Option C the response-path defer (tryAiaKdDelay)
+        # mirrors the IOMMU's tryIommuDelay and lives on the same
+        # SimObject. AccConfig will additionally hand the validator
+        # to acc.llvm_interface (chargeValidation) below; keeping
+        # both wirings in lockstep is required because the launch
+        # decision (LLVMInterface) and its realization (CommInterface)
+        # must consult the same shared state.
+        lines.append("clstr." + self.name + ".validator = clstr.validator")
 
         # Pass kernel validation options from args/options
         lines.append("AccConfig(clstr." + self.name + ", ir, hw_config,")

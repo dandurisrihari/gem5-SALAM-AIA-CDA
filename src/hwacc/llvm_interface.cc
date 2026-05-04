@@ -704,47 +704,42 @@ LLVMInterface::ActiveFunction::launchRead(
         // ====================================================
 
         // ====================================================
-        // KERNEL VALIDATION (AIA -> KD) FAST-PATH FOR LOADS
-        // POST-HOC ACCOUNTING (Option A): mirror the IOMMU model.
-        // We never stall the scheduler on a validation result. On a
-        // page first-touch we charge one cold-miss latency into the
-        // per-CU analytical budget and immediately mark the page
-        // validated, then fall through to launch the read the same
-        // tick. Rationale: the previous in-sim stall (return false +
-        // FIFO + replay) coupled to DDR queue dynamics across the
-        // many parallel CUs in this cluster and could push aia-kd
-        // simTicks BELOW plain (negative abs_overhead_us) by
-        // staggering DDR pressure. Post-hoc accounting keeps
-        // simTicks aligned with plain so cluster-level deltas
-        // reflect the protection cost only.
+        // KERNEL VALIDATION (AIA -> KD) -- OPTION C (launch-time
+        // decision, response-path defer).
         //
-        // Page granularity is 4 KiB. Accesses that straddle a page
-        // boundary only validate the first page (acceptable for
-        // SALAM accelerators which use word-aligned scalar/vector
-        // accesses).
+        // For every LLVM-IR load we ask the chip-wide validator
+        // whether this access pays the validation tax (cache hit ->
+        // 0; coalesced wait -> remaining ticks until the in-flight
+        // page becomes ready; cold miss -> full per-page latency
+        // ending after the chip-wide kernel-driver deadline; DMA-
+        // ctrl write doesn't apply to loads). The returned tick
+        // delta is stamped onto MemoryRequest::aiaKdDefer; the
+        // CommInterface response path (tryAiaKdDelay) holds the
+        // returning packet for that many ticks before completing
+        // the load. The scheduler runs unmodified, exactly as in
+        // plain mode -- the realized latency is purely a
+        // response-side stretch, mirroring the IOMMU model so the
+        // two mechanisms produce comparable abs_overhead_us.
+        //
+        // Page granularity is 4 KiB. Multi-cache-line accesses are
+        // taxed once per LLVM-IR access (CommInterface zeroes the
+        // stamp after deferring the first packet); subsequent
+        // packets of the same MemoryRequest pass through inline.
         // ====================================================
+        Tick aiaKdDefer = 0;
         if (owner->isKernelValidationEnabled()) {
-            if (owner->isPageValidated(ptrAddr)) {
-                owner->incrementValidationCacheHits();
-                if (dbg)
-                    DPRINTFS(RuntimeCompute, owner,
-                        "|| Cache HIT for READ: addr=0x%016lx - proceeding\n",
-                        ptrAddr);
-            } else {
-                // Cold miss (first touch this PID): post-hoc charge
-                // the configured per-cold-miss latency and cache the
-                // page so siblings see a hit.
-                owner->accountValidation(ptrAddr, /*dmaCtrl=*/false);
-                if (dbg)
-                    DPRINTFS(RuntimeCompute, owner,
-                        "|| Post-hoc validation for READ: "
-                        "addr=0x%016lx, size=%lu\n",
-                        ptrAddr, (unsigned long)reqSize);
-            }
-            // Fall through to launch the read normally.
+            aiaKdDefer = owner->chargeValidation(ptrAddr,
+                                                 /*isWrite=*/false);
+            if (dbg)
+                DPRINTFS(RuntimeCompute, owner,
+                    "|| AIA-KD READ defer=%llu addr=0x%016lx "
+                    "size=%lu\n",
+                    (unsigned long long)aiaKdDefer, ptrAddr,
+                    (unsigned long)reqSize);
         }
 
         auto memReq = (readInst)->createMemoryRequest();
+        memReq->aiaKdDefer = aiaKdDefer;
         auto rd_uid = readInst->getUID();
         readQueue.insert({rd_uid, (readInst)});
         readQueueMap.insert({memReq, rd_uid});
@@ -773,41 +768,25 @@ LLVMInterface::ActiveFunction::launchWrite(
     // ====================================================
 
     // ====================================================
-    // KERNEL VALIDATION (AIA -> KD) FAST-PATH FOR STORES
-    // POST-HOC ACCOUNTING (Option A); see launchRead() above for
-    // the rationale. Page granularity = 4 KiB.
-    //
-    // DMA-control-reg write exception: writes whose target lies in
-    // any DMA's PIO range bypass the validated-page cache. Every
-    // such store reprograms the engine with a (potentially new)
-    // (src, dst, len) triple, so the kernel must inspect each write
-    // individually and we charge a cold-miss latency every time.
-    // Reads are unaffected (status polling is benign).
+    // KERNEL VALIDATION (AIA -> KD) -- OPTION C for stores.
+    // See launchRead() for the design rationale. The validator's
+    // checkAndCharge() owns the DMA-control-reg policy: writes
+    // landing in any DMA's PIO range never enter the page cache
+    // (every reprogram pays the full inspection latency); ordinary
+    // stores share the per-PID 4 KiB page cache with loads.
     // ====================================================
+    Tick aiaKdDefer = 0;
     if (owner->isKernelValidationEnabled()) {
-        bool dmaCtrl = owner->isDmaCtrlAddr(ptrAddr);
-        if (!dmaCtrl && owner->isPageValidated(ptrAddr)) {
-            owner->incrementValidationCacheHits();
-            if (dbg)
-                DPRINTFS(RuntimeCompute, owner,
-                    "|| Cache HIT for WRITE: addr=0x%016lx - proceeding\n",
-                    ptrAddr);
-        } else {
-            // Cold miss (first touch this PID), or DMA-ctrl write
-            // (always charges). Post-hoc account the latency and
-            // for non-DMA-ctrl writes also cache the page.
-            owner->accountValidation(ptrAddr, dmaCtrl);
-            if (dbg)
-                DPRINTFS(RuntimeCompute, owner,
-                    "|| Post-hoc validation for WRITE: "
-                    "addr=0x%016lx, size=%lu%s\n",
-                    ptrAddr, (unsigned long)reqSize,
-                    dmaCtrl ? " [DMA-CTRL]" : "");
-        }
-        // Fall through to launch the write normally.
+        aiaKdDefer = owner->chargeValidation(ptrAddr, /*isWrite=*/true);
+        if (dbg)
+            DPRINTFS(RuntimeCompute, owner,
+                "|| AIA-KD WRITE defer=%llu addr=0x%016lx size=%lu\n",
+                (unsigned long long)aiaKdDefer, ptrAddr,
+                (unsigned long)reqSize);
     }
 
     auto memReq = (writeInst)->createMemoryRequest();
+    memReq->aiaKdDefer = aiaKdDefer;
     trackWrite(memReq->getAddress(), writeInst);
     auto wr_uid = writeInst->getUID();
     writeQueue.insert({wr_uid, (writeInst)});
@@ -1322,339 +1301,65 @@ LLVMInterface::createInstruction(llvm::Instruction * inst, uint64_t id) {
 }
 
 // Kernel validation functions
-// Models AIA consulting KD for SMID validation
+// Models AIA consulting KD for SMID validation.
+//
+// OPTION C (current design): the launch-time decision lives in
+// chargeValidation() below. The previous in-sim stall machinery
+// (queueWaitingInstruction / sendValidationRequest / completeValidation
+// / validateWithKernel + per-CU EventFunctionWrapper + GIC IRQ poke)
+// was removed: it produced negative abs_overhead_us by reshaping DDR
+// queue timing, and it could not be apples-to-apples compared with the
+// IOMMU mechanism (which already injects latency on the response
+// path). Option C makes both mechanisms response-path latency taxes,
+// stamped onto MemoryRequest::aiaKdDefer at LLVM IF and realized by
+// CommInterface::tryAiaKdDelay -- mirroring CommInterface::
+// tryIommuDelay exactly. See .github/prompts/01-aia-kd-design.md and
+// 06-gotchas-and-history.md.
 
-void
-LLVMInterface::queueWaitingInstruction(uint64_t addr,
-    std::shared_ptr<SALAM::Instruction> inst,
-    ActiveFunction* func, bool isRead, size_t size)
+Tick
+LLVMInterface::chargeValidation(uint64_t addr, bool isWrite)
 {
-    uint64_t pageAddr = addr & ~0xFFFULL;
-    // Park the waiter in the cluster-shared validator. `func` is
-    // erased to void* in the SimObject's struct (which is unaware of
-    // ActiveFunction); processValidationResponse() casts it back.
-    AiaKdValidator::WaitingInstruction waiting;
-    waiting.inst = inst;
-    waiting.func = static_cast<void*>(func);
-    waiting.isRead = isRead;
-    waiting.addr = addr;
-    waiting.size = size;
-    waiting.queueTime = curTick();  // When this instruction started waiting
-    validator->waitingForPage[pageAddr].push_back(waiting);
-    pendingValidationUIDs.insert(inst->getUID());
-}
+    if (!validator || !validator->enabled()) return 0;
 
-void
-LLVMInterface::sendValidationRequest(uint64_t addr, size_t size, bool isRead,
-                                     std::shared_ptr<SALAM::Instruction> inst,
-                                     ActiveFunction* func)
-{
-    // Cold-miss path. Caller (launchRead/launchWrite) has already
-    // verified the page is neither cached nor in flight (against the
-    // SHARED `validatedPagesPerProcess` and `pendingValidationPages`
-    // sets, so this is genuinely the first device-wide touch).
-    //
-    // Layering note (chip-wide validator):
-    //   * `pendingValidationPages` is shared so a sibling CU's later
-    //     touch on the same page coalesces in launchRead/Write.
-    //   * The FIFO + response event live on the validator (one per
-    //     cluster) -- ONE chip-wide kernel-driver service. Sibling-CU
-    //     cold misses are interleaved into the same FIFO instead of
-    //     racing through per-CU events.
-    //   * Coalesced sibling-CU waiters are tracked in the SHARED
-    //     `waitingForPage` map and dispatched by completeValidation()
-    //     when the validator drains a ready entry.
-    //
-    // We:
-    //   1) mark the page as in-flight so subsequent same-page accesses
-    //      coalesce (cross-CU) instead of issuing duplicate IRQs;
-    //   2) hand a PendingRequest to validator->enqueue(), tagged with
-    //      `cu`/`func` so the validator can route completion back to
-    //      this CU's completeValidation();
-    //   3) raise the configured GIC IRQ (currently suppressed -- see
-    //      block comment below for why).
-    uint64_t pageAddr = addr & ~0xFFFULL;
+    AiaKdValidator::Outcome outcome;
+    Tick defer = validator->checkAndCharge(processId, addr, isWrite,
+                                           outcome);
 
-    // DMA-control-reg pages are NEVER added to the chip-wide pending
-    // set. Doing so would let a sibling cold-miss store to the same
-    // page coalesce behind us and skip its own validation -- breaking
-    // the "every DMA program is independently inspected" invariant.
-    // Mirror block in AiaKdValidator::processResponse() also skips
-    // the validatedPagesPerProcess insertion for these addresses.
-    if (!validator->isDmaCtrl(addr)) {
-        validator->pendingValidationPages.insert(pageAddr);
+    // Update the per-CU mirror counters that the printer below
+    // (printKernelValidationStats) renders into the harvested
+    // text. The validator owns the chip-wide totals; these are
+    // CU-local replicas so per-CU stats files stay coherent.
+    switch (outcome) {
+      case AiaKdValidator::Outcome::Disabled:
+        break;
+      case AiaKdValidator::Outcome::CacheHit:
+        validationCacheHits++;
+        break;
+      case AiaKdValidator::Outcome::Coalesced:
+        validationCoalescedWaits++;
+        totalCoalescedWaitLatency += defer;
+        break;
+      case AiaKdValidator::Outcome::ColdMiss:
+        totalKernelValidations++;
+        totalKernelValidationLatency += defer;
+        break;
+      case AiaKdValidator::Outcome::DmaCtrl:
+        // DMA-ctrl writes are still "full validation requests" for
+        // accounting purposes; the dmaCtrlValidations counter is the
+        // subset broken out for the harvested
+        // "of which DMA-ctrl writes:" line.
+        totalKernelValidations++;
+        dmaCtrlValidations++;
+        totalKernelValidationLatency += defer;
+        break;
     }
 
-    AiaKdValidator::PendingRequest req;
-    req.addr = addr;
-    req.size = size;
-    req.isRead = isRead;
-    req.inst = inst;
-    req.func = static_cast<void*>(func);
-    req.cu   = static_cast<void*>(this);
-    req.requestTime = curTick();
-    req.pid = processId;
-    req.requestId = 0;  // assigned inside enqueue()
-
     DPRINTF(LLVMInterface,
-            "[AIA->KD] Validation req: %s addr=0x%016lx "
-            "(page 0x%016lx), size=%lu, pid=%llu, uid=%llu\n",
-            isRead ? "READ" : "WRITE", addr, pageAddr,
-            (unsigned long)size, processId, inst->getUID());
+            "[AIA-KD] %s addr=0x%016lx pid=%llu outcome=%d defer=%llu\n",
+            isWrite ? "WRITE" : "READ", addr, processId,
+            (int)outcome, (unsigned long long)defer);
 
-    pendingValidationUIDs.insert(inst->getUID());
-    totalKernelValidations++;
-
-    // NOTE: We deliberately do NOT raise a real GIC interrupt here.
-    // The simulated bare-metal CPU has no meaningful ISR for it (the
-    // benchmarks ship a stub isr.c), so a real sendInt() only injects
-    // pipeline jitter into DerivO3CPU and skews end-to-end sim_ticks
-    // by far more than the modeled validation latency. Validation is
-    // entirely modeled in the gem5 side via the validator's
-    // responseEvent; this gives a clean, latency-only AIA-KD curve.
-    //
-    // If a future configuration actually wires a kernel-side handler,
-    // re-enable by calling comm->getGic()->sendInt(validationIntNum)
-    // here and a matching clearInt() in completeValidation().
-
-    validator->enqueue(std::move(req));
-}
-
-void
-LLVMInterface::completeValidation(const AiaKdValidator::PendingRequest &req,
-                                  Tick currentTick)
-{
-    // Per-request dispatch invoked by the chip-wide validator. The
-    // page has already been marked validated by the validator itself;
-    // this method only handles the per-CU side-effects: stats, RAW
-    // re-check, launchRead/Write replay, and the waiter fan-out for
-    // sibling CUs that coalesced behind this request.
-    //
-    // The originator's CU is `this`; per-CU sets we may touch include
-    // `pendingValidationUIDs`, `revalidatedUIDs`, and the
-    // `totalKernelValidationLatency` counter. Waiter side-effects are
-    // routed through the waiter's own CU pointer
-    // (waiting.func->owner) -- see the fan-out block below.
-    bool validationOK = validateWithKernel(req.addr, req.size, req.pid);
-
-    Tick validationTime = currentTick - req.requestTime;
-    totalKernelValidationLatency += validationTime;
-
-    DPRINTF(LLVMInterface,
-            "[KD->AIA] Response #%llu: %s addr=0x%016lx, "
-            "pid=%llu, uid=%llu => %s (lat=%llu)\n",
-            req.requestId, req.isRead ? "READ" : "WRITE",
-            req.addr, req.pid, req.inst->getUID(),
-            validationOK ? "OK" : "DENIED", validationTime);
-
-    pendingValidationUIDs.erase(req.inst->getUID());
-
-    ActiveFunction *func = static_cast<ActiveFunction*>(req.func);
-    func->removeFromReservation(req.inst->getUID());
-
-    // Matching no-op for the suppressed sendInt() in
-    // sendValidationRequest(): we never raised the IRQ, so there is
-    // nothing to clear. Kept as a comment to make the AIA-KD
-    // protocol pairing obvious to readers.
-
-    if (validationOK) {
-        // Validation accepted: dispatch the originating access. Note:
-        // the dependency framework already cleared this instruction's
-        // producers before we issued the validation request, so only
-        // RAW (against newer in-flight writes that appeared while we
-        // waited) needs to be re-checked here.
-        if (req.isRead) {
-            uint64_t readAddr = req.inst->getPtrOperandValue(0);
-            if (func->writeActive(readAddr)) {
-                // RAW hazard: re-add dependency and put back into
-                // reservation. Mark UID as "already paid" so the
-                // eventual cache-hit replay does not double-count.
-                auto activeWrite = func->getActiveWrite(readAddr);
-                req.inst->addRuntimeDependency(activeWrite);
-                activeWrite->addRuntimeUser(req.inst);
-                revalidatedUIDs.insert(req.inst->getUID());
-                func->addToReservation(req.inst);
-                DPRINTF(LLVMInterface,
-                        "[AIA] RAW hazard for READ at 0x%016lx - "
-                        "re-queuing to reservation\n", req.addr);
-            } else {
-                auto memReq = req.inst->createMemoryRequest();
-                auto rd_uid = req.inst->getUID();
-                func->readQueue.insert({rd_uid, req.inst});
-                func->readQueueMap.insert({memReq, rd_uid});
-                launchRead(memReq, func);
-                DPRINTF(LLVMInterface,
-                        "[AIA] Proceeding with READ at 0x%016lx\n",
-                        req.addr);
-            }
-        } else {
-            auto memReq = req.inst->createMemoryRequest();
-            func->trackWrite(memReq->getAddress(), req.inst);
-            auto wr_uid = req.inst->getUID();
-            func->writeQueue.insert({wr_uid, req.inst});
-            func->writeQueueMap.insert({memReq, wr_uid});
-            launchWrite(memReq, func);
-            DPRINTF(LLVMInterface,
-                    "[AIA] Proceeding with WRITE at 0x%016lx\n",
-                    req.addr);
-        }
-
-        // Process any instructions that coalesced behind this page
-        // validation. With shared `waitingForPage`, waiters may
-        // belong to a different CU than the originator -- the
-        // device-wide AIA-KD validator services them all from one
-        // queue. We must therefore route every per-CU side-effect
-        // through `waiting.func->owner` (NOT `this`):
-        //
-        //   * `pendingValidationUIDs` -- per-CU set; the entry was
-        //     inserted by the waiter's CU in
-        //     queueWaitingInstruction(), so erase it there.
-        //   * `removeFromReservation` -- the reservation queue lives
-        //     on `waiting.func` itself.
-        //   * `revalidatedUIDs`       -- per-CU set consumed by the
-        //     waiter's launchRead/Write replay path.
-        //   * `launchRead`/`launchWrite` -- must use the waiter's
-        //     `comm` port (i.e. `waiting.func->owner->...`),
-        //     otherwise responses route to the wrong CU and
-        //     `findMemRequest` panics on an unknown MemoryRequest.
-        uint64_t pageAddr = req.addr & ~0xFFFULL;
-        auto waitIt = validator->waitingForPage.find(pageAddr);
-        if (waitIt != validator->waitingForPage.end()) {
-            for (auto &waiting : waitIt->second) {
-                ActiveFunction *waitingFunc =
-                    static_cast<ActiveFunction*>(waiting.func);
-                LLVMInterface *waiterCU = waitingFunc->owner;
-                waiterCU->pendingValidationUIDs.erase(
-                    waiting.inst->getUID());
-                waitingFunc->removeFromReservation(
-                    waiting.inst->getUID());
-
-                // Track coalesced wait statistics on the *waiter's*
-                // CU so per-CU stats stay coherent. NOT a cache hit:
-                // it actually waited.
-                waiterCU->validationCoalescedWaits++;
-                Tick waitLatency = currentTick - waiting.queueTime;
-                waiterCU->totalCoalescedWaitLatency += waitLatency;
-
-                DPRINTF(LLVMInterface,
-                        "[AIA] Processing waiting %s at 0x%016lx "
-                        "for CU %s (waited %llu ticks)\n",
-                        waiting.isRead ? "READ" : "WRITE",
-                        waiting.addr, waiterCU->name().c_str(),
-                        waitLatency);
-
-                if (waiting.isRead) {
-                    uint64_t readAddr =
-                        waiting.inst->getPtrOperandValue(0);
-                    if (waitingFunc->writeActive(readAddr)) {
-                        auto activeWrite =
-                            waitingFunc->getActiveWrite(readAddr);
-                        waiting.inst->addRuntimeDependency(activeWrite);
-                        activeWrite->addRuntimeUser(waiting.inst);
-                        waiterCU->revalidatedUIDs.insert(
-                            waiting.inst->getUID());
-                        waitingFunc->addToReservation(waiting.inst);
-                        DPRINTF(LLVMInterface,
-                                "[AIA] RAW hazard for waiting READ at "
-                                "0x%016lx - re-queuing\n",
-                                waiting.addr);
-                    } else {
-                        auto memReq =
-                            waiting.inst->createMemoryRequest();
-                        auto rd_uid = waiting.inst->getUID();
-                        waitingFunc->readQueue.insert(
-                            {rd_uid, waiting.inst});
-                        waitingFunc->readQueueMap.insert(
-                            {memReq, rd_uid});
-                        waiterCU->launchRead(memReq, waitingFunc);
-                    }
-                } else {
-                    auto memReq = waiting.inst->createMemoryRequest();
-                    waitingFunc->trackWrite(
-                        memReq->getAddress(), waiting.inst);
-                    auto wr_uid = waiting.inst->getUID();
-                    waitingFunc->writeQueue.insert(
-                        {wr_uid, waiting.inst});
-                    waitingFunc->writeQueueMap.insert(
-                        {memReq, wr_uid});
-                    waiterCU->launchWrite(memReq, waitingFunc);
-                }
-            }
-            validator->waitingForPage.erase(waitIt);
-        }
-    } else {
-        // Access denied by the kernel-side policy.
-        //
-        // `validateWithKernel()` is currently a stub that always
-        // returns true (we model only the latency of consulting the
-        // driver, not the policy). This branch is therefore
-        // unreachable today. If a real denial policy is added in
-        // future work, the originator + every coalesced waiter must
-        // be (a) cleanly removed from cluster-shared validator state
-        // and (b) faulted/cancelled in their per-CU pipelines.
-        //
-        // Step (a) is done here so the validator's bookkeeping does
-        // not leak even if step (b) is not yet implemented. Step (b)
-        // requires a SALAM-level "instruction fault" mechanism that
-        // does not exist yet, so we still panic to make the missing
-        // work loud rather than silently dropping accesses.
-        kernelValidationDenied++;
-
-        uint64_t pageAddr = req.addr & ~0xFFFULL;
-
-        // Drain the originator's bookkeeping: per-CU pending-UID set
-        // and reservation queue entry. (pendingValidationUIDs erase
-        // for the originator was already done above; the
-        // removeFromReservation call too. Repeated here for clarity
-        // when reading the denial path in isolation -- both calls
-        // are idempotent.)
-        pendingValidationUIDs.erase(req.inst->getUID());
-        func->removeFromReservation(req.inst->getUID());
-
-        // Drain coalesced waiters from the cluster-shared
-        // waitingForPage map and from each waiter's per-CU state.
-        auto waitIt = validator->waitingForPage.find(pageAddr);
-        if (waitIt != validator->waitingForPage.end()) {
-            for (auto &waiting : waitIt->second) {
-                ActiveFunction *waitingFunc =
-                    static_cast<ActiveFunction*>(waiting.func);
-                LLVMInterface *waiterCU = waitingFunc->owner;
-                waiterCU->pendingValidationUIDs.erase(
-                    waiting.inst->getUID());
-                waitingFunc->removeFromReservation(
-                    waiting.inst->getUID());
-                waiterCU->kernelValidationDenied++;
-            }
-            validator->waitingForPage.erase(waitIt);
-        }
-
-        // Drop the page from the cluster-shared in-flight set so
-        // future accesses to the same page do not coalesce against
-        // a request that no longer exists.
-        validator->pendingValidationPages.erase(pageAddr);
-
-        panic("[SECURITY] Kernel denied %s: addr=0x%016lx, pid=%llu. "
-              "Validator-side state has been cleaned, but per-CU "
-              "instruction-fault dispatch is NOT YET IMPLEMENTED -- "
-              "see denial-path checklist in "
-              ".github/prompts/01-aia-kd-design.md.",
-              req.isRead ? "READ" : "WRITE", req.addr, req.pid);
-    }
-}
-
-bool
-LLVMInterface::validateWithKernel(uint64_t addr, size_t size, uint64_t pid)
-{
-    // Stub for the actual kernel-side check. We model only the latency
-    // overhead of consulting the kernel driver, not the policy itself,
-    // so this always returns true. Replacing this with a real policy
-    // (e.g. an SMID/page allow-list) requires also handling the denial
-    // path in completeValidation(), which today panics -- see
-    // .github/prompts/01-aia-kd-design.md for the cleanup checklist.
-    DPRINTF(LLVMInterface,
-            "[KD] VALIDATED: addr=0x%016lx, size=%lu, pid=%llu\n",
-            addr, (unsigned long)size, pid);
-    return true;
+    return defer;
 }
 
 
@@ -1711,16 +1416,14 @@ LLVMInterface::printKernelValidationStats()
     std::cout << std::endl;
 
     // Cache statistics
-    // Count total unique pages across all processes. The cache lives
-    // on the cluster-shared validator SimObject, so this naturally
-    // reports the device-wide count regardless of which CU printed.
+    // The cache lives on the cluster-shared validator SimObject, so
+    // these helpers naturally report device-wide counts regardless
+    // of which CU printed.
     size_t totalUniquePages = 0;
     size_t numCachedProcesses = 0;
     if (validator) {
-        for (const auto& procCache : validator->validatedPagesPerProcess) {
-            totalUniquePages += procCache.second.size();
-        }
-        numCachedProcesses = validator->validatedPagesPerProcess.size();
+        totalUniquePages   = validator->uniquePages();
+        numCachedProcesses = validator->numCachedProcesses();
     }
     double cacheHitRate = totalMemAccesses > 0 ?
         (100.0 * validationCacheHits / totalMemAccesses) : 0.0;

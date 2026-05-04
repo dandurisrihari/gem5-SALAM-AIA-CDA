@@ -1,206 +1,253 @@
 # 01 — AIA-KD Design (Accelerator Isolation Architecture / Kernel Driver)
 
-> **Use this when** editing AIA-KD validation logic: latency model, the
-> validator SimObject, coalescing on `waitingForPage`, RAW re-check on
-> dispatch, or anything in `sendValidationRequest` /
-> `completeValidation`. For the high-level diagram see
+> **Use this when** editing AIA-KD validation logic: latency model,
+> the `AiaKdValidator` SimObject, page-cache / in-flight bookkeeping,
+> the launch-time decision in `LLVMInterface::chargeValidation()`,
+> the response-side defer in `CommInterface::tryAiaKdDelay()`, or
+> the `MemoryRequest::aiaKdDefer` field that links the two.
+> For the high-level diagram see
 > [00-architecture-overview.md](00-architecture-overview.md).
+> For the historical journey through Options A/B see
+> [06-gotchas-and-history.md](06-gotchas-and-history.md).
 
 ## What we model
 
 A software-defined protection scheme where the host OS kernel
 validates every **unique memory page** an accelerator intends to
-touch before the access is allowed to commit. Inspired by the AIA-KD
-paper's IRQ-driven kernel-driver path.
+touch before the access is allowed to commit. Inspired by the
+AIA-KD paper's IRQ-driven kernel-driver path, but modelled as a pure
+**latency tax on the response path** so it is apples-to-apples
+comparable with the IOMMU mechanism (which already taxes responses).
 
-- **Cost model**: per-page first-touch tax. The accelerator stalls
-  the offending instruction, raises a GIC IRQ to the host, the
-  kernel "validates" the page (functionally a no-op; we charge a
-  fixed `kernel_validation_latency`, default 8.367 µs to match the
-  AIA-KD paper's measured IRQ + driver round-trip), and the page is
-  then cached in `validatedPagesPerProcess[PID]`. Subsequent
-  accesses to the same page by the same process are free.
-- **DMA control-reg exception (per-write re-validation)**: writes
-  whose target lies in any DMA engine's PIO range **bypass** both
-  the validated-page cache and pending-page coalescing. Every store
-  pays full `kernel_validation_latency`. Justification: each write
-  to `SRC` / `DST` / `LEN` / `START` reprograms the DMA with a new
-  (potentially adversarial) request, so the kernel must inspect
-  every program independently. Reads to those same pages are
-  unaffected (status polling is benign). The per-cluster set of
-  DMA PIO ranges is plumbed by the SALAM-Configurator into the
-  `AiaKdValidator.dma_pio_ranges` VectorParam at config time.
-- **Coalescing**: a burst of accesses to a fresh **non-DMA-ctrl** page pays the
-  latency only once — followers register on `waitingForPage[page]`
-  and are dispatched together when the response fires. DMA-ctrl
-  writes do not coalesce: each store fires its own IRQ.
-- **What we expect to see**: high one-time overhead on first access
-  to a page; near-zero steady-state cost once the working set is
-  paged in.
+- **Cost model**: per-page first-touch tax. At each LLVM-IR memory
+  access we ask the chip-wide validator to classify the access; the
+  result is a per-access tick delta that the response port holds the
+  returning packet for. The accelerator scheduler is **not** stalled
+  in software — the realised latency is purely a response-side
+  stretch (see "Why response-side defer", below).
+- **Outcomes returned by `AiaKdValidator::checkAndCharge()`**:
+  - `Disabled`  — validator is null or `enabled()` is false; defer = 0.
+  - `CacheHit`  — `(pid, page)` already validated; defer = 0.
+  - `Coalesced` — the page is currently in flight for any CU; defer
+    is the **remaining** ticks until the in-flight entry completes
+    (the late-comer pays only the tail of the existing wait, not a
+    fresh full-latency request). Does NOT bump `nextReadyTick`.
+  - `ColdMiss`  — first chip-wide touch for `(pid, page)`; defer is
+    the configured `kernel_validation_latency`. The chip-wide
+    kernel-driver deadline (`nextReadyTick`) is bumped by `latency`
+    so concurrent cold misses serialize behind one another (one
+    driver thread).
+  - `DmaCtrl`   — write whose target lies in any DMA engine's PIO
+    range; defer is full `latency`, **does NOT enter the page
+    cache** (every reprogram pays again), and bumps
+    `nextReadyTick` like a cold miss.
+- **DMA control-reg policy**: stores into a DMA's PIO range
+  reprogram the engine with a (potentially adversarial) (src, dst,
+  len) triple, so each one must be inspected by the kernel. Reads
+  to those same pages are unaffected (status polling is benign).
+- **Coalescing** is "lazy promotion": a follower access pays only
+  the *tail* of the existing wait. There is no per-CU wake-up;
+  whichever access arrives next pays the remaining ticks. See
+  `AiaKdValidator::promoteReadyPages()` for the sweep that moves
+  expired in-flight entries into the per-PID cache.
+- **Multi-packet rule**: a single LLVM-IR access may fire several
+  cache-line-sized packets sequentially. Only the FIRST packet
+  carries the defer (`tryAiaKdDelay` zeroes
+  `MemoryRequest::aiaKdDefer` after consuming it); subsequent
+  packets pass through inline. This enforces "one validation tax
+  per LLVM-IR access" rather than "per cache line".
 
-## SimObject split (Stage B + chip-wide-FIFO refactor)
+## Option C — design rationale
 
-The cluster-shared cache + pending set + waiter queue **and** the
-chip-wide FIFO + response event live on the **`AiaKdValidator`**
-SimObject (one per `AccCluster`). This models a single kernel-driver
-thread fielding one IRQ at a time: ALL CUs in the cluster funnel
-their cold-miss requests into one FIFO, drained by one timer.
+Two earlier designs ran in this branch and were discarded; this
+section records why the current design (Option C) is correct.
 
-Each CU's `LLVMInterface` carries a (possibly null) `validator`
-pointer. Per-CU state — the `pendingValidationUIDs` set used by the
-fast path, the reservation queue, RAW dependency machinery, and the
-per-CU stats counters — stays on `LLVMInterface` because it is
-intrinsically per-CU.
+| Option | Decision time | Stall site | Result |
+|--------|---------------|------------|--------|
+| **A** (post-hoc accounting) | LLVM IF | none — counters only | `abs_overhead_us` was the sum of latency in counters but did not appear in `simTicks`; `runtime_us == plain` always. Wrong by definition. |
+| **B** (in-sim FIFO + IRQ + replay) | LLVM IF | LLVMInterface scheduler (`return false` from launchRead/Write, replay later) | Could push `aia-kd` simTicks **below** `plain`: stalling the scheduler reshapes DDR queue dynamics across the parallel CUs and decongests memory. Negative `abs_overhead_us`. |
+| **C** (current) | LLVM IF | response port (`CommInterface::tryAiaKdDelay`) | Tax is realised as a wall-clock stretch on the returning packet. Mirrors `tryIommuDelay` exactly so AIA-KD and IOMMU produce comparable `abs_overhead_us`. |
+
+Why response-side defer specifically: the IOMMU has always been
+modelled as a response-side delay (its hardware sits between memory
+and the CU; latency materialises when data comes back). AIA-KD's
+kernel-driver round-trip is conceptually upstream, but if we hold
+the *issue* the LLVM-IR scheduler runs through alternative ready
+instructions and reshuffles DRAM scheduling. Holding the *response*
+preserves DRAM scheduling identical to plain, isolating the
+protection cost as a pure additive stretch — exactly what we want
+to measure.
+
+## SimObject split
+
+The cluster-shared cache, in-flight set, and chip-wide kernel-driver
+deadline live on the **`AiaKdValidator`** SimObject (one per
+`AccCluster`). This models a single kernel-driver thread that can
+service one IRQ at a time — concurrent cold misses across all CUs
+serialize through the same `nextReadyTick` counter.
+
+Per-CU mirror counters (used only for the
+`printKernelValidationStats` text the harvester regexes bind to)
+stay on `LLVMInterface`. There is no per-CU pending-UID set, no
+per-CU response event, and no scheduler-side stall.
 
 | Lives on `AiaKdValidator` (cluster-shared) | Lives on `LLVMInterface` (per-CU) |
 |--------------------------------------------|------------------------------------|
-| `validatedPagesPerProcess[pid]`            | `pendingValidationUIDs`            |
-| `pendingValidationPages`                   | `revalidatedUIDs` (RAW replay)     |
-| `waitingForPage[pageAddr]`                 | per-CU stats counters              |
-| `pendingRequests` (chip-wide FIFO)         | `kernelValidationLatency` (mirrored, cross-checked)|
-| `responseEvent` (chip-wide timer)          |                                    |
-| `latency()`, `enabled()`                   |                                    |
-
-Both `WaitingInstruction::func` and `PendingRequest::func` are stored
-as `void*` inside the SimObject (it is unaware of
-`LLVMInterface::ActiveFunction`); the type erasure is undone at the
-dispatch site in `LLVMInterface::completeValidation()`. The
-`PendingRequest` additionally carries `void *cu` (the originating
-`LLVMInterface*`), letting the validator route completion back to
-the right CU without knowing its layout.
+| `validatedPagesPerProcess[pid]`            | `totalKernelValidations`           |
+| `pendingValidationPages[page] = {readyTick, originatorPid}` | `validationCacheHits` |
+| `nextReadyTick` (chip-wide deadline)       | `validationCoalescedWaits`         |
+| `latency()`, `enabled()`, `isDmaCtrl()`    | `dmaCtrlValidations`               |
+| chip-wide stats: `totalColdMisses`, `totalCoalesced`, `totalDmaCtrl`, `totalLatencyTicks` | `totalKernelValidationLatency`, `totalCoalescedWaitLatency` |
+| `uniquePages()`, `numCachedProcesses()`    | `kernelValidationDenied` (always 0)|
 
 ## Key files
 
 - Header: [src/hwacc/aia_kd_validator.hh](../../src/hwacc/aia_kd_validator.hh)
-- Impl  : [src/hwacc/aia_kd_validator.cc](../../src/hwacc/aia_kd_validator.cc) — `enqueue()` + `processResponse()` (drain + dispatch)
-- Param : [src/hwacc/AiaKdValidator.py](../../src/hwacc/AiaKdValidator.py) (`enabled`, `latency`)
-- Per-CU: [src/hwacc/llvm_interface.{hh,cc}](../../src/hwacc/llvm_interface.cc)
-  - `ActiveFunction::launchRead` / `launchWrite` — checkpoint
-  - `sendValidationRequest` — build PendingRequest, hand to `validator->enqueue()`
-  - `completeValidation(req, now)` — per-request dispatch invoked by
-    the validator: RAW re-check + launchRead/Write replay for the
-    originator and fan-out to coalesced waiters
-  - `queueWaitingInstruction` — coalescing helper
-  - `validateWithKernel` — currently always `true`
-  - `printKernelValidationStats` — final stats dump
+- Impl  : [src/hwacc/aia_kd_validator.cc](../../src/hwacc/aia_kd_validator.cc) — `checkAndCharge()` + `promoteReadyPages()`
+- Param : [src/hwacc/AiaKdValidator.py](../../src/hwacc/AiaKdValidator.py) (`enabled`, `latency`, `dma_pio_ranges`)
+- Per-access stamp: [src/hwacc/LLVMRead/src/mem_request.hh](../../src/hwacc/LLVMRead/src/mem_request.hh) — `Tick aiaKdDefer`
+- Launch decision: [src/hwacc/llvm_interface.cc](../../src/hwacc/llvm_interface.cc) — `chargeValidation()`, `ActiveFunction::launchRead/launchWrite` stamp the request
+- Response defer: [src/hwacc/comm_interface.cc](../../src/hwacc/comm_interface.cc) — `tryAiaKdDelay()`, `processAiaKdRespQueue()`, called from MemSidePort, SPMPort, RegPort `recvTimingResp` lambdas
+- Wiring  : [tools/SALAM-Configurator/config_parser.py](../../tools/SALAM-Configurator/config_parser.py) — emits `clstr.<acc>.validator = clstr.validator`
+- Stats reporter: [src/hwacc/llvm_interface.cc](../../src/hwacc/llvm_interface.cc) — `printKernelValidationStats()`
 
-## Runtime path (per memory access)
+## Runtime path (per LLVM-IR memory access)
 
-1. Read/write reaches `launchRead` / `launchWrite`.
-2. If validation enabled (validator non-null and `enableKernelValidation`):
-   - **Cache hit** (`isPageValidated`) → no latency, fall through.
-   - **Pending on same page** (`isPageValidationPending`) → enqueue in
-     `validator->waitingForPage[page]`, mark UID pending, return `false`.
-   - **Cache miss** → `sendValidationRequest` builds a
-     `AiaKdValidator::PendingRequest` (carrying `cu`+`func` for
-     callback) and calls `validator->enqueue()`. The validator
-     marks the page in `pendingValidationPages` (already done by
-     caller) and (re)schedules its single chip-wide `responseEvent`
-     for the head deadline `head.requestTime + validator->latency()`.
-3. `AiaKdValidator::processResponse()` fires:
-   - install the head page in `validatedPagesPerProcess[pid]`,
-   - clear from `pendingValidationPages`,
-   - call `cu->completeValidation(req, now)` on the originator, which:
-     - dispatches the originating request (RAW re-checked),
-     - replays every entry in `validator->waitingForPage[page]` —
-       each waiter routes through **its own** CU
-       (`waitingFunc->owner`) so per-CU stats stay coherent and the
-       response port returns to the right CU.
-   - reschedule `responseEvent` for the next FIFO head deadline if
-     work remains.
+1. `ActiveFunction::launchRead` / `launchWrite` builds the
+   `MemoryRequest` for the access.
+2. If AIA-KD is enabled it calls `owner->chargeValidation(addr,
+   isWrite)`, which delegates to `validator->checkAndCharge(...)`
+   and updates the per-CU mirror counters based on the returned
+   `Outcome`. The returned tick delta is stamped onto
+   `memReq->aiaKdDefer`.
+3. The request is enqueued normally (`comm->enqueueRead/Write`) —
+   no scheduler stall, no replay, no pending-UID set.
+4. The cache-line packets fire as in plain mode. Each response
+   reaches the appropriate `recvTimingResp` lambda
+   (MemSidePort / SPMPort / RegPort) and runs the gate:
+   ```cpp
+   if (owner->tryIommuDelay(pkt)) return true;
+   if (owner->tryAiaKdDelay(pkt, pkt->isRead())) return true;
+   owner->recvPacket(pkt);
+   ```
+   `tryAiaKdDelay` looks up the originating `MemoryRequest`, reads
+   `aiaKdDefer`, **zeroes it**, and pushes
+   `{pkt, curTick() + defer}` onto `pendingAiaKdResps`. The
+   `aiaKdRespEvent` is (re)scheduled for the front of the queue.
+5. When `aiaKdRespEvent` fires, `processAiaKdRespQueue()` drains
+   ready entries (FIFO, ordered by readyTick) and calls
+   `recvPacket(pkt)` on each. The access commits at
+   `original_arrival + defer`.
+
+## Mutual exclusion with IOMMU
+
+The IOMMU and AIA-KD mechanisms target the same response-port hook
+and produce overlapping latency. `LLVMInterface::LLVMInterface()`
+panics if both `enable_kernel_validation` and `enable_iommu` are
+true. As a result, only one of `pendingIommuResps` /
+`pendingAiaKdResps` is ever non-empty in a given run.
 
 ## Stats reported (`printKernelValidationStats`)
 
-- `totalKernelValidations` — full-latency requests
-- `dmaCtrlValidations` — subset of the above attributable to writes
-  into a DMA control-reg page (printed as
-  `"of which DMA-ctrl writes"`). For benchmarks that reprogram DMAs
-  many times (`bfs`, `mobilenetv2/body`), expect this to dominate
-  `totalKernelValidations` and the AIA-KD overhead to scale roughly
-  with `(num_dma_programs × writes_per_program × latency)`.
-- `validationCacheHits` — zero-latency hits
-- `validationCoalescedWaits` + `totalCoalescedWaitLatency` — partial-lat
-- `kernelValidationDenied` — currently always 0 (panic on deny)
-- Cache hit rate, unique pages validated, processes seen
-  (the cache totals are read from `validator->validatedPagesPerProcess`)
+The harvester (`tools/speedkills/harvest.py`) binds to the **exact
+text** of the lines below. Do not rename:
+
+- `Validation requests (full lat):` — full-latency requests
+  (cold misses + DMA-ctrl writes)
+- `of which DMA-ctrl writes:` — subset attributable to writes
+  into any DMA control-reg page. For benchmarks that reprogram
+  DMAs many times (`bfs`, `mobilenetv2/body`), expect this to
+  dominate the full-latency request count.
+- `Cache hits (zero lat):` — page already validated this PID
+- `Coalesced waits (partial lat):` — accesses that paid only
+  the tail of an in-flight cold miss
+- `TOTAL SECURITY OVERHEAD: ... us` — sum of all defers; the
+  harvester binds this to compute `abs_overhead_us`.
+- Cache stats: `Processes with cached pages`, `Unique pages
+  validated (total)`, `Cache hit rate`. Read from the validator
+  (`validator->uniquePages()` / `numCachedProcesses()`), so they
+  are device-wide regardless of which CU printed.
 
 ## Default parameters
 
 - `kernel_validation_latency` (CLI `--kernel-validation-latency`):
   speedkills `aia-kd` mode injects **8 367 000 ticks = 8.367 µs**,
-  matching the cumulative TOTAL SECURITY OVERHEAD observed on
-  mobilenetv2 with 1 µs latency × ~8 K validations across all
-  clusters. The Param default in `LLVMInterface.py` is 0 (opt-in
-  via CLI / mode profile). The same value is mirrored onto
-  `AiaKdValidator.latency` by the SALAM-Configurator generator; the
-  `LLVMInterface` constructor panics on mismatch.
-- `validation_int_num` (`--validation-int-num`): 172. The IRQ raise
-  itself (`gic->sendInt`/`clearInt`) is currently **disabled** in
-  `llvm_interface.cc`; sim_ticks were confirmed bit-identical with
-  vs without the IRQ since the ISR is an empty stub.
+  matching the AIA-KD paper's measured IRQ + driver round-trip.
+  The Param default in `LLVMInterface.py` is 0 (opt-in via CLI /
+  mode profile). The same value is mirrored onto
+  `AiaKdValidator.latency` by the SALAM-Configurator generator;
+  the `LLVMInterface` constructor panics on mismatch.
+- `validation_int_num` (`--validation-int-num`): 172. The IRQ
+  raise is currently NOT used in Option C (the entire model lives
+  in `AiaKdValidator` + `MemoryRequest::aiaKdDefer` + the
+  response port). The Param survives so old CLI flags keep
+  working.
 - `process_id` (`--process-id`): 17. Cache key for
-  `validatedPagesPerProcess`. Mismatched PIDs across CUs no longer
-  trigger a startup panic (pre-Stage-B did) — the SimObject simply
-  keys separate cache entries.
+  `validatedPagesPerProcess`. Different PIDs across CUs in the
+  same cluster simply key separate cache entries.
+- `dma_pio_ranges` (`AiaKdValidator.dma_pio_ranges`): the union
+  of every DMA engine's `(pio_addr, pio_addr + pio_size)`
+  interval, emitted by the SALAM-Configurator. `isDmaCtrl(addr)`
+  returns true iff `addr` falls in any of these.
 
 ## Things to be careful about
 
-- Page granularity hard-coded as `addr & ~0xFFFULL` (4 KiB). Any
-  change must touch `isPageValidated`, `isPageValidationPending`,
-  `sendValidationRequest`, `completeValidation`, and
-  `queueWaitingInstruction` together.
+- **Page granularity** is hard-coded as `addr & ~0xFFFULL`
+  (4 KiB) inside `AiaKdValidator::checkAndCharge`. Any change
+  must touch it there; nothing else in `LLVMInterface` knows
+  about page bits in Option C.
 - An access whose `[addr, addr+size)` straddles a 4 KiB boundary
   only validates the page containing `addr`. Acceptable today
   (SALAM accesses are word/vector aligned); revisit if you add
   coarser DMA-style accesses.
-- `responseEvent` is **chip-wide** (lives on the validator)
-  and has only one in-flight schedule; new requests rely on it
-  being rescheduled inside `AiaKdValidator::processResponse()` when
-  the head of `pendingRequests` is not yet ready. The originator's
-  `LLVMInterface` no longer owns a per-CU event.
-- RAW hazard re-queue logic is duplicated for the originating
-  request and for waiters; keep both paths in sync. Both **must**
-  call `revalidatedUIDs.insert(uid)` before pushing the instruction
-  back to reservation, otherwise the eventual cache-hit replay will
-  be counted twice (once as full/coalesced latency, once as a free
-  hit) and inflate `cacheHitRate` and `totalMemAccesses`.
-- The replay path only re-checks RAW (via `writeActive`); it
-  assumes the instruction's other dynamic dependencies were already
-  satisfied at the time validation was issued.
-- Denials currently `panic(...)`. If denial becomes a real outcome,
-  cleanup of `validator->pendingValidationPages`,
-  `validator->waitingForPage`, `validator->pendingRequests`,
-  reservation queue entries, `revalidatedUIDs`, and downstream
-  consumers must all be added.
-- Enabling validation with `kernel_validation_latency=0` still runs
-  the full protocol (warned at startup) — useful for control runs
-  where you want the bookkeeping but no overhead. The sanity suite
-  uses this to assert protocol bookkeeping is timing-inert.
-- `printKernelValidationStats` prints to stdout (console log). If any
-  external script parses those strings, update both sides together.
+- The **multi-packet zeroing** in `tryAiaKdDelay` is
+  load-bearing: without it, a request split into N cache-line
+  packets would be taxed N×D. The first response defers by D and
+  pushes every subsequent same-request packet's `tryRead` issue
+  back by D, so the access correctly commits at
+  `last_packet_arrival + D`.
+- `findMemRequest()` panics on unknown packets. The AIA-KD path
+  uses it the same way the IOMMU path does; if you change either,
+  keep them parallel.
+- `chargeValidation()` updates per-CU mirror counters BEFORE the
+  request is enqueued, so a panic mid-launch leaves the validator
+  and the per-CU counters consistent. Do not split the
+  call/stamp/enqueue trio across event boundaries.
+- `kernelValidationDenied` is always 0 (no policy implemented).
+  If you add a real deny policy, you also need a way for
+  `tryAiaKdDelay` to abort the response (Option C has no
+  scheduler re-queue path) — likely via a fault packet on the
+  response port.
+- Enabling validation with `kernel_validation_latency=0` is
+  bit-identical to plain (sanity test asserts this). Useful as a
+  control to exercise bookkeeping without timing impact.
+- `printKernelValidationStats` prints to stdout (console log).
+  If any external script parses those strings, update both sides
+  together. The strings called out above are tied to
+  `tools/speedkills/harvest.py` regexes.
 
 ## Multi-cluster behaviour (mobilenetv2)
 
-Single-cluster benchmarks (sys_validation, gemm, fft, nw, lenet) have
-**one** `AiaKdValidator` for the whole simulation. mobilenetv2 has
-**four** — one per `AccCluster` (`head`, `body`, `tail`,
-`classifier`) — see [00-architecture-overview.md](00-architecture-overview.md#benchmark-topology-mobilenetv2-worked-example)
+Single-cluster benchmarks (sys_validation, gemm, fft, nw, lenet)
+have **one** `AiaKdValidator` for the whole simulation.
+mobilenetv2 has **four** — one per `AccCluster` (`head`, `body`,
+`tail`, `classifier`) — see
+[00-architecture-overview.md](00-architecture-overview.md#benchmark-topology-mobilenetv2-worked-example)
 for the full topology.
 
 Implications when working on AIA-KD code:
 
-- The validated-page cache is **per cluster, not per simulation**. A
-  shared input page touched by all four mbnet clusters pays the
+- The validated-page cache is **per cluster, not per simulation**.
+  A shared input page touched by all four mbnet clusters pays the
   first-touch tax 4×. Do not assume a global cache when reading
   stats or designing tests.
-- The chip-wide FIFO + `responseEvent` are **per validator**, so
-  mbnet has 4 independent FIFOs that can each have one IRQ in
-  flight at the same wall-clock time. Within a single cluster only
-  one IRQ is in flight (the model's invariant).
-- `body` is the worst-contended cluster (5 CUs); `classifier` (2
-  CUs) behaves like sys_validation. When debugging contention,
+- The chip-wide kernel-driver deadline (`nextReadyTick`) is **per
+  validator**, so mbnet has 4 independent deadlines that can each
+  be servicing one cold miss at the same wall-clock time. Within
+  a single cluster, the next cold miss starts at
+  `max(curTick(), nextReadyTick)`.
+- `body` is the worst-contended cluster (5 CUs); `classifier`
+  (2 CUs) behaves like sys_validation. When debugging contention,
   start with `system.acccluster_body.validator.*` in stats.txt.
-- Per-CU stats (`totalKernelValidations`, `validationCacheHits`,
-  `dmaCtrlValidations`, `validationCoalescedWaits`, etc.) still
-  live on `LLVMInterface`, so they aggregate per-CU regardless of
-  which cluster the CU belongs to.
+- Per-CU mirror counters live on `LLVMInterface`; the chip-wide
+  totals live on the validator.
