@@ -96,25 +96,24 @@ short-circuits, so the runtime cost is one early-return per access.
 
 ## Coverage caveats (traffic that bypasses the IOMMU intercept)
 
-The intercepts live in (a) `CommInterface::MemSidePort` for
-`Role::Global` only and (b) `DmaPort` for `NoncoherentDma` /
-`StreamDma`. Traffic paths that intentionally bypass:
+All five CommInterface intercept sites are active (all-ports model):
+`MemSidePort` **all three roles** (`Local`, `Global`, `Stream`),
+`SPMPort`, and `RegPort`. Additionally `DmaPort` covers
+`NoncoherentDma` / `StreamDma` off-cluster egress. Traffic paths
+that still intentionally bypass:
 
-- `MemSidePort` with `Role::Local` or `Role::Stream`, plus
-  `SPMPort` and `RegPort` — by design: these target on-cluster
-  scratchpads, register banks and stream FIFOs. A real SMMU sits
-  between the cluster master interface and the system bus, not
-  inside the cluster.
 - `NoncoherentDma::accPort` (the `cluster_dma` master into the
-  cluster-local xbar) — same reason; intra-cluster traffic.
+  cluster-local xbar) — intra-cluster traffic, behind the trust
+  boundary; analogous to why no extra intercept is needed for
+  on-cluster xbar traffic already covered by CommInterface ports.
 - `IOAcc::MemSidePort` ([src/hwacc/io_acc.hh](../../src/hwacc/io_acc.hh))
   — separate hand-coded I/O accelerator hierarchy parallel to
   `CommInterface`/`LLVMInterface`. Not currently routed through the
-  IOMMU; would need an analogous `Role::Global` hook if used.
+  IOMMU; would need an analogous hook if used.
 
 Standard `LLVMInterface`-based accelerators using `CommInterface`,
-`NoncoherentDma`, and `StreamDma` are fully covered for their
-off-cluster traffic. If you add an `IOAcc`-based accelerator,
+`NoncoherentDma`, and `StreamDma` are fully covered for ALL traffic
+(on-cluster and off-cluster). If you add an `IOAcc`-based accelerator,
 its DRAM-bound packets will not be counted.
 
 ## Design rationale (response-path injection)
