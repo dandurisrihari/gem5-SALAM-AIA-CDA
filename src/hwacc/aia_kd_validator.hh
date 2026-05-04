@@ -19,7 +19,7 @@
  *     LLVMInterface::ActiveFunction), so dispatch returns to the
  *     correct CU's scheduler regardless of which CU triggered the
  *     IRQ. Actual dispatch lives in
- *     LLVMInterface::processValidationResponse() -- this SimObject
+ *     LLVMInterface::completeValidation() -- this SimObject
  *     just owns the storage.
  *
  * State only -- no behavior. The validation protocol (responseEvent,

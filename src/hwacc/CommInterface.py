@@ -26,13 +26,10 @@ class CommInterface(BasicPioDevice):
     reset_spm = Param.Bool(False, "Reset the ready state of any connected scratchpad memories when finished executing")
 
     # Shared device-wide IOMMU SimObject (one per AccCluster). When
-    # set, MemSidePort::recvTimingResp() consults iommu->translate()
-    # via tryIommuDelay() to charge per-access translation latency on
-    # a single chip-wide translation port -- but ONLY for the Global
-    # role (the cluster's `acp` egress to coherency_bus). On-cluster
-    # MemSidePort roles (Local, Stream), SPMPort and RegPort all
-    # bypass, matching real-HW SMMU placement at the cluster master
-    # interface. NULL == IOMMU disabled.
+    # set, every response port (all three MemSidePort roles -- Local,
+    # Global, Stream -- plus SPMPort and RegPort) calls
+    # tryIommuDelay() so every CU memory access is translated by the
+    # single chip-wide SMMU. NULL == IOMMU disabled.
     iommu = Param.AcceleratorIommu(NULL,
         "Device-wide accelerator IOMMU shared with sibling CUs "
         "(NULL when IOMMU disabled)")

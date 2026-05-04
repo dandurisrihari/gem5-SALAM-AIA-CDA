@@ -71,6 +71,11 @@ AcceleratorIommu::translate(uint64_t pageAddr, bool /*isRead*/)
         stats.tlbHits++;
     else
         stats.tlbMisses++;
+    // Track cumulative distinct pages seen -- this is the
+    // apples-to-apples counterpart of AIA-KD's per-page cold-miss
+    // count (does not double-count IOTLB capacity re-walks).
+    if (uniquePagesSeen.insert(pageAddr).second)
+        stats.uniquePages++;
     stats.totalLatencyTicks += lat;
 
     return ready;
@@ -84,6 +89,9 @@ AcceleratorIommu::IommuStats::IommuStats(statistics::Group *parent)
                "IOTLB hits"),
       ADD_STAT(tlbMisses,         statistics::units::Count::get(),
                "IOTLB misses (page walks)"),
+      ADD_STAT(uniquePages,       statistics::units::Count::get(),
+               "Distinct pages translated (cumulative; "
+               "independent of IOTLB churn)"),
       ADD_STAT(totalLatencyTicks, statistics::units::Tick::get(),
                "Sum of latency added by IOMMU (ticks)")
 {

@@ -277,12 +277,11 @@ class CommInterface : public BasicPioDevice
     void processIommuRespQueue();
     // Returns true if the response was deferred (caller must NOT
     // touch pkt afterwards); false if no IOMMU latency applies and
-    // the caller should dispatch the packet inline. Called only from
-    // MemSidePort::recvTimingResp on the Global (coherency_bus / acp)
-    // role -- that is the only CommInterface egress that actually
-    // crosses the cluster master interface to reach DRAM. SPM, Reg,
-    // local-xbar and stream-FIFO traffic all stay on-cluster and
-    // bypass the SMMU, matching real-HW behaviour.
+    // the caller should dispatch the packet inline. Called from
+    // every response path that delivers data into the CU --
+    // MemSidePort (all three roles: Local, Global, Stream), SPMPort
+    // and RegPort -- so every CU memory access pays the single
+    // chip-wide SMMU translation tax (all-ports coverage).
     bool tryIommuDelay(PacketPtr pkt);
 
   public:

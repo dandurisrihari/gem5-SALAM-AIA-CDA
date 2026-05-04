@@ -80,11 +80,14 @@ CommInterface::tryIommuDelay(PacketPtr pkt) {
     // behind one chip-wide port -- matching a centralized SMMU
     // edge-IoT design with one TBU/TCU.
     //
-    // Called only on the cluster's egress path to the system bus:
-    // MemSidePort with Role::Global (the coherency_bus / `acp`
-    // port). Local-xbar, stream-FIFO, SPM and RegPort traffic all
-    // stay on-cluster (or are host-PIO inbound) and so bypass the
-    // SMMU, matching real Arm SMMUv2/SMMUv3 placement.
+    // Called from every CommInterface response port -- all three
+    // MemSidePort roles (Local, Global, Stream) plus SPMPort and
+    // RegPort -- so every memory access initiated by a CU pays the
+    // single chip-wide SMMU translation tax. This is the
+    // "all-ports" coverage model: one IOMMU sits in front of all
+    // accelerator memory traffic, regardless of whether the target
+    // is on-cluster (SPM, regs, local-xbar, stream FIFO) or
+    // off-cluster (coherency_bus / DRAM).
     if (!iommu || !iommu->enabled()) return false;
 
     uint64_t page = pkt->req->getPaddr() & ~0xFFFULL;
@@ -106,10 +109,10 @@ CommInterface::tryIommuDelay(PacketPtr pkt) {
 
 bool
 CommInterface::MemSidePort::recvTimingResp(PacketPtr pkt) {
-    // Only Global (coherency_bus / acp) egress reaches DRAM and is
-    // therefore translated. Local-xbar and stream-FIFO MemSidePorts
-    // stay inside the cluster.
-    if (role_ == Role::Global && owner->tryIommuDelay(pkt)) return true;
+    // All MemSidePort roles (Local, Global, Stream) route through
+    // the shared IOMMU: every CU-issued memory access is translated
+    // by the single chip-wide SMMU.
+    if (owner->tryIommuDelay(pkt)) return true;
     owner->recvPacket(pkt);
     return true;
 }
@@ -141,8 +144,10 @@ CommInterface::MemSidePort::sendPacket(PacketPtr pkt) {
 
 bool
 CommInterface::SPMPort::recvTimingResp(PacketPtr pkt) {
-    // SPM is on-cluster SRAM; its address never leaves the cluster
-    // master interface, so a real SMMU never sees it. No IOMMU hook.
+    // All-ports coverage: SPM responses also pay the IOMMU tax so
+    // every CU memory access is uniformly translated through the
+    // single chip-wide SMMU.
+    if (owner->tryIommuDelay(pkt)) return true;
     owner->recvPacket(pkt);
     return true;
 }
@@ -174,9 +179,10 @@ CommInterface::SPMPort::sendPacket(PacketPtr pkt) {
 
 bool
 CommInterface::RegPort::recvTimingResp(PacketPtr pkt) {
-    // RegPort traffic targets the device's own MMIO register bank
-    // (host-CPU-issued PIO, not CU egress). Not an SMMU-translated
-    // path.
+    // All-ports coverage: register-bank responses also flow through
+    // the IOMMU so every memory access seen by a CU is accounted
+    // for by the single chip-wide SMMU.
+    if (owner->tryIommuDelay(pkt)) return true;
     owner->recvPacket(pkt);
     return true;
 }

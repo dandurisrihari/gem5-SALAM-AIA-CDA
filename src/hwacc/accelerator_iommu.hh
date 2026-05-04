@@ -97,6 +97,16 @@ class AcceleratorIommu : public SimObject
     std::set<uint64_t>  set;
 
     /**
+     * Cumulative set of every distinct 4 KiB page ever translated by
+     * this IOMMU (independent of IOTLB capacity churn). Compared
+     * against AIA-KD's per-page validated-pages cache to verify both
+     * mechanisms observe the same page footprint -- the IOTLB miss
+     * count can be larger than |uniquePages| when capacity churn
+     * forces re-walks of previously seen pages.
+     */
+    std::set<uint64_t>  uniquePagesSeen;
+
+    /**
      * Monotonic deadline of the translation port. Each successful
      * `translate()` call advances this by the appropriate latency,
      * serializing the entire device's translation traffic through
@@ -116,6 +126,8 @@ class AcceleratorIommu : public SimObject
         statistics::Scalar totalChecks;     // every translate() call
         statistics::Scalar tlbHits;         // IOTLB hits
         statistics::Scalar tlbMisses;       // IOTLB misses (page walks)
+        // Distinct pages translated (cumulative).
+        statistics::Scalar uniquePages;
         statistics::Scalar totalLatencyTicks;  // sum of added latency
     } stats;
 };
