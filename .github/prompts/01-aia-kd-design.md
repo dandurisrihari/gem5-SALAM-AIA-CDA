@@ -147,13 +147,13 @@ the right CU without knowing its layout.
 
 - Page granularity hard-coded as `addr & ~0xFFFULL` (4 KiB). Any
   change must touch `isPageValidated`, `isPageValidationPending`,
-  `sendValidationRequest`, `processValidationResponse`, and
+  `sendValidationRequest`, `completeValidation`, and
   `queueWaitingInstruction` together.
 - An access whose `[addr, addr+size)` straddles a 4 KiB boundary
   only validates the page containing `addr`. Acceptable today
   (SALAM accesses are word/vector aligned); revisit if you add
   coarser DMA-style accesses.
-- `validationResponseEvent` is **chip-wide** (lives on the validator)
+- `responseEvent` is **chip-wide** (lives on the validator)
   and has only one in-flight schedule; new requests rely on it
   being rescheduled inside `AiaKdValidator::processResponse()` when
   the head of `pendingRequests` is not yet ready. The originator's
@@ -176,9 +176,8 @@ the right CU without knowing its layout.
   the full protocol (warned at startup) — useful for control runs
   where you want the bookkeeping but no overhead. The sanity suite
   uses this to assert protocol bookkeeping is timing-inert.
-- Stats parsing in `experiment_monitor.py` matches **exact strings**
-  printed by `printKernelValidationStats` — update both sides
-  together.
+- `printKernelValidationStats` prints to stdout (console log). If any
+  external script parses those strings, update both sides together.
 
 ## Multi-cluster behaviour (mobilenetv2)
 
@@ -201,6 +200,7 @@ Implications when working on AIA-KD code:
 - `body` is the worst-contended cluster (5 CUs); `classifier` (2
   CUs) behaves like sys_validation. When debugging contention,
   start with `system.acccluster_body.validator.*` in stats.txt.
-- Per-CU stats (`validatedPagesCount`, `coldMissCount`, etc.) still
+- Per-CU stats (`totalKernelValidations`, `validationCacheHits`,
+  `dmaCtrlValidations`, `validationCoalescedWaits`, etc.) still
   live on `LLVMInterface`, so they aggregate per-CU regardless of
   which cluster the CU belongs to.

@@ -64,10 +64,11 @@ Before edits, state in the chat:
 
 ## 4. Rebuild reminder (the AccCluster trap)
 
-`configs/SALAM/AccCluster.py` is **embedded into `gem5.opt`**
-(`[EMBED PY]`). Edits to it (or to the
-SALAM-Configurator generator that produces it) have *no effect*
-until `scons build/ARM/gem5.opt -jN` finishes. Check
+`src/hwacc/AccCluster.py` is **embedded into `gem5.opt`**
+(`[EMBED PY]`). Edits to it (or to any other SimObject `.py` file
+under `src/hwacc/`, or to the SALAM-Configurator generator that
+produces the per-benchmark `configs/SALAM/<bench>.py` files) have
+*no effect* until `scons build/ARM/gem5.opt -jN` finishes. Check
 `ls -la build/ARM/gem5.opt` after the build before launching runs.
 
 **Always pipe `yes ""` into the build command** so scons doesn't
@@ -92,8 +93,9 @@ change generated `configs/SALAM/*.py`) **must** be followed by:
 python3 tests/aia_cda_tests/run_sanity.py --regen
 ```
 
-The suite is short (2 fast benches × 3 modes plus an aia-kd@lat=0
-noise-floor check, well under a minute on the dev container) and
+The suite is short (2 fast benches × 3 modes plus aia-kd@lat=0
+and iommu@lat=0 noise-floor checks, well under a minute on the dev
+container) and
 asserts the protection-mode invariants that have regressed before:
 
 - every (bench, mode) row appears in `summary.tsv`,

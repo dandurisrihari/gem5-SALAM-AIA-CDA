@@ -236,8 +236,8 @@ def _write_all_modes_overhead(rows, path: Path) -> str:
       benchmark, mode, entries, miss_ns, plain_us, runtime_us,
       abs_overhead_us, abs_overhead_pct, proj_overhead_us,
       proj_overhead_pct, iommu_checks, iotlb_hits, iotlb_misses,
-      iotlb_hit_rate_pct, smid_requests, smid_validations,
-      smid_validations_dma_ctrl
+      iotlb_hit_rate_pct, iommu_unique_pages, smid_requests,
+      smid_validations, smid_validations_dma_ctrl
     """
     import re as _re
     by_bench: dict = {}
@@ -252,7 +252,7 @@ def _write_all_modes_overhead(rows, path: Path) -> str:
             "abs_overhead_us", "abs_overhead_pct",
             "proj_overhead_us", "proj_overhead_pct",
             "iommu_checks", "iotlb_hits", "iotlb_misses",
-            "iotlb_hit_rate_pct",
+            "iotlb_hit_rate_pct", "iommu_unique_pages",
             "smid_requests", "smid_validations",
             "smid_validations_dma_ctrl")
     lines = ["\t".join(cols)]
@@ -317,6 +317,7 @@ def _write_all_modes_overhead(rows, path: Path) -> str:
                     row.iommu_checks, row.iotlb_hits, row.iotlb_misses,
                     (f"{row.iotlb_hit_rate_pct}%"
                      if row.iotlb_hit_rate_pct != "-" else "-"),
+                    row.iommu_unique_pages,
                     row.smid_requests, row.smid_validations,
                     row.smid_validations_dma_ctrl)
             lines.append("\t".join(vals))

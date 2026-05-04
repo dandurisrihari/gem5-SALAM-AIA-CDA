@@ -154,7 +154,9 @@ sites:
    ```python
    lines.append("\tclstr.validator = AiaKdValidator(")
    lines.append("\t    enabled=getattr(options, "
-                "'enable_kernel_validation', False))")
+                "'enable_kernel_validation', False),")
+   lines.append("\t    latency=getattr(options, "
+                "'kernel_validation_latency', 0))")
    ```
 
 2. **`Accelerator.genDefinition()`** — pass the cluster-shared
@@ -204,7 +206,7 @@ If a SimObject struct field needs to point at a type that lives in
 `LLVMInterface::ActiveFunction*`), don't include `llvm_interface.hh`
 from the SimObject header — that creates a cyclic include. Store
 the pointer as `void*` in the SimObject and `static_cast<>` it
-back at the dispatch site (`processValidationResponse`) where the
+back at the dispatch site (`completeValidation`) where the
 concrete type is already visible:
 
 ```cpp
@@ -218,9 +220,9 @@ struct WaitingInstruction {
     Tick queueTime;
 };
 
-// in llvm_interface.cc, dispatch site:
-ActiveFunction *waitingFunc =
-    static_cast<ActiveFunction*>(waiting.func);
+// in llvm_interface.cc, dispatch site (completeValidation):
+ActiveFunction *func =
+    static_cast<ActiveFunction*>(req.func);
 ```
 
 This keeps the SimObject header dependency-free.

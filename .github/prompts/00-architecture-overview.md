@@ -19,6 +19,12 @@ exclusive); plain is the unprotected baseline.
 | `aia-kd`  | first touch of a 4 KiB page | 8.367 µs (default)       | Host CPU via GIC IRQ |
 | `iommu`   | every memory transaction    | 2 ns hit / 500 ns miss   | One shared SMMU port |
 
+**IOMMU coverage (all-ports model):** every response delivered to a CU
+pays one IOTLB lookup — all five CommInterface port types (MemSidePort
+Local, Global, Stream; SPMPort; RegPort) plus the off-cluster DmaPort
+on NoncoherentDma / StreamDma engines. On-cluster and off-cluster
+traffic are both translated by the single chip-wide AcceleratorIommu.
+
 **Key insight (the whole reason this comparison exists):** AIA-KD pays
 once per **page**; IOMMU pays once per **access**. AIA-KD wins on
 access-heavy workloads with small page footprints; IOMMU wins on
@@ -106,7 +112,9 @@ generator contract, why some things stay per-CU), see
   │  AcceleratorIommu (one per AccCluster)                  │
   │   * IOTLB (LRU, 8 entries default)                      │
   │   * nextReadyTick : monotonic chip-wide port deadline   │
-  │   * IommuStats group                                    │
+  │   * IommuStats: totalChecks, tlbHits, tlbMisses,        │
+  │                 uniquePages (cumulative distinct pages), │
+  │                 totalLatencyTicks                        │
   │                                                         │
   │   translate(pageAddr, isRead) returns ready-tick:       │
   │     hit  ──► +2 ns                                      │
@@ -196,12 +204,21 @@ interact.
 ### Reading mbnet stats
 
 Each cluster's SimObject stats are tagged with the cluster name in
-the gem5 stats file:
+the gem5 stats file. The cluster name comes from the benchmark YAML
+(`sys_name`), **not** a fixed `acccluster_` prefix — e.g. mobilenetv2
+uses `head`, `body`, `tail`, `classifier`; sys_validation/nw uses
+`nw_clstr`. Example paths:
 
-- `system.acccluster_head.validator.*`
-- `system.acccluster_body.validator.*`
-- `system.acccluster_body.iommu.*`
-- ...
+- `system.head.iommu.totalChecks`
+- `system.body.iommu.totalChecks`
+- `system.body.iommu.uniquePages`
+- `system.body.iommu.tlbHits`
+- `system.body.iommu.tlbMisses`
+- `system.nw_clstr.iommu.totalChecks`   ← single-cluster bench
+
+(The `validator.*` stats are printed to run.log by
+`LLVMInterface::printIommuStats()` / `printAiaKdStats()`, not to
+`stats.txt`.)
 
 Sum across clusters to get the chip-wide cost; look at one cluster to
 see where the contention concentrates (almost always `body`).

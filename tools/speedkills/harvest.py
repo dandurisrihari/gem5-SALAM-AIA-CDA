@@ -16,9 +16,19 @@ _SIM_SECONDS_RE = re.compile(r"^simSeconds\s+([0-9.eE+-]+)", re.MULTILINE)
 _RUNTIME_RE     = re.compile(r"Runtime:\s+(\S+)")
 _AIA_OVERHEAD_RE   = re.compile(r"TOTAL SECURITY OVERHEAD:\s+(\S+)\s+us")
 _IOMMU_OVERHEAD_RE = re.compile(r"TOTAL IOMMU OVERHEAD:\s+(\S+)\s+us")
-_IOMMU_CHECKS_RE   = re.compile(r"Total IOMMU checks:\s+(\S+)")
-_IOTLB_HITS_RE     = re.compile(r"IOTLB hits:\s+(\d+)")
-_IOTLB_MISSES_RE   = re.compile(r"IOTLB misses \(page walks\):\s+(\d+)")
+# IOMMU stats are owned by the chip-wide AcceleratorIommu SimObject
+# (one per cluster). Read them straight from stats.txt -- the console
+# `printIommuStats()` is called once per CU and would N-fold the
+# chip-wide counter when multiple CUs share one IOMMU. Sum across
+# clusters (each cluster has its own line).
+_STATS_TOTALCHECKS_RE = re.compile(
+    r"\.iommu\.totalChecks\s+(\d+)", re.MULTILINE)
+_STATS_TLBHITS_RE = re.compile(
+    r"\.iommu\.tlbHits\s+(\d+)", re.MULTILINE)
+_STATS_TLBMISSES_RE = re.compile(
+    r"\.iommu\.tlbMisses\s+(\d+)", re.MULTILINE)
+_STATS_UNIQUEPAGES_RE = re.compile(
+    r"\.iommu\.uniquePages\s+(\d+)", re.MULTILINE)
 _SMID_REQS_RE      = re.compile(
     r"Total memory accesses \(validated\):\s+(\d+)")
 _SMID_VALS_RE      = re.compile(r"Validation requests \(full lat\):\s+(\d+)")
@@ -53,6 +63,7 @@ class HarvestRow:
     iotlb_hits: str = "-"
     iotlb_misses: str = "-"
     iotlb_hit_rate_pct: str = "-"
+    iommu_unique_pages: str = "-"
     smid_requests: str = "-"
     smid_validations: str = "-"
     # Subset of smid_validations attributable to writes into a DMA
@@ -67,6 +78,7 @@ class HarvestRow:
             self.kernel_runtime_us, self.aia_kd_overhead_us,
             self.iommu_overhead_us, self.iommu_checks,
             self.iotlb_hits, self.iotlb_misses, self.iotlb_hit_rate_pct,
+            self.iommu_unique_pages,
             self.smid_requests, self.smid_validations,
             self.smid_validations_dma_ctrl,
         ))
@@ -75,6 +87,7 @@ class HarvestRow:
 HEADER = ("mode\truntime_us\tsim_ticks\tsim_seconds\tkernel_runtime_us"
           "\taia_kd_overhead_us\tiommu_overhead_us\tiommu_checks"
           "\tiotlb_hits\tiotlb_misses\tiotlb_hit_rate_pct"
+          "\tiommu_unique_pages"
           "\tsmid_requests\tsmid_validations\tsmid_validations_dma_ctrl")
 
 
@@ -88,6 +101,15 @@ def harvest_run(label: str, outdir: Path) -> HarvestRow:
         return row
 
     stats_text = stats_path.read_text()
+    # gem5 may dump stats more than once per run (mid-sim checkpoints +
+    # end-of-sim). Each dump is a self-contained block delimited by
+    # `Begin Simulation Statistics` / `End Simulation Statistics`.
+    # Use only the LAST block so cumulative counters aren't summed
+    # across dumps (which would N-fold them).
+    _sep = "---------- Begin Simulation Statistics ----------"
+    _last_begin = stats_text.rfind(_sep)
+    if _last_begin >= 0:
+        stats_text = stats_text[_last_begin:]
     log_text = log_path.read_text() if log_path.exists() else ""
 
     if (m := _SIM_TICKS_RE.search(stats_text)):
@@ -105,19 +127,22 @@ def harvest_run(label: str, outdir: Path) -> HarvestRow:
     iommu = [float(x) for x in _IOMMU_OVERHEAD_RE.findall(log_text)]
     if iommu:
         row.iommu_overhead_us = f"{sum(iommu):.3f}"
-    checks = [int(x) for x in _IOMMU_CHECKS_RE.findall(log_text)]
+    checks = [int(x) for x in _STATS_TOTALCHECKS_RE.findall(stats_text)]
     if checks:
         row.iommu_checks = str(sum(checks))
-    hits = [int(x) for x in _IOTLB_HITS_RE.findall(log_text)]
+    hits = [int(x) for x in _STATS_TLBHITS_RE.findall(stats_text)]
     if hits:
         row.iotlb_hits = str(sum(hits))
-    misses = [int(x) for x in _IOTLB_MISSES_RE.findall(log_text)]
+    misses = [int(x) for x in _STATS_TLBMISSES_RE.findall(stats_text)]
     if misses:
         row.iotlb_misses = str(sum(misses))
     if hits or misses:
         total = sum(hits) + sum(misses)
         if total > 0:
             row.iotlb_hit_rate_pct = f"{(sum(hits) / total) * 100.0:.4f}"
+    upages = [int(x) for x in _STATS_UNIQUEPAGES_RE.findall(stats_text)]
+    if upages:
+        row.iommu_unique_pages = str(sum(upages))
     smid_r = [int(x) for x in _SMID_REQS_RE.findall(log_text)]
     if smid_r:
         row.smid_requests = str(sum(smid_r))

@@ -84,7 +84,7 @@ python3 tests/aia_cda_tests/run_sanity.py --regen
 python3 -m tools.speedkills sweep \
     --bench nw \
     --outdir BM_ARM_OUT/nw_aiakd_sweep \
-    --aia-kd-latencies "0 1000 8367000 16734000" \
+    --latencies 0,1000,8367000,16734000 \
     --jobs 4
 ```
 
@@ -118,8 +118,9 @@ codebase are expressed in ticks; convert to time as ticks × 1 ps.
 
 ## Visualisation
 
-`tools/experiment_monitor.py` (also reachable as
-`python3 -m tools.speedkills monitor -- ...`) parses
-`printKernelValidationStats` / `printIommuStats` output by **exact
-string match**. If you change a printed line in
-`llvm_interface.cc`, update the parser regexes too.
+`tools/experiment_monitor.py` and the `monitor` subcommand have been
+removed from this branch. Parse stats directly from `stats.txt`
+(last `Begin Simulation Statistics` block) or from the
+`summary.tsv` / `deltas.tsv` files produced by `speedkills harvest`.
+If you change a printed line in `llvm_interface.cc`, update the
+harvester regexes in `tools/speedkills/harvest.py` too.
