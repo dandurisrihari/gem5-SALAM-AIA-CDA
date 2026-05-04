@@ -19,11 +19,17 @@ exclusive); plain is the unprotected baseline.
 | `aia-kd`  | first touch of a 4 KiB page | 8.367 µs (default)       | Host CPU via GIC IRQ |
 | `iommu`   | every memory transaction    | 2 ns hit / 500 ns miss   | One shared SMMU port |
 
-**IOMMU coverage (all-ports model):** every response delivered to a CU
-pays one IOTLB lookup — all five CommInterface port types (MemSidePort
-Local, Global, Stream; SPMPort; RegPort) plus the off-cluster DmaPort
-on NoncoherentDma / StreamDma engines. On-cluster and off-cluster
-traffic are both translated by the single chip-wide AcceleratorIommu.
+**IOMMU coverage (strict / all-ports enforcement):** every response
+delivered to a CU pays one IOTLB lookup -- all five CommInterface
+port types (MemSidePort Local, Global, Stream; SPMPort; RegPort)
+plus the off-cluster DmaPort on NoncoherentDma / StreamDma engines.
+On-cluster *and* intra-cluster SPM / register-bank traffic are both
+translated by the single chip-wide AcceleratorIommu. This is
+stricter than a textbook Arm SMMU (which would translate only
+cluster-master egress); we model it that way for symmetry with
+AIA-KD (both fire on the same five response ports) and to close the
+SPM-as-staging-buffer side channel. See 02-iommu-design.md for the
+caveat on "Class A" workloads and the relaxed-ablation knob.
 
 **AIA-KD coverage (response-side defer; Option C):** every LLVM-IR
 load/store decides its validation cost at launch time

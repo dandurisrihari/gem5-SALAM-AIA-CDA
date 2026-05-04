@@ -25,8 +25,21 @@ matches what Stage A intentionally collapsed to).
   `iotlb_miss_latency` (default 500 ns, for a 4-level walk to slow
   DRAM) on miss with LRU install. The IOTLB is small (default 8
   entries) reflecting an edge-class uTLB. This is the
-  "all-ports" coverage model: a single chip-wide IOMMU sits in
-  front of all accelerator memory traffic.
+  **strict / all-ports enforcement** model: a single chip-wide
+  IOMMU sits in front of *all* accelerator memory traffic --
+  including intra-cluster SPM and register-bank responses, which a
+  textbook Arm SMMU would not translate (an SMMU normally sits on
+  cluster-master egress only). We model it strictly to (a) close
+  the side-channel where an attacker could stage data through the
+  SPM and bypass per-page checks, and (b) keep the IOMMU and
+  AIA-KD threat models directly comparable -- both fire on the
+  same five CommInterface response ports, so head-to-head numbers
+  are apples-to-apples. Caveat for paper text: "Class A" workloads
+  (`lenet_*`, `stencil2d`, `bfs`) report higher overhead than a
+  hardware SMMU would, because intra-SPM hits also pay translation;
+  an ablation that drops the `tryIommuDelay` calls in `SPMPort` /
+  `RegPort` `recvTimingResp` lambdas is the easy way to produce
+  the "relaxed" comparison number if a reviewer asks.
 - **Sharing semantics**: a translation request from any CU reserves
   a serial slot on the shared SMMU timeline; subsequent
   translations (from this or any other CU) cannot start until the
