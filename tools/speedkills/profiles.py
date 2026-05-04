@@ -4,10 +4,10 @@ Three modes only:
 
     plain    baseline (no protection)
     aia-kd   AIA kernel-driver validation (analytical, per validated page)
-    iommu    analytical IOMMU latency model living inside LLVMInterface;
-             every LLVM-IR load/store goes through an IOTLB lookup and
-             accumulates a hit/miss latency that is reported in the
-             stats but does not perturb simulator timing.
+    iommu    per-access IOTLB latency model; the AcceleratorIommu SimObject
+             owns the LRU IOTLB and chip-wide port deadline; the intercept
+             lives in CommInterface::tryIommuDelay (all 5 response ports)
+             and DmaPort::tryIommuDelay (off-cluster DMA egress).
 
 The real SMMUv3 SimObject profiles that lived here on `main` are *not*
 exposed in this branch. The underlying gem5 code is unchanged; compare
