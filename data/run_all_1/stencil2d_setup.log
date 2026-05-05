@@ -1,0 +1,25 @@
+
+# /usr/bin/python3 /gem5-SALAM/tools/SALAM-Configurator/systembuilder.py --sys-name stencil2d --bench-path benchmarks/sys_validation/stencil2d --config-name config.yml
+
+# make -C /gem5-SALAM/benchmarks/sys_validation/stencil2d clean
+make: Entering directory '/gem5-SALAM/benchmarks/sys_validation/stencil2d'
+make[1]: Entering directory '/gem5-SALAM/benchmarks/sys_validation/stencil2d/hw'
+rm -f *.ll
+make[1]: Leaving directory '/gem5-SALAM/benchmarks/sys_validation/stencil2d/hw'
+make[1]: Entering directory '/gem5-SALAM/benchmarks/sys_validation/stencil2d/sw'
+rm -f *.o *.elf
+make[1]: Leaving directory '/gem5-SALAM/benchmarks/sys_validation/stencil2d/sw'
+make: Leaving directory '/gem5-SALAM/benchmarks/sys_validation/stencil2d'
+
+# make -C /gem5-SALAM/benchmarks/sys_validation/stencil2d
+make: Entering directory '/gem5-SALAM/benchmarks/sys_validation/stencil2d'
+make[1]: Entering directory '/gem5-SALAM/benchmarks/sys_validation/stencil2d/hw'
+clang -O1 -S -fno-slp-vectorize -fno-vectorize -fno-unroll-loops -fno-inline -fno-builtin -emit-llvm stencil2d.c top.c
+make[1]: Leaving directory '/gem5-SALAM/benchmarks/sys_validation/stencil2d/hw'
+make[1]: Entering directory '/gem5-SALAM/benchmarks/sys_validation/stencil2d/sw'
+/usr/bin/arm-none-eabi-cpp boot.s  | /usr/bin/arm-none-eabi-as -EL -o boot.o
+/usr/bin/arm-none-eabi-g++ -g -O3 -lunistd -I . -fno-exceptions   -c -o main.o main.cpp
+/usr/bin/arm-none-eabi-gcc    -c -o isr.o isr.c
+/usr/bin/arm-none-eabi-gcc -nostartfiles -Xlinker -Tboot.ld -o main.elf boot.o ../../../common/syscalls.o main.o isr.o -nostartfiles
+make[1]: Leaving directory '/gem5-SALAM/benchmarks/sys_validation/stencil2d/sw'
+make: Leaving directory '/gem5-SALAM/benchmarks/sys_validation/stencil2d'
