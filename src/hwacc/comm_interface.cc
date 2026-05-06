@@ -1,12 +1,14 @@
 #include "hwacc/comm_interface.hh"
+
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <iomanip>
+
 #include "base/trace.hh"
 #include "mem/packet.hh"
 #include "mem/packet_access.hh"
 #include "sim/system.hh"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <iomanip>
 
 using namespace std;
 
@@ -151,11 +153,28 @@ CommInterface::tryAiaKdDelay(PacketPtr pkt, bool isRead) {
     req->aiaKdDefer = 0;  // one-shot per LLVM-IR access
 
     Tick ready = curTick() + defer;
-    pendingAiaKdResps.push_back({pkt, ready});
+    // Unlike the IOMMU queue (whose readyTicks are monotone in
+    // call order because translate() reads curTick() at response
+    // time and advances a monotonic port deadline), AIA-KD defers
+    // are stamped at LAUNCH time and realized at response time.
+    // Two responses arriving close together can therefore land in
+    // inverted ready-order: e.g. a coalesced waiter (small defer)
+    // arriving just after a cold-miss originator (large defer)
+    // would be artificially stalled behind it under naive
+    // push_back drainage. Insert into pendingAiaKdResps sorted by
+    // readyTick (ascending) so processAiaKdRespQueue's front-first
+    // drain stays correct.
+    auto insertPos = std::find_if(
+        pendingAiaKdResps.begin(), pendingAiaKdResps.end(),
+        [ready](const PendingIommuResp &e) {
+            return e.readyTick > ready;
+        });
+    pendingAiaKdResps.insert(insertPos, {pkt, ready});
+    Tick frontReady = pendingAiaKdResps.front().readyTick;
     if (!aiaKdRespEvent.scheduled()) {
-        schedule(aiaKdRespEvent, ready);
-    } else if (aiaKdRespEvent.when() > ready) {
-        reschedule(aiaKdRespEvent, ready);
+        schedule(aiaKdRespEvent, frontReady);
+    } else if (aiaKdRespEvent.when() > frontReady) {
+        reschedule(aiaKdRespEvent, frontReady);
     }
     return true;
 }
