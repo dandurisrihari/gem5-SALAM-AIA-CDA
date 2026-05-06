@@ -12,9 +12,9 @@ gem5 Simulator System.  http://gem5.org
 gem5 is copyrighted software; use the --copyright option for details.
 
 gem5 version 21.1.0.1
-gem5 compiled May  2 2026 19:55:51
-gem5 started May  3 2026 00:10:50
-gem5 executing on 3b7fb6fd27b8, pid 1113582
+gem5 compiled May  6 2026 03:05:39
+gem5 started May  6 2026 03:06:25
+gem5 executing on 3b7fb6fd27b8, pid 3650660
 command line: /gem5-SALAM/build/ARM/gem5.opt --listener-mode=off --outdir=/gem5-SALAM/BM_ARM_OUT/run_all/nw/iommu_e16_m250ns /gem5-SALAM/configs/SALAM/fs_nw.py --mem-size=4GB --mem-type=DDR4_2400_8x8 --machine-type=VExpress_GEM5_V1 --dtb-file=none --bare-metal --cpu-type=DerivO3CPU --caches --l2cache --kernel=/gem5-SALAM/benchmarks/sys_validation/nw/sw/main.elf --disk-image=/gem5-SALAM/benchmarks/common/fake.iso --accpath=/gem5-SALAM/benchmarks/sys_validation/nw --accbench=nw --enable-iommu --iotlb-entries 16 --iotlb-hit-latency 2000 --iotlb-miss-latency 250000
 
 [HWAccConfig] IOMMU ENABLED: entries=16, hit_lat=2000, miss_lat=250000
@@ -42,12 +42,12 @@ Total Power Static: 4058.24
 
 Total Power Dynamic: 7686.08
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 2ms 695us
-   Simulation Time (Total):         0h 0m 4s 169ms
-   Simulation Time (Active):        0h 0m 1s 339ms
-        Queue Processing Time:      0h 0m 1s 332ms
-             Scheduling Time:       0h 0m 0s 769ms
-             Computation Time:      0h 0m 0s 248ms
+   Setup Time:                      0h 0m 0s 2ms 707us
+   Simulation Time (Total):         0h 0m 6s 876ms
+   Simulation Time (Active):        0h 0m 2s 323ms
+        Queue Processing Time:      0h 0m 2s 309ms
+             Scheduling Time:       0h 0m 1s 336ms
+             Computation Time:      0h 0m 0s 404ms
    System Clock:                    0.1GHz
    Runtime:                         68269 cycles
    Runtime:                         682.69 us
@@ -62,6 +62,7 @@ Total Power Dynamic: 7686.08
    Total memory accesses (validated): 0
    Cache hits (0 latency):          0
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -83,33 +84,33 @@ Total Power Dynamic: 7686.08
    IOMMU SimObject:                 system.nw_clstr.iommu
 
    --- Access Breakdown ---
-   Total IOMMU checks:              120750
-   IOTLB hits:                      120712
-   IOTLB misses (page walks):       38
-   IOTLB hit rate:                  99.9685%
+   Total IOMMU checks:              120754
+   IOTLB hits:                      120715
+   IOTLB misses (page walks):       39
+   IOTLB hit rate:                  99.9677%
 
    --- Latency Breakdown ---
-   TOTAL IOMMU OVERHEAD:            250.924 us
-   Avg latency per access:          0.00207805 us
+   TOTAL IOMMU OVERHEAD:            251.18 us
+   Avg latency per access:          0.0020801 us
 
 ********************************************************************************
 system.nw_clstr.top.llvm_interface
 Total Area: 251.85
-Total Power Static: 2.9562
+Total Power Static: 2.95681
 
-Total Power Dynamic: 14.5273
+Total Power Dynamic: 14.5303
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 1ms 377us
-   Simulation Time (Total):         0h 0m 4s 186ms
-   Simulation Time (Active):        0h 0m 0s 48ms
-        Queue Processing Time:      0h 0m 0s 42ms
-             Scheduling Time:       0h 0m 0s 16ms
+   Setup Time:                      0h 0m 0s 1ms 322us
+   Simulation Time (Total):         0h 0m 6s 900ms
+   Simulation Time (Active):        0h 0m 0s 87ms
+        Queue Processing Time:      0h 0m 0s 71ms
+             Scheduling Time:       0h 0m 0s 33ms
              Computation Time:      0h 0m 0s 2ms
    System Clock:                    0.1GHz
-   Runtime:                         68624 cycles
-   Runtime:                         686.24 us
+   Runtime:                         68686 cycles
+   Runtime:                         686.86 us
    Stalls:                          0 cycles
-   Executed Nodes:                  68623 cycles
+   Executed Nodes:                  68685 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       NO
@@ -119,6 +120,7 @@ Total Power Dynamic: 14.5273
    Total memory accesses (validated): 0
    Cache hits (0 latency):          0
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -140,13 +142,13 @@ Total Power Dynamic: 14.5273
    IOMMU SimObject:                 system.nw_clstr.iommu
 
    --- Access Breakdown ---
-   Total IOMMU checks:              120765
-   IOTLB hits:                      120727
-   IOTLB misses (page walks):       38
-   IOTLB hit rate:                  99.9685%
+   Total IOMMU checks:              120778
+   IOTLB hits:                      120738
+   IOTLB misses (page walks):       40
+   IOTLB hit rate:                  99.9669%
 
    --- Latency Breakdown ---
-   TOTAL IOMMU OVERHEAD:            250.954 us
-   Avg latency per access:          0.00207804 us
+   TOTAL IOMMU OVERHEAD:            251.476 us
+   Avg latency per access:          0.00208213 us
 
-Exiting @ tick 1081496500 because m5_exit instruction encountered
+Exiting @ tick 1082352500 because m5_exit instruction encountered

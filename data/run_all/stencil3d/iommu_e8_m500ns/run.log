@@ -12,9 +12,9 @@ gem5 Simulator System.  http://gem5.org
 gem5 is copyrighted software; use the --copyright option for details.
 
 gem5 version 21.1.0.1
-gem5 compiled May  2 2026 19:55:51
-gem5 started May  3 2026 00:10:50
-gem5 executing on 3b7fb6fd27b8, pid 1113651
+gem5 compiled May  6 2026 03:05:39
+gem5 started May  6 2026 03:06:26
+gem5 executing on 3b7fb6fd27b8, pid 3650844
 command line: /gem5-SALAM/build/ARM/gem5.opt --listener-mode=off --outdir=/gem5-SALAM/BM_ARM_OUT/run_all/stencil3d/iommu_e8_m500ns /gem5-SALAM/configs/SALAM/fs_stencil3d.py --mem-size=4GB --mem-type=DDR4_2400_8x8 --machine-type=VExpress_GEM5_V1 --dtb-file=none --bare-metal --cpu-type=DerivO3CPU --caches --l2cache --kernel=/gem5-SALAM/benchmarks/sys_validation/stencil3d/sw/main.elf --disk-image=/gem5-SALAM/benchmarks/common/fake.iso --accpath=/gem5-SALAM/benchmarks/sys_validation/stencil3d --accbench=stencil3d --enable-iommu --iotlb-entries 8 --iotlb-hit-latency 2000 --iotlb-miss-latency 500000
 
 [HWAccConfig] IOMMU ENABLED: entries=8, hit_lat=2000, miss_lat=500000
@@ -42,12 +42,12 @@ Total Power Static: 1924.05
 
 Total Power Dynamic: 43712.4
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 26ms 314us
-   Simulation Time (Total):         0h 0m 9s 610ms
-   Simulation Time (Active):        0h 0m 4s 958ms
-        Queue Processing Time:      0h 0m 4s 947ms
-             Scheduling Time:       0h 0m 2s 686ms
-             Computation Time:      0h 0m 0s 398ms
+   Setup Time:                      0h 0m 0s 50ms 349us
+   Simulation Time (Total):         0h 0m 7s 72ms
+   Simulation Time (Active):        0h 0m 3s 587ms
+        Queue Processing Time:      0h 0m 3s 577ms
+             Scheduling Time:       0h 0m 1s 891ms
+             Computation Time:      0h 0m 0s 329ms
    System Clock:                    0.1GHz
    Runtime:                         57459 cycles
    Runtime:                         574.59 us
@@ -62,6 +62,7 @@ Total Power Dynamic: 43712.4
    Total memory accesses (validated): 0
    Cache hits (0 latency):          0
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -83,33 +84,33 @@ Total Power Dynamic: 43712.4
    IOMMU SimObject:                 system.stencil3d_clstr.iommu
 
    --- Access Breakdown ---
-   Total IOMMU checks:              138015
-   IOTLB hits:                      137917
-   IOTLB misses (page walks):       98
-   IOTLB hit rate:                  99.929%
+   Total IOMMU checks:              140130
+   IOTLB hits:                      140015
+   IOTLB misses (page walks):       115
+   IOTLB hit rate:                  99.9179%
 
    --- Latency Breakdown ---
-   TOTAL IOMMU OVERHEAD:            324.834 us
-   Avg latency per access:          0.00235361 us
+   TOTAL IOMMU OVERHEAD:            337.53 us
+   Avg latency per access:          0.00240869 us
 
 ********************************************************************************
 system.stencil3d_clstr.top.llvm_interface
 Total Area: 201.48
-Total Power Static: 2.96903
+Total Power Static: 3.0222
 
-Total Power Dynamic: 14.5903
+Total Power Dynamic: 14.8516
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 1ms 201us
-   Simulation Time (Total):         0h 0m 10s 321ms
-   Simulation Time (Active):        0h 0m 0s 107ms
-        Queue Processing Time:      0h 0m 0s 93ms
-             Scheduling Time:       0h 0m 0s 38ms
-             Computation Time:      0h 0m 0s 7ms
+   Setup Time:                      0h 0m 0s 1ms 182us
+   Simulation Time (Total):         0h 0m 7s 956ms
+   Simulation Time (Active):        0h 0m 0s 77ms
+        Queue Processing Time:      0h 0m 0s 66ms
+             Scheduling Time:       0h 0m 0s 36ms
+             Computation Time:      0h 0m 0s 3ms
    System Clock:                    0.1GHz
-   Runtime:                         72628 cycles
-   Runtime:                         726.28 us
+   Runtime:                         75334 cycles
+   Runtime:                         753.34 us
    Stalls:                          0 cycles
-   Executed Nodes:                  72627 cycles
+   Executed Nodes:                  75333 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       NO
@@ -119,6 +120,7 @@ Total Power Dynamic: 14.5903
    Total memory accesses (validated): 0
    Cache hits (0 latency):          0
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -140,13 +142,13 @@ Total Power Dynamic: 14.5903
    IOMMU SimObject:                 system.stencil3d_clstr.iommu
 
    --- Access Breakdown ---
-   Total IOMMU checks:              138439
-   IOTLB hits:                      138341
-   IOTLB misses (page walks):       98
-   IOTLB hit rate:                  99.9292%
+   Total IOMMU checks:              142623
+   IOTLB hits:                      142491
+   IOTLB misses (page walks):       132
+   IOTLB hit rate:                  99.9074%
 
    --- Latency Breakdown ---
-   TOTAL IOMMU OVERHEAD:            325.682 us
-   Avg latency per access:          0.00235253 us
+   TOTAL IOMMU OVERHEAD:            350.982 us
+   Avg latency per access:          0.00246091 us
 
-Exiting @ tick 13984422000 because m5_exit instruction encountered
+Exiting @ tick 14011300000 because m5_exit instruction encountered

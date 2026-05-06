@@ -12,9 +12,9 @@ gem5 Simulator System.  http://gem5.org
 gem5 is copyrighted software; use the --copyright option for details.
 
 gem5 version 21.1.0.1
-gem5 compiled May  2 2026 19:55:51
-gem5 started May  3 2026 00:10:50
-gem5 executing on 3b7fb6fd27b8, pid 1113618
+gem5 compiled May  6 2026 03:05:39
+gem5 started May  6 2026 03:06:25
+gem5 executing on 3b7fb6fd27b8, pid 3650809
 command line: /gem5-SALAM/build/ARM/gem5.opt --listener-mode=off --outdir=/gem5-SALAM/BM_ARM_OUT/run_all/stencil3d/aia-kd /gem5-SALAM/configs/SALAM/fs_stencil3d.py --mem-size=4GB --mem-type=DDR4_2400_8x8 --machine-type=VExpress_GEM5_V1 --dtb-file=none --bare-metal --cpu-type=DerivO3CPU --caches --l2cache --kernel=/gem5-SALAM/benchmarks/sys_validation/stencil3d/sw/main.elf --disk-image=/gem5-SALAM/benchmarks/common/fake.iso --accpath=/gem5-SALAM/benchmarks/sys_validation/stencil3d --accbench=stencil3d --enable-kernel-validation --kernel-validation-latency 8367000
 
 [HWAccConfig] Kernel validation ENABLED: latency=8367000, int=172, pid=17
@@ -42,17 +42,17 @@ Total Power Static: 1924.05
 
 Total Power Dynamic: 43712.4
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 58ms 51us
-   Simulation Time (Total):         0h 0m 9s 185ms
-   Simulation Time (Active):        0h 0m 5s 345ms
-        Queue Processing Time:      0h 0m 5s 336ms
-             Scheduling Time:       0h 0m 2s 602ms
-             Computation Time:      0h 0m 0s 423ms
+   Setup Time:                      0h 0m 0s 27ms 7us
+   Simulation Time (Total):         0h 0m 8s 647ms
+   Simulation Time (Active):        0h 0m 4s 182ms
+        Queue Processing Time:      0h 0m 4s 172ms
+             Scheduling Time:       0h 0m 2s 252ms
+             Computation Time:      0h 0m 0s 385ms
    System Clock:                    0.1GHz
-   Runtime:                         61905 cycles
-   Runtime:                         619.05 us
+   Runtime:                         74765 cycles
+   Runtime:                         747.65 us
    Stalls:                          0 cycles
-   Executed Nodes:                  61904 cycles
+   Executed Nodes:                  74764 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -60,65 +60,67 @@ Total Power Dynamic: 43712.4
 
    --- Access Breakdown ---
    Total memory accesses (validated): 133568
-   Cache hits (0 latency):          133448
+   Cache hits (0 latency):          133502
    Validation requests (full lat):  32
-   Coalesced waits (partial lat):   88
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   34
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      267.744 us
-   Coalesced wait latency:          735.976 us
-   TOTAL SECURITY OVERHEAD:         1003.72 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.36336 us
-   Avg overhead per blocked access: 8.36433 us
+   Validation request latency:      276.111 us
+   Coalesced wait latency:          292.783 us
+   TOTAL SECURITY OVERHEAD:         568.894 us
+   Avg latency per validation:      8.62847 us
+   Avg latency per coalesced wait:  8.61126 us
+   Avg overhead per blocked access: 8.61961 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  33
-   Cache hit rate:                  99.9102%
+   Cache hit rate:                  99.9506%
 
 ********************************************************************************
 system.stencil3d_clstr.top.llvm_interface
 Total Area: 201.48
-Total Power Static: 3.3559
+Total Power Static: 3.8815
 
-Total Power Dynamic: 16.4915
+Total Power Dynamic: 19.0744
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 1ms 223us
-   Simulation Time (Total):         0h 0m 9s 845ms
-   Simulation Time (Active):        0h 0m 0s 108ms
+   Setup Time:                      0h 0m 0s 1ms 233us
+   Simulation Time (Total):         0h 0m 9s 611ms
+   Simulation Time (Active):        0h 0m 0s 104ms
         Queue Processing Time:      0h 0m 0s 94ms
-             Scheduling Time:       0h 0m 0s 44ms
-             Computation Time:      0h 0m 0s 10ms
+             Scheduling Time:       0h 0m 0s 39ms
+             Computation Time:      0h 0m 0s 7ms
    System Clock:                    0.1GHz
-   Runtime:                         77856 cycles
-   Runtime:                         778.56 us
+   Runtime:                         97425 cycles
+   Runtime:                         974.25 us
    Stalls:                          0 cycles
-   Executed Nodes:                  77855 cycles
+   Executed Nodes:                  97424 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
    Configured latency per check:    8.367 us
 
    --- Access Breakdown ---
-   Total memory accesses (validated): 5504
-   Cache hits (0 latency):          5499
-   Validation requests (full lat):  1
-   Coalesced waits (partial lat):   4
+   Total memory accesses (validated): 5288
+   Cache hits (0 latency):          5281
+   Validation requests (full lat):  7
+     of which DMA-ctrl writes:      6
+   Coalesced waits (partial lat):   0
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      8.367 us
-   Coalesced wait latency:          33.468 us
-   TOTAL SECURITY OVERHEAD:         41.835 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.367 us
-   Avg overhead per blocked access: 8.367 us
+   Validation request latency:      83.67 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         83.67 us
+   Avg latency per validation:      11.9529 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 11.9529 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  33
-   Cache hit rate:                  99.9092%
+   Cache hit rate:                  99.8676%
 
-Exiting @ tick 14036498000 because m5_exit instruction encountered
+Exiting @ tick 14232533000 because m5_exit instruction encountered

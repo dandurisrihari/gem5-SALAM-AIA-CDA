@@ -15,9 +15,9 @@ gem5 Simulator System.  http://gem5.org
 gem5 is copyrighted software; use the --copyright option for details.
 
 gem5 version 21.1.0.1
-gem5 compiled May  2 2026 19:55:51
-gem5 started May  3 2026 03:40:19
-gem5 executing on 3b7fb6fd27b8, pid 1231997
+gem5 compiled May  6 2026 03:05:39
+gem5 started May  6 2026 06:37:50
+gem5 executing on 3b7fb6fd27b8, pid 3760538
 command line: /gem5-SALAM/build/ARM/gem5.opt --listener-mode=off --outdir=/gem5-SALAM/BM_ARM_OUT/run_all/mobilenetv2_35/aia-kd /gem5-SALAM/configs/SALAM/fs_mobilenetv2_35.py --mem-size=4GB --mem-type=DDR4_2400_8x8 --machine-type=VExpress_GEM5_V1 --dtb-file=none --bare-metal --cpu-type=DerivO3CPU --caches --l2cache --kernel=/gem5-SALAM/benchmarks/mobilenetv2/sw/main.elf --disk-image=/gem5-SALAM/benchmarks/common/fake.iso --accpath=/gem5-SALAM/benchmarks/mobilenetv2 --accbench=mobilenetv2_35 --enable-kernel-validation --kernel-validation-latency 8367000
 
 [HWAccConfig] Kernel validation ENABLED: latency=8367000, int=172, pid=17
@@ -75,45 +75,46 @@ build/ARM/sim/simulate.cc:107: info: Entering event queue @ 0.  Starting simulat
 ********************************************************************************
 system.head.head_top.llvm_interface
 Total Area: 3799.78
-Total Power Static: 158.955
+Total Power Static: 78.8477
 
-Total Power Dynamic: 781.169
+Total Power Dynamic: 387.51
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 3ms 962us
-   Simulation Time (Total):         0h 25m 8s 225ms
-   Simulation Time (Active):        0h 0m 1s 388ms
-        Queue Processing Time:      0h 0m 1s 351ms
-             Scheduling Time:       0h 0m 0s 637ms
-             Computation Time:      0h 0m 0s 241ms
+   Setup Time:                      0h 0m 0s 4ms 25us
+   Simulation Time (Total):         0h 24m 39s 520ms
+   Simulation Time (Active):        0h 0m 0s 879ms
+        Queue Processing Time:      0h 0m 0s 848ms
+             Scheduling Time:       0h 0m 0s 374ms
+             Computation Time:      0h 0m 0s 149ms
    System Clock:                    0.1GHz
-   Runtime:                         262683 cycles
-   Runtime:                         2626.83 us
+   Runtime:                         315395 cycles
+   Runtime:                         3153.95 us
    Stalls:                          0 cycles
-   Executed Nodes:                  262682 cycles
+   Executed Nodes:                  315394 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
    Configured latency per check:    8.367 us
 
    --- Access Breakdown ---
-   Total memory accesses (validated): 260123
-   Cache hits (0 latency):          260108
-   Validation requests (full lat):  2
-   Coalesced waits (partial lat):   13
+   Total memory accesses (validated): 45
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  44
+     of which DMA-ctrl writes:      42
+   Coalesced waits (partial lat):   1
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      16.734 us
-   Coalesced wait latency:          108.771 us
-   TOTAL SECURITY OVERHEAD:         125.505 us
-   Avg latency per validation:      8.367 us
+   Validation request latency:      552.222 us
+   Coalesced wait latency:          8.367 us
+   TOTAL SECURITY OVERHEAD:         560.589 us
+   Avg latency per validation:      12.5505 us
    Avg latency per coalesced wait:  8.367 us
-   Avg overhead per blocked access: 8.367 us
+   Avg overhead per blocked access: 12.4575 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  2
-   Cache hit rate:                  99.9942%
+   Cache hit rate:                  0%
 
 ********************************************************************************
 system.head.head_pwconv.llvm_interface
@@ -122,17 +123,17 @@ Total Power Static: 2554.71
 
 Total Power Dynamic: 61491.8
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 805us
-   Simulation Time (Total):         0h 28m 30s 663ms
-   Simulation Time (Active):        0h 0m 49s 98ms
-        Queue Processing Time:      0h 0m 49s 71ms
-             Scheduling Time:       0h 0m 16s 550ms
-             Computation Time:      0h 0m 0s 376ms
+   Setup Time:                      0h 0m 0s 0ms 661us
+   Simulation Time (Total):         0h 27m 51s 304ms
+   Simulation Time (Active):        0h 0m 42s 34ms
+        Queue Processing Time:      0h 0m 42s 13ms
+             Scheduling Time:       0h 0m 14s 209ms
+             Computation Time:      0h 0m 0s 396ms
    System Clock:                    0.1GHz
-   Runtime:                         293206 cycles
-   Runtime:                         2932.06 us
+   Runtime:                         293110 cycles
+   Runtime:                         2931.1 us
    Stalls:                          0 cycles
-   Executed Nodes:                  293205 cycles
+   Executed Nodes:                  293109 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -142,6 +143,7 @@ Total Power Dynamic: 61491.8
    Total memory accesses (validated): 221184
    Cache hits (0 latency):          221184
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -165,17 +167,17 @@ Total Power Static: 72931.3
 
 Total Power Dynamic: 869084
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 4ms 685us
-   Simulation Time (Total):         0h 28m 31s 726ms
-   Simulation Time (Active):        0h 4m 16s 743ms
-        Queue Processing Time:      0h 4m 16s 734ms
-             Scheduling Time:       0h 3m 36s 822ms
-             Computation Time:      0h 0m 4s 99ms
+   Setup Time:                      0h 0m 0s 4ms 516us
+   Simulation Time (Total):         0h 27m 52s 765ms
+   Simulation Time (Active):        0h 4m 7s 989ms
+        Queue Processing Time:      0h 4m 7s 981ms
+             Scheduling Time:       0h 3m 31s 540ms
+             Computation Time:      0h 0m 3s 975ms
    System Clock:                    0.1GHz
-   Runtime:                         294038 cycles
-   Runtime:                         2940.38 us
+   Runtime:                         293962 cycles
+   Runtime:                         2939.62 us
    Stalls:                          0 cycles
-   Executed Nodes:                  294037 cycles
+   Executed Nodes:                  293961 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -185,16 +187,17 @@ Total Power Dynamic: 869084
    Total memory accesses (validated): 1752096
    Cache hits (0 latency):          1752095
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   1
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      0 us
-   Coalesced wait latency:          1.79 us
-   TOTAL SECURITY OVERHEAD:         1.79 us
+   Coalesced wait latency:          4.74 us
+   TOTAL SECURITY OVERHEAD:         4.74 us
    Avg latency per validation:      0 us
-   Avg latency per coalesced wait:  1.79 us
-   Avg overhead per blocked access: 1.79 us
+   Avg latency per coalesced wait:  4.74 us
+   Avg overhead per blocked access: 4.74 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -208,17 +211,17 @@ Total Power Static: 259429
 
 Total Power Dynamic: 6.41728e+06
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 11ms 312us
-   Simulation Time (Total):         0h 28m 40s 392ms
-   Simulation Time (Active):        0h 22m 37s 682ms
-        Queue Processing Time:      0h 22m 37s 633ms
-             Scheduling Time:       0h 20m 16s 364ms
-             Computation Time:      0h 0m 16s 864ms
+   Setup Time:                      0h 0m 0s 11ms 499us
+   Simulation Time (Total):         0h 27m 59s 29ms
+   Simulation Time (Active):        0h 22m 17s 430ms
+        Queue Processing Time:      0h 22m 17s 664ms
+             Scheduling Time:       0h 20m 4s 689ms
+             Computation Time:      0h 0m 16s 445ms
    System Clock:                    0.1GHz
-   Runtime:                         295537 cycles
-   Runtime:                         2955.37 us
+   Runtime:                         296297 cycles
+   Runtime:                         2962.97 us
    Stalls:                          0 cycles
-   Executed Nodes:                  295536 cycles
+   Executed Nodes:                  296296 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -226,18 +229,19 @@ Total Power Dynamic: 6.41728e+06
 
    --- Access Breakdown ---
    Total memory accesses (validated): 9474750
-   Cache hits (0 latency):          9474750
+   Cache hits (0 latency):          9474749
    Validation requests (full lat):  0
-   Coalesced waits (partial lat):   0
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   1
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      0 us
-   Coalesced wait latency:          0 us
-   TOTAL SECURITY OVERHEAD:         0 us
+   Coalesced wait latency:          8.363 us
+   TOTAL SECURITY OVERHEAD:         8.363 us
    Avg latency per validation:      0 us
-   Avg latency per coalesced wait:  0 us
-   Avg overhead per blocked access: 0 us
+   Avg latency per coalesced wait:  8.363 us
+   Avg overhead per blocked access: 8.363 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -251,17 +255,17 @@ Total Power Static: 87.7635
 
 Total Power Dynamic: 263.175
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 7ms 347us
-   Simulation Time (Total):         0h 38m 19s 831ms
-   Simulation Time (Active):        0h 0m 0s 435ms
-        Queue Processing Time:      0h 0m 0s 391ms
-             Scheduling Time:       0h 0m 0s 234ms
+   Setup Time:                      0h 0m 0s 0ms 519us
+   Simulation Time (Total):         0h 36m 12s 735ms
+   Simulation Time (Active):        0h 0m 0s 347ms
+        Queue Processing Time:      0h 0m 0s 309ms
+             Scheduling Time:       0h 0m 0s 162ms
              Computation Time:      0h 0m 0s 15ms
    System Clock:                    0.1GHz
-   Runtime:                         283587 cycles
-   Runtime:                         2835.87 us
+   Runtime:                         429917 cycles
+   Runtime:                         4299.17 us
    Stalls:                          0 cycles
-   Executed Nodes:                  283586 cycles
+   Executed Nodes:                  429916 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -271,6 +275,7 @@ Total Power Dynamic: 263.175
    Total memory accesses (validated): 36864
    Cache hits (0 latency):          36864
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -294,17 +299,17 @@ Total Power Static: 15393.1
 
 Total Power Dynamic: 366196
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 988us
-   Simulation Time (Total):         0h 38m 35s 313ms
-   Simulation Time (Active):        0h 5m 15s 504ms
-        Queue Processing Time:      0h 5m 15s 370ms
-             Scheduling Time:       0h 3m 25s 327ms
-             Computation Time:      0h 0m 2s 947ms
+   Setup Time:                      0h 0m 0s 0ms 819us
+   Simulation Time (Total):         0h 36m 27s 351ms
+   Simulation Time (Active):        0h 4m 40s 55ms
+        Queue Processing Time:      0h 4m 39s 861ms
+             Scheduling Time:       0h 3m 9s 917ms
+             Computation Time:      0h 0m 2s 823ms
    System Clock:                    0.1GHz
-   Runtime:                         285777 cycles
-   Runtime:                         2857.77 us
+   Runtime:                         432107 cycles
+   Runtime:                         4321.07 us
    Stalls:                          0 cycles
-   Executed Nodes:                  285776 cycles
+   Executed Nodes:                  432106 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -314,6 +319,7 @@ Total Power Dynamic: 366196
    Total memory accesses (validated): 1032192
    Cache hits (0 latency):          1032192
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -337,17 +343,17 @@ Total Power Static: 229952
 
 Total Power Dynamic: 2.63548e+06
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 9ms 206us
-   Simulation Time (Total):         0h 38m 58s 614ms
-   Simulation Time (Active):        0h 22m 11s 315ms
-        Queue Processing Time:      0h 22m 11s 542ms
-             Scheduling Time:       0h 20m 36s 18ms
-             Computation Time:      0h 0m 13s 963ms
+   Setup Time:                      0h 0m 0s 8ms 918us
+   Simulation Time (Total):         0h 36m 50s 22ms
+   Simulation Time (Active):        0h 21m 33s 18ms
+        Queue Processing Time:      0h 21m 33s 181ms
+             Scheduling Time:       0h 20m 6s 10ms
+             Computation Time:      0h 0m 13s 749ms
    System Clock:                    0.1GHz
-   Runtime:                         290261 cycles
-   Runtime:                         2902.61 us
+   Runtime:                         436284 cycles
+   Runtime:                         4362.84 us
    Stalls:                          0 cycles
-   Executed Nodes:                  290260 cycles
+   Executed Nodes:                  436283 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -355,23 +361,24 @@ Total Power Dynamic: 2.63548e+06
 
    --- Access Breakdown ---
    Total memory accesses (validated): 5090400
-   Cache hits (0 latency):          5090391
+   Cache hits (0 latency):          5090393
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  9
-   Cache hit rate:                  99.9998%
+   Cache hit rate:                  99.9999%
 
 ********************************************************************************
 system.body.body_pwconv1.llvm_interface
@@ -380,17 +387,17 @@ Total Power Static: 185773
 
 Total Power Dynamic: 1.83603e+06
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 145ms 128us
-   Simulation Time (Total):         0h 38m 58s 417ms
-   Simulation Time (Active):        0h 9m 58s 984ms
-        Queue Processing Time:      0h 9m 58s 972ms
-             Scheduling Time:       0h 8m 18s 395ms
-             Computation Time:      0h 0m 10s 862ms
+   Setup Time:                      0h 0m 0s 140ms 674us
+   Simulation Time (Total):         0h 36m 50s 239ms
+   Simulation Time (Active):        0h 9m 37s 937ms
+        Queue Processing Time:      0h 9m 37s 977ms
+             Scheduling Time:       0h 8m 5s 283ms
+             Computation Time:      0h 0m 10s 694ms
    System Clock:                    0.1GHz
-   Runtime:                         292053 cycles
-   Runtime:                         2920.53 us
+   Runtime:                         445275 cycles
+   Runtime:                         4452.75 us
    Stalls:                          0 cycles
-   Executed Nodes:                  292052 cycles
+   Executed Nodes:                  445274 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -398,58 +405,16 @@ Total Power Dynamic: 1.83603e+06
 
    --- Access Breakdown ---
    Total memory accesses (validated): 2469888
-   Cache hits (0 latency):          2469760
+   Cache hits (0 latency):          2469761
    Validation requests (full lat):  2
-   Coalesced waits (partial lat):   126
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   125
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      16.734 us
-   Coalesced wait latency:          1047.86 us
-   TOTAL SECURITY OVERHEAD:         1064.6 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.31637 us
-   Avg overhead per blocked access: 8.31716 us
-
-   --- Cache Statistics ---
-   Processes with cached pages:     1
-   Unique pages validated (total):  9
-   Cache hit rate:                  99.9948%
-
-********************************************************************************
-system.body.body_top.llvm_interface
-Total Area: 3749.41
-Total Power Static: 0.972625
-
-Total Power Dynamic: 4.81833
-   ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 10ms 606us
-   Simulation Time (Total):         0h 40m 51s 452ms
-   Simulation Time (Active):        0h 0m 0s 331ms
-        Queue Processing Time:      0h 0m 0s 282ms
-             Scheduling Time:       0h 0m 0s 94ms
-             Computation Time:      0h 0m 0s 24ms
-   System Clock:                    0.1GHz
-   Runtime:                         311334 cycles
-   Runtime:                         3113.34 us
-   Stalls:                          0 cycles
-   Executed Nodes:                  311333 cycles
-
-   ========= Kernel Validation Stats ==========
-   Kernel validation enabled:       YES
-   Configured latency per check:    8.367 us
-
-   --- Access Breakdown ---
-   Total memory accesses (validated): 27735
-   Cache hits (0 latency):          27694
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
-   Validations denied:              0
-
-   --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
+   Coalesced wait latency:          1045.88 us
+   TOTAL SECURITY OVERHEAD:         1062.61 us
    Avg latency per validation:      8.367 us
    Avg latency per coalesced wait:  8.367 us
    Avg overhead per blocked access: 8.367 us
@@ -457,7 +422,51 @@ Total Power Dynamic: 4.81833
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  9
-   Cache hit rate:                  99.8522%
+   Cache hit rate:                  99.9949%
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 3749.41
+Total Power Static: 0.977515
+
+Total Power Dynamic: 4.84235
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 10ms 334us
+   Simulation Time (Total):         0h 39m 10s 674ms
+   Simulation Time (Active):        0h 0m 0s 346ms
+        Queue Processing Time:      0h 0m 0s 278ms
+             Scheduling Time:       0h 0m 0s 96ms
+             Computation Time:      0h 0m 0s 26ms
+   System Clock:                    0.1GHz
+   Runtime:                         559183 cycles
+   Runtime:                         5591.83 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  559182 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       YES
+   Configured latency per check:    8.367 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 39827
+   Cache hits (0 latency):          39762
+   Validation requests (full lat):  45
+     of which DMA-ctrl writes:      42
+   Coalesced waits (partial lat):   20
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      627.525 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         953.838 us
+   Avg latency per validation:      13.945 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 14.6744 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     1
+   Unique pages validated (total):  9
+   Cache hit rate:                  99.8368%
 
 ********************************************************************************
 system.body.body_residual.llvm_interface
@@ -466,11 +475,11 @@ Total Power Static: 21.9391
 
 Total Power Dynamic: 65.7937
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 381us
-   Simulation Time (Total):         0h 15m 42s 894ms
-   Simulation Time (Active):        0h 0m 0s 132ms
-        Queue Processing Time:      0h 0m 0s 103ms
-             Scheduling Time:       0h 0m 0s 53ms
+   Setup Time:                      0h 0m 0s 0ms 385us
+   Simulation Time (Total):         0h 15m 13s 886ms
+   Simulation Time (Active):        0h 0m 0s 126ms
+        Queue Processing Time:      0h 0m 0s 101ms
+             Scheduling Time:       0h 0m 0s 47ms
              Computation Time:      0h 0m 0s 3ms
    System Clock:                    0.1GHz
    Runtime:                         361483 cycles
@@ -486,6 +495,7 @@ Total Power Dynamic: 65.7937
    Total memory accesses (validated): 46080
    Cache hits (0 latency):          46080
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -509,12 +519,12 @@ Total Power Static: 3848.3
 
 Total Power Dynamic: 91549.2
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 751us
-   Simulation Time (Total):         0h 16m 8s 101ms
-   Simulation Time (Active):        0h 1m 11s 215ms
-        Queue Processing Time:      0h 1m 11s 189ms
-             Scheduling Time:       0h 0m 45s 418ms
-             Computation Time:      0h 0m 0s 688ms
+   Setup Time:                      0h 0m 0s 0ms 750us
+   Simulation Time (Total):         0h 15m 38s 138ms
+   Simulation Time (Active):        0h 1m 4s 348ms
+        Queue Processing Time:      0h 1m 4s 330ms
+             Scheduling Time:       0h 0m 42s 756ms
+             Computation Time:      0h 0m 0s 653ms
    System Clock:                    0.1GHz
    Runtime:                         363301 cycles
    Runtime:                         3633.01 us
@@ -529,6 +539,7 @@ Total Power Dynamic: 91549.2
    Total memory accesses (validated): 1290240
    Cache hits (0 latency):          1290240
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -552,12 +563,12 @@ Total Power Static: 56863.8
 
 Total Power Dynamic: 649870
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 9ms 410us
-   Simulation Time (Total):         0h 16m 43s 532ms
-   Simulation Time (Active):        0h 5m 34s 265ms
-        Queue Processing Time:      0h 5m 34s 246ms
-             Scheduling Time:       0h 5m 6s 366ms
-             Computation Time:      0h 0m 3s 550ms
+   Setup Time:                      0h 0m 0s 8ms 895us
+   Simulation Time (Total):         0h 16m 13s 183ms
+   Simulation Time (Active):        0h 5m 27s 675ms
+        Queue Processing Time:      0h 5m 27s 660ms
+             Scheduling Time:       0h 5m 2s 54ms
+             Computation Time:      0h 0m 3s 380ms
    System Clock:                    0.1GHz
    Runtime:                         379383 cycles
    Runtime:                         3793.83 us
@@ -570,18 +581,19 @@ Total Power Dynamic: 649870
 
    --- Access Breakdown ---
    Total memory accesses (validated): 6391872
-   Cache hits (0 latency):          6391863
+   Cache hits (0 latency):          6391865
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -595,12 +607,12 @@ Total Power Static: 185773
 
 Total Power Dynamic: 1.83603e+06
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 145ms 95us
-   Simulation Time (Total):         0h 16m 44s 220ms
-   Simulation Time (Active):        0h 9m 24s 871ms
-        Queue Processing Time:      0h 9m 24s 939ms
-             Scheduling Time:       0h 8m 11s 110ms
-             Computation Time:      0h 0m 10s 887ms
+   Setup Time:                      0h 0m 0s 134ms 716us
+   Simulation Time (Total):         0h 16m 13s 837ms
+   Simulation Time (Active):        0h 9m 9s 261ms
+        Queue Processing Time:      0h 9m 9s 319ms
+             Scheduling Time:       0h 8m 1s 151ms
+             Computation Time:      0h 0m 10s 359ms
    System Clock:                    0.1GHz
    Runtime:                         393309 cycles
    Runtime:                         3933.09 us
@@ -613,18 +625,19 @@ Total Power Dynamic: 1.83603e+06
 
    --- Access Breakdown ---
    Total memory accesses (validated): 4939776
-   Cache hits (0 latency):          4939648
+   Cache hits (0 latency):          4939649
    Validation requests (full lat):  2
-   Coalesced waits (partial lat):   126
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   125
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      16.734 us
-   Coalesced wait latency:          1047.86 us
-   TOTAL SECURITY OVERHEAD:         1064.6 us
+   Coalesced wait latency:          1045.88 us
+   TOTAL SECURITY OVERHEAD:         1062.61 us
    Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.31637 us
-   Avg overhead per blocked access: 8.31716 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 8.367 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -638,41 +651,42 @@ Total Power Static: 0.978737
 
 Total Power Dynamic: 4.84836
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 7ms 576us
-   Simulation Time (Total):         0h 16m 44s 863ms
-   Simulation Time (Active):        0h 0m 0s 240ms
-        Queue Processing Time:      0h 0m 0s 207ms
-             Scheduling Time:       0h 0m 0s 78ms
-             Computation Time:      0h 0m 0s 18ms
+   Setup Time:                      0h 0m 0s 7ms 250us
+   Simulation Time (Total):         0h 16m 15s 242ms
+   Simulation Time (Active):        0h 0m 0s 211ms
+        Queue Processing Time:      0h 0m 0s 177ms
+             Scheduling Time:       0h 0m 0s 72ms
+             Computation Time:      0h 0m 0s 17ms
    System Clock:                    0.1GHz
-   Runtime:                         411856 cycles
-   Runtime:                         4118.56 us
+   Runtime:                         464566 cycles
+   Runtime:                         4645.66 us
    Stalls:                          0 cycles
-   Executed Nodes:                  411855 cycles
+   Executed Nodes:                  464565 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
    Configured latency per check:    8.367 us
 
    --- Access Breakdown ---
-   Total memory accesses (validated): 64520
-   Cache hits (0 latency):          64479
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
+   Total memory accesses (validated): 75014
+   Cache hits (0 latency):          74907
+   Validation requests (full lat):  87
+     of which DMA-ctrl writes:      84
+   Coalesced waits (partial lat):   20
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.367 us
-   Avg overhead per blocked access: 8.367 us
+   Validation request latency:      1154.65 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         1480.96 us
+   Avg latency per validation:      13.2718 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 13.8407 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  9
-   Cache hit rate:                  99.9365%
+   Cache hit rate:                  99.8574%
 
 ********************************************************************************
 system.body.body_residual.llvm_interface
@@ -681,17 +695,17 @@ Total Power Static: 32.9098
 
 Total Power Dynamic: 131.587
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 397us
-   Simulation Time (Total):         0h 10m 13s 974ms
-   Simulation Time (Active):        0h 0m 0s 125ms
-        Queue Processing Time:      0h 0m 0s 114ms
-             Scheduling Time:       0h 0m 0s 70ms
-             Computation Time:      0h 0m 0s 7ms
+   Setup Time:                      0h 0m 0s 0ms 404us
+   Simulation Time (Total):         0h 9m 50s 318ms
+   Simulation Time (Active):        0h 0m 0s 113ms
+        Queue Processing Time:      0h 0m 0s 103ms
+             Scheduling Time:       0h 0m 0s 60ms
+             Computation Time:      0h 0m 0s 6ms
    System Clock:                    0.1GHz
-   Runtime:                         101395 cycles
-   Runtime:                         1013.95 us
+   Runtime:                         102377 cycles
+   Runtime:                         1023.77 us
    Stalls:                          0 cycles
-   Executed Nodes:                  101394 cycles
+   Executed Nodes:                  102376 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -701,6 +715,7 @@ Total Power Dynamic: 131.587
    Total memory accesses (validated): 59904
    Cache hits (0 latency):          59904
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -724,17 +739,17 @@ Total Power Static: 3848.3
 
 Total Power Dynamic: 91549.2
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 781us
-   Simulation Time (Total):         0h 10m 37s 630ms
-   Simulation Time (Active):        0h 1m 9s 715ms
-        Queue Processing Time:      0h 1m 9s 690ms
-             Scheduling Time:       0h 0m 45s 782ms
-             Computation Time:      0h 0m 0s 701ms
+   Setup Time:                      0h 0m 0s 0ms 752us
+   Simulation Time (Total):         0h 10m 13s 445ms
+   Simulation Time (Active):        0h 1m 2s 330ms
+        Queue Processing Time:      0h 1m 2s 312ms
+             Scheduling Time:       0h 0m 42s 460ms
+             Computation Time:      0h 0m 0s 666ms
    System Clock:                    0.1GHz
-   Runtime:                         103213 cycles
-   Runtime:                         1032.13 us
+   Runtime:                         104195 cycles
+   Runtime:                         1041.95 us
    Stalls:                          0 cycles
-   Executed Nodes:                  103212 cycles
+   Executed Nodes:                  104194 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -744,6 +759,7 @@ Total Power Dynamic: 91549.2
    Total memory accesses (validated): 1548288
    Cache hits (0 latency):          1548288
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -767,17 +783,17 @@ Total Power Static: 56814.8
 
 Total Power Dynamic: 649870
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 9ms 353us
-   Simulation Time (Total):         0h 10m 49s 521ms
-   Simulation Time (Active):        0h 5m 27s 358ms
-        Queue Processing Time:      0h 5m 27s 329ms
-             Scheduling Time:       0h 5m 2s 815ms
-             Computation Time:      0h 0m 3s 595ms
+   Setup Time:                      0h 0m 0s 9ms 782us
+   Simulation Time (Total):         0h 10m 24s 847ms
+   Simulation Time (Active):        0h 5m 20s 176ms
+        Queue Processing Time:      0h 5m 20s 166ms
+             Scheduling Time:       0h 4m 56s 838ms
+             Computation Time:      0h 0m 3s 421ms
    System Clock:                    0.1GHz
-   Runtime:                         105471 cycles
-   Runtime:                         1054.71 us
+   Runtime:                         106453 cycles
+   Runtime:                         1064.53 us
    Stalls:                          0 cycles
-   Executed Nodes:                  105470 cycles
+   Executed Nodes:                  106452 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -785,18 +801,19 @@ Total Power Dynamic: 649870
 
    --- Access Breakdown ---
    Total memory accesses (validated): 7651872
-   Cache hits (0 latency):          7651863
+   Cache hits (0 latency):          7651865
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -810,17 +827,17 @@ Total Power Static: 92541.7
 
 Total Power Dynamic: 914996
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 154ms 564us
-   Simulation Time (Total):         0h 10m 49s 463ms
-   Simulation Time (Active):        0h 3m 52s 440ms
-        Queue Processing Time:      0h 3m 52s 426ms
-             Scheduling Time:       0h 3m 25s 168ms
-             Computation Time:      0h 0m 5s 647ms
+   Setup Time:                      0h 0m 0s 137ms 687us
+   Simulation Time (Total):         0h 10m 24s 809ms
+   Simulation Time (Active):        0h 3m 43s 391ms
+        Queue Processing Time:      0h 3m 43s 380ms
+             Scheduling Time:       0h 3m 17s 978ms
+             Computation Time:      0h 0m 5s 195ms
    System Clock:                    0.1GHz
-   Runtime:                         109853 cycles
-   Runtime:                         1098.53 us
+   Runtime:                         110834 cycles
+   Runtime:                         1108.34 us
    Stalls:                          0 cycles
-   Executed Nodes:                  109852 cycles
+   Executed Nodes:                  110833 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -828,58 +845,16 @@ Total Power Dynamic: 914996
 
    --- Access Breakdown ---
    Total memory accesses (validated): 6119424
-   Cache hits (0 latency):          6119176
+   Cache hits (0 latency):          6119177
    Validation requests (full lat):  3
-   Coalesced waits (partial lat):   245
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   244
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      25.101 us
-   Coalesced wait latency:          2043.53 us
-   TOTAL SECURITY OVERHEAD:         2068.64 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.34096 us
-   Avg overhead per blocked access: 8.34127 us
-
-   --- Cache Statistics ---
-   Processes with cached pages:     1
-   Unique pages validated (total):  10
-   Cache hit rate:                  99.9959%
-
-********************************************************************************
-system.body.body_top.llvm_interface
-Total Area: 11248.2
-Total Power Static: 0.979959
-
-Total Power Dynamic: 4.85437
-   ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 7ms 346us
-   Simulation Time (Total):         0h 10m 50s 169ms
-   Simulation Time (Active):        0h 0m 0s 86ms
-        Queue Processing Time:      0h 0m 0s 71ms
-             Scheduling Time:       0h 0m 0s 26ms
-             Computation Time:      0h 0m 0s 7ms
-   System Clock:                    0.1GHz
-   Runtime:                         128430 cycles
-   Runtime:                         1284.3 us
-   Stalls:                          0 cycles
-   Executed Nodes:                  128429 cycles
-
-   ========= Kernel Validation Stats ==========
-   Kernel validation enabled:       YES
-   Configured latency per check:    8.367 us
-
-   --- Access Breakdown ---
-   Total memory accesses (validated): 76000
-   Cache hits (0 latency):          75959
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
-   Validations denied:              0
-
-   --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
+   Coalesced wait latency:          2041.55 us
+   TOTAL SECURITY OVERHEAD:         2066.65 us
    Avg latency per validation:      8.367 us
    Avg latency per coalesced wait:  8.367 us
    Avg overhead per blocked access: 8.367 us
@@ -887,7 +862,51 @@ Total Power Dynamic: 4.85437
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  10
-   Cache hit rate:                  99.9461%
+   Cache hit rate:                  99.996%
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 11248.2
+Total Power Static: 0.97507
+
+Total Power Dynamic: 4.83034
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 317us
+   Simulation Time (Total):         0h 10m 26s 275ms
+   Simulation Time (Active):        0h 0m 0s 85ms
+        Queue Processing Time:      0h 0m 0s 68ms
+             Scheduling Time:       0h 0m 0s 25ms
+             Computation Time:      0h 0m 0s 6ms
+   System Clock:                    0.1GHz
+   Runtime:                         182025 cycles
+   Runtime:                         1820.25 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  182024 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       YES
+   Configured latency per check:    8.367 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 84980
+   Cache hits (0 latency):          84831
+   Validation requests (full lat):  129
+     of which DMA-ctrl writes:      126
+   Coalesced waits (partial lat):   20
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      1681.77 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         2008.08 us
+   Avg latency per validation:      13.037 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 13.477 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     1
+   Unique pages validated (total):  10
+   Cache hit rate:                  99.8247%
 
 ********************************************************************************
 system.body.body_residual.llvm_interface
@@ -896,11 +915,11 @@ Total Power Static: 10.9684
 
 Total Power Dynamic: 32.8969
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 387us
-   Simulation Time (Total):         0h 6m 18s 618ms
-   Simulation Time (Active):        0h 0m 0s 53ms
-        Queue Processing Time:      0h 0m 0s 45ms
-             Scheduling Time:       0h 0m 0s 25ms
+   Setup Time:                      0h 0m 0s 0ms 395us
+   Simulation Time (Total):         0h 6m 4s 691ms
+   Simulation Time (Active):        0h 0m 0s 48ms
+        Queue Processing Time:      0h 0m 0s 42ms
+             Scheduling Time:       0h 0m 0s 22ms
              Computation Time:      0h 0m 0s 1ms
    System Clock:                    0.1GHz
    Runtime:                         84277 cycles
@@ -916,6 +935,7 @@ Total Power Dynamic: 32.8969
    Total memory accesses (validated): 64512
    Cache hits (0 latency):          64512
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -939,12 +959,12 @@ Total Power Static: 1866.67
 
 Total Power Dynamic: 45269.9
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 762us
-   Simulation Time (Total):         0h 6m 45s 583ms
-   Simulation Time (Active):        0h 0m 29s 66ms
-        Queue Processing Time:      0h 0m 29s 51ms
-             Scheduling Time:       0h 0m 16s 884ms
-             Computation Time:      0h 0m 0s 331ms
+   Setup Time:                      0h 0m 0s 0ms 752us
+   Simulation Time (Total):         0h 6m 31s 580ms
+   Simulation Time (Active):        0h 0m 24s 977ms
+        Queue Processing Time:      0h 0m 24s 967ms
+             Scheduling Time:       0h 0m 15s 112ms
+             Computation Time:      0h 0m 0s 306ms
    System Clock:                    0.1GHz
    Runtime:                         85815 cycles
    Runtime:                         858.15 us
@@ -959,6 +979,7 @@ Total Power Dynamic: 45269.9
    Total memory accesses (validated): 1669248
    Cache hits (0 latency):          1669248
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -982,12 +1003,12 @@ Total Power Static: 27794.7
 
 Total Power Dynamic: 316697
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 9ms 372us
-   Simulation Time (Total):         0h 7m 20s 799ms
-   Simulation Time (Active):        0h 2m 45s 988ms
-        Queue Processing Time:      0h 2m 45s 969ms
-             Scheduling Time:       0h 2m 32s 578ms
-             Computation Time:      0h 0m 1s 756ms
+   Setup Time:                      0h 0m 0s 9ms 406us
+   Simulation Time (Total):         0h 7m 5s 700ms
+   Simulation Time (Active):        0h 2m 42s 463ms
+        Queue Processing Time:      0h 2m 42s 451ms
+             Scheduling Time:       0h 2m 30s 273ms
+             Computation Time:      0h 0m 1s 661ms
    System Clock:                    0.1GHz
    Runtime:                         94387 cycles
    Runtime:                         943.87 us
@@ -1000,18 +1021,19 @@ Total Power Dynamic: 316697
 
    --- Access Breakdown ---
    Total memory accesses (validated): 8290656
-   Cache hits (0 latency):          8290647
+   Cache hits (0 latency):          8290649
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -1025,12 +1047,12 @@ Total Power Static: 92541.7
 
 Total Power Dynamic: 914996
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 145ms 700us
-   Simulation Time (Total):         0h 7m 20s 816ms
-   Simulation Time (Active):        0h 3m 50s 486ms
-        Queue Processing Time:      0h 3m 50s 474ms
-             Scheduling Time:       0h 3m 24s 372ms
-             Computation Time:      0h 0m 5s 659ms
+   Setup Time:                      0h 0m 0s 134ms 881us
+   Simulation Time (Total):         0h 7m 5s 727ms
+   Simulation Time (Active):        0h 3m 43s 423ms
+        Queue Processing Time:      0h 3m 43s 412ms
+             Scheduling Time:       0h 3m 19s 217ms
+             Computation Time:      0h 0m 5s 320ms
    System Clock:                    0.1GHz
    Runtime:                         100219 cycles
    Runtime:                         1002.19 us
@@ -1043,18 +1065,19 @@ Total Power Dynamic: 914996
 
    --- Access Breakdown ---
    Total memory accesses (validated): 7305984
-   Cache hits (0 latency):          7305736
+   Cache hits (0 latency):          7305737
    Validation requests (full lat):  3
-   Coalesced waits (partial lat):   245
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   244
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      25.101 us
-   Coalesced wait latency:          2043.53 us
-   TOTAL SECURITY OVERHEAD:         2068.64 us
+   Coalesced wait latency:          2041.55 us
+   TOTAL SECURITY OVERHEAD:         2066.65 us
    Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.34096 us
-   Avg overhead per blocked access: 8.34127 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 8.367 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -1064,45 +1087,46 @@ Total Power Dynamic: 914996
 ********************************************************************************
 system.body.body_top.llvm_interface
 Total Area: 14997.7
-Total Power Static: 0.979959
+Total Power Static: 0.978126
 
-Total Power Dynamic: 4.85437
+Total Power Dynamic: 4.84536
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 7ms 407us
-   Simulation Time (Total):         0h 7m 21s 434ms
-   Simulation Time (Active):        0h 0m 0s 67ms
-        Queue Processing Time:      0h 0m 0s 56ms
-             Scheduling Time:       0h 0m 0s 21ms
+   Setup Time:                      0h 0m 0s 7ms 352us
+   Simulation Time (Total):         0h 7m 7s 94ms
+   Simulation Time (Active):        0h 0m 0s 68ms
+        Queue Processing Time:      0h 0m 0s 53ms
+             Scheduling Time:       0h 0m 0s 20ms
              Computation Time:      0h 0m 0s 5ms
    System Clock:                    0.1GHz
-   Runtime:                         118797 cycles
-   Runtime:                         1187.97 us
+   Runtime:                         171473 cycles
+   Runtime:                         1714.73 us
    Stalls:                          0 cycles
-   Executed Nodes:                  118796 cycles
+   Executed Nodes:                  171472 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
    Configured latency per check:    8.367 us
 
    --- Access Breakdown ---
-   Total memory accesses (validated): 86619
-   Cache hits (0 latency):          86578
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
+   Total memory accesses (validated): 93999
+   Cache hits (0 latency):          93808
+   Validation requests (full lat):  171
+     of which DMA-ctrl writes:      168
+   Coalesced waits (partial lat):   20
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.367 us
-   Avg overhead per blocked access: 8.367 us
+   Validation request latency:      2208.89 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         2535.2 us
+   Avg latency per validation:      12.9175 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 13.2733 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  10
-   Cache hit rate:                  99.9527%
+   Cache hit rate:                  99.7968%
 
 ********************************************************************************
 system.body.body_residual.llvm_interface
@@ -1111,11 +1135,11 @@ Total Power Static: 16.4537
 
 Total Power Dynamic: 65.7937
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 389us
-   Simulation Time (Total):         0h 6m 17s 209ms
-   Simulation Time (Active):        0h 0m 0s 64ms
-        Queue Processing Time:      0h 0m 0s 56ms
-             Scheduling Time:       0h 0m 0s 33ms
+   Setup Time:                      0h 0m 0s 0ms 403us
+   Simulation Time (Total):         0h 6m 9s 281ms
+   Simulation Time (Active):        0h 0m 0s 60ms
+        Queue Processing Time:      0h 0m 0s 54ms
+             Scheduling Time:       0h 0m 0s 30ms
              Computation Time:      0h 0m 0s 3ms
    System Clock:                    0.1GHz
    Runtime:                         84277 cycles
@@ -1131,6 +1155,7 @@ Total Power Dynamic: 65.7937
    Total memory accesses (validated): 71424
    Cache hits (0 latency):          71424
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -1154,12 +1179,12 @@ Total Power Static: 1866.67
 
 Total Power Dynamic: 45269.9
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 748us
-   Simulation Time (Total):         0h 6m 44s 490ms
-   Simulation Time (Active):        0h 0m 28s 191ms
-        Queue Processing Time:      0h 0m 28s 178ms
-             Scheduling Time:       0h 0m 16s 319ms
-             Computation Time:      0h 0m 0s 327ms
+   Setup Time:                      0h 0m 0s 0ms 766us
+   Simulation Time (Total):         0h 6m 35s 931ms
+   Simulation Time (Active):        0h 0m 25s 654ms
+        Queue Processing Time:      0h 0m 25s 643ms
+             Scheduling Time:       0h 0m 15s 591ms
+             Computation Time:      0h 0m 0s 310ms
    System Clock:                    0.1GHz
    Runtime:                         85815 cycles
    Runtime:                         858.15 us
@@ -1174,6 +1199,7 @@ Total Power Dynamic: 45269.9
    Total memory accesses (validated): 1790208
    Cache hits (0 latency):          1790208
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -1197,12 +1223,12 @@ Total Power Static: 27794.7
 
 Total Power Dynamic: 316697
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 9ms 148us
-   Simulation Time (Total):         0h 7m 19s 834ms
-   Simulation Time (Active):        0h 2m 45s 748ms
-        Queue Processing Time:      0h 2m 45s 728ms
-             Scheduling Time:       0h 2m 32s 499ms
-             Computation Time:      0h 0m 1s 745ms
+   Setup Time:                      0h 0m 0s 8ms 311us
+   Simulation Time (Total):         0h 7m 9s 948ms
+   Simulation Time (Active):        0h 2m 43s 210ms
+        Queue Processing Time:      0h 2m 43s 196ms
+             Scheduling Time:       0h 2m 30s 930ms
+             Computation Time:      0h 0m 1s 673ms
    System Clock:                    0.1GHz
    Runtime:                         94387 cycles
    Runtime:                         943.87 us
@@ -1215,18 +1241,19 @@ Total Power Dynamic: 316697
 
    --- Access Breakdown ---
    Total memory accesses (validated): 8929440
-   Cache hits (0 latency):          8929431
+   Cache hits (0 latency):          8929433
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -1240,12 +1267,12 @@ Total Power Static: 92541.7
 
 Total Power Dynamic: 914996
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 139ms 56us
-   Simulation Time (Total):         0h 7m 19s 858ms
-   Simulation Time (Active):        0h 3m 50s 610ms
-        Queue Processing Time:      0h 3m 50s 597ms
-             Scheduling Time:       0h 3m 24s 556ms
-             Computation Time:      0h 0m 5s 651ms
+   Setup Time:                      0h 0m 0s 137ms 301us
+   Simulation Time (Total):         0h 7m 9s 974ms
+   Simulation Time (Active):        0h 3m 46s 31ms
+        Queue Processing Time:      0h 3m 46s 21ms
+             Scheduling Time:       0h 3m 21s 549ms
+             Computation Time:      0h 0m 5s 366ms
    System Clock:                    0.1GHz
    Runtime:                         100219 cycles
    Runtime:                         1002.19 us
@@ -1258,18 +1285,19 @@ Total Power Dynamic: 914996
 
    --- Access Breakdown ---
    Total memory accesses (validated): 8492544
-   Cache hits (0 latency):          8492296
+   Cache hits (0 latency):          8492297
    Validation requests (full lat):  3
-   Coalesced waits (partial lat):   245
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   244
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      25.101 us
-   Coalesced wait latency:          2043.53 us
-   TOTAL SECURITY OVERHEAD:         2068.64 us
+   Coalesced wait latency:          2041.55 us
+   TOTAL SECURITY OVERHEAD:         2066.65 us
    Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.34096 us
-   Avg overhead per blocked access: 8.34127 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 8.367 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -1279,45 +1307,46 @@ Total Power Dynamic: 914996
 ********************************************************************************
 system.body.body_top.llvm_interface
 Total Area: 18747.1
-Total Power Static: 0.982404
+Total Power Static: 0.976904
 
-Total Power Dynamic: 4.86638
+Total Power Dynamic: 4.83935
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 7ms 354us
-   Simulation Time (Total):         0h 7m 20s 490ms
-   Simulation Time (Active):        0h 0m 0s 66ms
-        Queue Processing Time:      0h 0m 0s 54ms
-             Scheduling Time:       0h 0m 0s 21ms
+   Setup Time:                      0h 0m 0s 7ms 397us
+   Simulation Time (Total):         0h 7m 11s 405ms
+   Simulation Time (Active):        0h 0m 0s 67ms
+        Queue Processing Time:      0h 0m 0s 53ms
+             Scheduling Time:       0h 0m 0s 20ms
              Computation Time:      0h 0m 0s 5ms
    System Clock:                    0.1GHz
-   Runtime:                         118843 cycles
-   Runtime:                         1188.43 us
+   Runtime:                         171452 cycles
+   Runtime:                         1714.52 us
    Stalls:                          0 cycles
-   Executed Nodes:                  118842 cycles
+   Executed Nodes:                  171451 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
    Configured latency per check:    8.367 us
 
    --- Access Breakdown ---
-   Total memory accesses (validated): 97243
-   Cache hits (0 latency):          97202
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
+   Total memory accesses (validated): 103018
+   Cache hits (0 latency):          102785
+   Validation requests (full lat):  213
+     of which DMA-ctrl writes:      210
+   Coalesced waits (partial lat):   20
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.367 us
-   Avg overhead per blocked access: 8.367 us
+   Validation request latency:      2736.01 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         3062.32 us
+   Avg latency per validation:      12.8451 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 13.143 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  10
-   Cache hit rate:                  99.9578%
+   Cache hit rate:                  99.7738%
 
 ********************************************************************************
 system.body.body_residual.llvm_interface
@@ -1326,11 +1355,11 @@ Total Power Static: 16.4537
 
 Total Power Dynamic: 65.7937
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 405us
-   Simulation Time (Total):         0h 3m 59s 620ms
-   Simulation Time (Active):        0h 0m 0s 57ms
-        Queue Processing Time:      0h 0m 0s 52ms
-             Scheduling Time:       0h 0m 0s 33ms
+   Setup Time:                      0h 0m 0s 0ms 390us
+   Simulation Time (Total):         0h 3m 53s 499ms
+   Simulation Time (Active):        0h 0m 0s 52ms
+        Queue Processing Time:      0h 0m 0s 48ms
+             Scheduling Time:       0h 0m 0s 29ms
              Computation Time:      0h 0m 0s 3ms
    System Clock:                    0.1GHz
    Runtime:                         28133 cycles
@@ -1346,6 +1375,7 @@ Total Power Dynamic: 65.7937
    Total memory accesses (validated): 78336
    Cache hits (0 latency):          78336
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -1369,12 +1399,12 @@ Total Power Static: 1866.67
 
 Total Power Dynamic: 45269.9
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 766us
-   Simulation Time (Total):         0h 4m 19s 947ms
-   Simulation Time (Active):        0h 0m 26s 821ms
-        Queue Processing Time:      0h 0m 26s 809ms
-             Scheduling Time:       0h 0m 15s 953ms
-             Computation Time:      0h 0m 0s 326ms
+   Setup Time:                      0h 0m 0s 0ms 749us
+   Simulation Time (Total):         0h 4m 12s 729ms
+   Simulation Time (Active):        0h 0m 23s 584ms
+        Queue Processing Time:      0h 0m 23s 574ms
+             Scheduling Time:       0h 0m 14s 765ms
+             Computation Time:      0h 0m 0s 309ms
    System Clock:                    0.1GHz
    Runtime:                         29671 cycles
    Runtime:                         296.71 us
@@ -1389,6 +1419,7 @@ Total Power Dynamic: 45269.9
    Total memory accesses (validated): 1911168
    Cache hits (0 latency):          1911168
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -1412,12 +1443,12 @@ Total Power Static: 27770.1
 
 Total Power Dynamic: 316697
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 9ms 330us
-   Simulation Time (Total):         0h 4m 34s 721ms
-   Simulation Time (Active):        0h 2m 40s 673ms
-        Queue Processing Time:      0h 2m 40s 656ms
-             Scheduling Time:       0h 2m 28s 955ms
-             Computation Time:      0h 0m 1s 731ms
+   Setup Time:                      0h 0m 0s 8ms 208us
+   Simulation Time (Total):         0h 4m 27s 239ms
+   Simulation Time (Active):        0h 2m 38s 302ms
+        Queue Processing Time:      0h 2m 38s 291ms
+             Scheduling Time:       0h 2m 27s 457ms
+             Computation Time:      0h 0m 1s 664ms
    System Clock:                    0.1GHz
    Runtime:                         32483 cycles
    Runtime:                         324.83 us
@@ -1430,18 +1461,19 @@ Total Power Dynamic: 316697
 
    --- Access Breakdown ---
    Total memory accesses (validated): 9547488
-   Cache hits (0 latency):          9547479
+   Cache hits (0 latency):          9547481
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -1455,12 +1487,12 @@ Total Power Static: 34660
 
 Total Power Dynamic: 342746
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 142ms 948us
-   Simulation Time (Total):         0h 4m 34s 576ms
-   Simulation Time (Active):        0h 1m 18s 888ms
-        Queue Processing Time:      0h 1m 18s 883ms
-             Scheduling Time:       0h 1m 10s 161ms
-             Computation Time:      0h 0m 2s 49ms
+   Setup Time:                      0h 0m 0s 137ms 390us
+   Simulation Time (Total):         0h 4m 27s 99ms
+   Simulation Time (Active):        0h 1m 17s 297ms
+        Queue Processing Time:      0h 1m 17s 292ms
+             Scheduling Time:       0h 1m 9s 44ms
+             Computation Time:      0h 0m 1s 978ms
    System Clock:                    0.1GHz
    Runtime:                         32723 cycles
    Runtime:                         327.23 us
@@ -1473,18 +1505,19 @@ Total Power Dynamic: 342746
 
    --- Access Breakdown ---
    Total memory accesses (validated): 8929728
-   Cache hits (0 latency):          8929480
+   Cache hits (0 latency):          8929481
    Validation requests (full lat):  3
-   Coalesced waits (partial lat):   245
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   244
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      25.101 us
-   Coalesced wait latency:          2043.53 us
-   TOTAL SECURITY OVERHEAD:         2068.64 us
+   Coalesced wait latency:          2041.55 us
+   TOTAL SECURITY OVERHEAD:         2066.65 us
    Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.34096 us
-   Avg overhead per blocked access: 8.34127 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 8.367 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -1494,45 +1527,46 @@ Total Power Dynamic: 342746
 ********************************************************************************
 system.body.body_top.llvm_interface
 Total Area: 22496.5
-Total Power Static: 0.978737
+Total Power Static: 0.977515
 
-Total Power Dynamic: 4.84836
+Total Power Dynamic: 4.84235
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 7ms 483us
-   Simulation Time (Total):         0h 4m 35s 197ms
-   Simulation Time (Active):        0h 0m 0s 39ms
-        Queue Processing Time:      0h 0m 0s 32ms
-             Scheduling Time:       0h 0m 0s 11ms
+   Setup Time:                      0h 0m 0s 7ms 357us
+   Simulation Time (Total):         0h 4m 28s 521ms
+   Simulation Time (Active):        0h 0m 0s 38ms
+        Queue Processing Time:      0h 0m 0s 29ms
+             Scheduling Time:       0h 0m 0s 10ms
              Computation Time:      0h 0m 0s 3ms
    System Clock:                    0.1GHz
-   Runtime:                         51273 cycles
-   Runtime:                         512.73 us
+   Runtime:                         103961 cycles
+   Runtime:                         1039.61 us
    Stalls:                          0 cycles
-   Executed Nodes:                  51272 cycles
+   Executed Nodes:                  103960 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
    Configured latency per check:    8.367 us
 
    --- Access Breakdown ---
-   Total memory accesses (validated): 101834
-   Cache hits (0 latency):          101793
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
+   Total memory accesses (validated): 106010
+   Cache hits (0 latency):          105735
+   Validation requests (full lat):  255
+     of which DMA-ctrl writes:      252
+   Coalesced waits (partial lat):   20
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.367 us
-   Avg overhead per blocked access: 8.367 us
+   Validation request latency:      3263.13 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         3589.44 us
+   Avg latency per validation:      12.7966 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 13.0525 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  10
-   Cache hit rate:                  99.9597%
+   Cache hit rate:                  99.7406%
 
 ********************************************************************************
 system.body.body_residual.llvm_interface
@@ -1541,11 +1575,11 @@ Total Power Static: 4.11165
 
 Total Power Dynamic: 12.3363
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 401us
-   Simulation Time (Total):         0h 1m 44s 354ms
-   Simulation Time (Active):        0h 0m 0s 15ms
+   Setup Time:                      0h 0m 0s 0ms 402us
+   Simulation Time (Total):         0h 1m 39s 613ms
+   Simulation Time (Active):        0h 0m 0s 14ms
         Queue Processing Time:      0h 0m 0s 13ms
-             Scheduling Time:       0h 0m 0s 8ms
+             Scheduling Time:       0h 0m 0s 7ms
              Computation Time:      0h 0m 0s 0ms
    System Clock:                    0.1GHz
    Runtime:                         16805 cycles
@@ -1561,6 +1595,7 @@ Total Power Dynamic: 12.3363
    Total memory accesses (validated): 80064
    Cache hits (0 latency):          80064
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -1584,12 +1619,12 @@ Total Power Static: 692.817
 
 Total Power Dynamic: 16913.1
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 758us
-   Simulation Time (Total):         0h 2m 8s 226ms
-   Simulation Time (Active):        0h 0m 8s 492ms
-        Queue Processing Time:      0h 0m 8s 487ms
-             Scheduling Time:       0h 0m 4s 734ms
-             Computation Time:      0h 0m 0s 114ms
+   Setup Time:                      0h 0m 0s 0ms 750us
+   Simulation Time (Total):         0h 2m 2s 573ms
+   Simulation Time (Active):        0h 0m 7s 231ms
+        Queue Processing Time:      0h 0m 7s 228ms
+             Scheduling Time:       0h 0m 4s 109ms
+             Computation Time:      0h 0m 0s 106ms
    System Clock:                    0.1GHz
    Runtime:                         20507 cycles
    Runtime:                         205.07 us
@@ -1604,6 +1639,7 @@ Total Power Dynamic: 16913.1
    Total memory accesses (validated): 1955520
    Cache hits (0 latency):          1955520
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -1627,12 +1663,12 @@ Total Power Static: 10000
 
 Total Power Dynamic: 113736
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 9ms 202us
-   Simulation Time (Total):         0h 2m 34s 510ms
-   Simulation Time (Active):        0h 1m 0s 920ms
-        Queue Processing Time:      0h 1m 0s 914ms
-             Scheduling Time:       0h 0m 56s 38ms
-             Computation Time:      0h 0m 0s 636ms
+   Setup Time:                      0h 0m 0s 8ms 325us
+   Simulation Time (Total):         0h 2m 28s 227ms
+   Simulation Time (Active):        0h 0m 59s 243ms
+        Queue Processing Time:      0h 0m 59s 238ms
+             Scheduling Time:       0h 0m 54s 786ms
+             Computation Time:      0h 0m 0s 599ms
    System Clock:                    0.1GHz
    Runtime:                         25239 cycles
    Runtime:                         252.39 us
@@ -1645,18 +1681,19 @@ Total Power Dynamic: 113736
 
    --- Access Breakdown ---
    Total memory accesses (validated): 9779040
-   Cache hits (0 latency):          9779031
+   Cache hits (0 latency):          9779033
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -1670,12 +1707,12 @@ Total Power Static: 34660
 
 Total Power Dynamic: 342746
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 144ms 477us
-   Simulation Time (Total):         0h 2m 34s 394ms
-   Simulation Time (Active):        0h 1m 19s 652ms
-        Queue Processing Time:      0h 1m 19s 648ms
-             Scheduling Time:       0h 1m 11s 61ms
-             Computation Time:      0h 0m 2s 71ms
+   Setup Time:                      0h 0m 0s 135ms 819us
+   Simulation Time (Total):         0h 2m 28s 121ms
+   Simulation Time (Active):        0h 1m 16s 508ms
+        Queue Processing Time:      0h 1m 16s 503ms
+             Scheduling Time:       0h 1m 8s 532ms
+             Computation Time:      0h 0m 1s 959ms
    System Clock:                    0.1GHz
    Runtime:                         27517 cycles
    Runtime:                         275.17 us
@@ -1688,18 +1725,19 @@ Total Power Dynamic: 342746
 
    --- Access Breakdown ---
    Total memory accesses (validated): 9368640
-   Cache hits (0 latency):          9368392
+   Cache hits (0 latency):          9368393
    Validation requests (full lat):  3
-   Coalesced waits (partial lat):   245
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   244
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      25.101 us
-   Coalesced wait latency:          2043.53 us
-   TOTAL SECURITY OVERHEAD:         2068.64 us
+   Coalesced wait latency:          2041.55 us
+   TOTAL SECURITY OVERHEAD:         2066.65 us
    Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.34096 us
-   Avg overhead per blocked access: 8.34127 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 8.367 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -1709,45 +1747,46 @@ Total Power Dynamic: 342746
 ********************************************************************************
 system.body.body_top.llvm_interface
 Total Area: 26245.9
-Total Power Static: 0.978126
+Total Power Static: 0.973237
 
-Total Power Dynamic: 4.84536
+Total Power Dynamic: 4.82133
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 7ms 404us
-   Simulation Time (Total):         0h 2m 34s 994ms
-   Simulation Time (Active):        0h 0m 0s 24ms
-        Queue Processing Time:      0h 0m 0s 19ms
-             Scheduling Time:       0h 0m 0s 7ms
+   Setup Time:                      0h 0m 0s 7ms 225us
+   Simulation Time (Total):         0h 2m 29s 463ms
+   Simulation Time (Active):        0h 0m 0s 28ms
+        Queue Processing Time:      0h 0m 0s 20ms
+             Scheduling Time:       0h 0m 0s 8ms
              Computation Time:      0h 0m 0s 1ms
    System Clock:                    0.1GHz
-   Runtime:                         46053 cycles
-   Runtime:                         460.53 us
+   Runtime:                         98673 cycles
+   Runtime:                         986.73 us
    Stalls:                          0 cycles
-   Executed Nodes:                  46052 cycles
+   Executed Nodes:                  98672 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
    Configured latency per check:    8.367 us
 
    --- Access Breakdown ---
-   Total memory accesses (validated): 105958
-   Cache hits (0 latency):          105917
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
+   Total memory accesses (validated): 108537
+   Cache hits (0 latency):          108220
+   Validation requests (full lat):  297
+     of which DMA-ctrl writes:      294
+   Coalesced waits (partial lat):   20
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.367 us
-   Avg overhead per blocked access: 8.367 us
+   Validation request latency:      3790.25 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         4116.56 us
+   Avg latency per validation:      12.7618 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 12.986 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  10
-   Cache hit rate:                  99.9613%
+   Cache hit rate:                  99.7079%
 
 ********************************************************************************
 system.body.body_residual.llvm_interface
@@ -1756,11 +1795,11 @@ Total Power Static: 6.16866
 
 Total Power Dynamic: 24.6726
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 407us
-   Simulation Time (Total):         0h 1m 43s 236ms
-   Simulation Time (Active):        0h 0m 0s 19ms
-        Queue Processing Time:      0h 0m 0s 17ms
-             Scheduling Time:       0h 0m 0s 11ms
+   Setup Time:                      0h 0m 0s 0ms 401us
+   Simulation Time (Total):         0h 1m 39s 592ms
+   Simulation Time (Active):        0h 0m 0s 17ms
+        Queue Processing Time:      0h 0m 0s 16ms
+             Scheduling Time:       0h 0m 0s 9ms
              Computation Time:      0h 0m 0s 1ms
    System Clock:                    0.1GHz
    Runtime:                         16805 cycles
@@ -1776,6 +1815,7 @@ Total Power Dynamic: 24.6726
    Total memory accesses (validated): 82656
    Cache hits (0 latency):          82656
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -1799,12 +1839,12 @@ Total Power Static: 692.817
 
 Total Power Dynamic: 16913.1
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 752us
-   Simulation Time (Total):         0h 2m 6s 565ms
-   Simulation Time (Active):        0h 0m 8s 169ms
-        Queue Processing Time:      0h 0m 8s 165ms
-             Scheduling Time:       0h 0m 4s 506ms
-             Computation Time:      0h 0m 0s 115ms
+   Setup Time:                      0h 0m 0s 0ms 762us
+   Simulation Time (Total):         0h 2m 2s 349ms
+   Simulation Time (Active):        0h 0m 7s 169ms
+        Queue Processing Time:      0h 0m 7s 166ms
+             Scheduling Time:       0h 0m 4s 128ms
+             Computation Time:      0h 0m 0s 105ms
    System Clock:                    0.1GHz
    Runtime:                         20507 cycles
    Runtime:                         205.07 us
@@ -1819,6 +1859,7 @@ Total Power Dynamic: 16913.1
    Total memory accesses (validated): 1999872
    Cache hits (0 latency):          1999872
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -1842,12 +1883,12 @@ Total Power Static: 10000
 
 Total Power Dynamic: 113736
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 9ms 281us
-   Simulation Time (Total):         0h 2m 32s 849ms
-   Simulation Time (Active):        0h 1m 0s 489ms
-        Queue Processing Time:      0h 1m 0s 483ms
-             Scheduling Time:       0h 0m 55s 692ms
-             Computation Time:      0h 0m 0s 629ms
+   Setup Time:                      0h 0m 0s 8ms 274us
+   Simulation Time (Total):         0h 2m 28s 39ms
+   Simulation Time (Active):        0h 0m 59s 289ms
+        Queue Processing Time:      0h 0m 59s 284ms
+             Scheduling Time:       0h 0m 54s 895ms
+             Computation Time:      0h 0m 0s 596ms
    System Clock:                    0.1GHz
    Runtime:                         25239 cycles
    Runtime:                         252.39 us
@@ -1860,18 +1901,19 @@ Total Power Dynamic: 113736
 
    --- Access Breakdown ---
    Total memory accesses (validated): 10010592
-   Cache hits (0 latency):          10010583
+   Cache hits (0 latency):          10010585
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -1885,12 +1927,12 @@ Total Power Static: 34660
 
 Total Power Dynamic: 342746
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 142ms 255us
-   Simulation Time (Total):         0h 2m 32s 736ms
-   Simulation Time (Active):        0h 1m 18s 791ms
-        Queue Processing Time:      0h 1m 18s 787ms
-             Scheduling Time:       0h 1m 10s 295ms
-             Computation Time:      0h 0m 2s 61ms
+   Setup Time:                      0h 0m 0s 136ms 419us
+   Simulation Time (Total):         0h 2m 27s 933ms
+   Simulation Time (Active):        0h 1m 16s 353ms
+        Queue Processing Time:      0h 1m 16s 348ms
+             Scheduling Time:       0h 1m 8s 443ms
+             Computation Time:      0h 0m 1s 956ms
    System Clock:                    0.1GHz
    Runtime:                         27517 cycles
    Runtime:                         275.17 us
@@ -1903,18 +1945,19 @@ Total Power Dynamic: 342746
 
    --- Access Breakdown ---
    Total memory accesses (validated): 9807552
-   Cache hits (0 latency):          9807304
+   Cache hits (0 latency):          9807305
    Validation requests (full lat):  3
-   Coalesced waits (partial lat):   245
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   244
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      25.101 us
-   Coalesced wait latency:          2043.53 us
-   TOTAL SECURITY OVERHEAD:         2068.64 us
+   Coalesced wait latency:          2041.55 us
+   TOTAL SECURITY OVERHEAD:         2066.65 us
    Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.34096 us
-   Avg overhead per blocked access: 8.34127 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 8.367 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -1924,45 +1967,46 @@ Total Power Dynamic: 342746
 ********************************************************************************
 system.body.body_top.llvm_interface
 Total Area: 29995.3
-Total Power Static: 0.979348
+Total Power Static: 0.976904
 
-Total Power Dynamic: 4.85136
+Total Power Dynamic: 4.83935
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 7ms 318us
-   Simulation Time (Total):         0h 2m 33s 334ms
-   Simulation Time (Active):        0h 0m 0s 24ms
+   Setup Time:                      0h 0m 0s 7ms 250us
+   Simulation Time (Total):         0h 2m 29s 271ms
+   Simulation Time (Active):        0h 0m 0s 27ms
         Queue Processing Time:      0h 0m 0s 20ms
-             Scheduling Time:       0h 0m 0s 8ms
+             Scheduling Time:       0h 0m 0s 7ms
              Computation Time:      0h 0m 0s 1ms
    System Clock:                    0.1GHz
-   Runtime:                         46076 cycles
-   Runtime:                         460.76 us
+   Runtime:                         98741 cycles
+   Runtime:                         987.41 us
    Stalls:                          0 cycles
-   Executed Nodes:                  46075 cycles
+   Executed Nodes:                  98740 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
    Configured latency per check:    8.367 us
 
    --- Access Breakdown ---
-   Total memory accesses (validated): 110085
-   Cache hits (0 latency):          110044
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
+   Total memory accesses (validated): 111064
+   Cache hits (0 latency):          110705
+   Validation requests (full lat):  339
+     of which DMA-ctrl writes:      336
+   Coalesced waits (partial lat):   20
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.367 us
-   Avg overhead per blocked access: 8.367 us
+   Validation request latency:      4317.37 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         4643.68 us
+   Avg latency per validation:      12.7356 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 12.9351 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  10
-   Cache hit rate:                  99.9628%
+   Cache hit rate:                  99.6768%
 
 ********************************************************************************
 system.body.body_residual.llvm_interface
@@ -1971,11 +2015,11 @@ Total Power Static: 6.16866
 
 Total Power Dynamic: 24.6726
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 399us
-   Simulation Time (Total):         0h 1m 43s 858ms
-   Simulation Time (Active):        0h 0m 0s 19ms
-        Queue Processing Time:      0h 0m 0s 17ms
-             Scheduling Time:       0h 0m 0s 10ms
+   Setup Time:                      0h 0m 0s 0ms 369us
+   Simulation Time (Total):         0h 1m 39s 850ms
+   Simulation Time (Active):        0h 0m 0s 18ms
+        Queue Processing Time:      0h 0m 0s 16ms
+             Scheduling Time:       0h 0m 0s 9ms
              Computation Time:      0h 0m 0s 1ms
    System Clock:                    0.1GHz
    Runtime:                         16805 cycles
@@ -1991,6 +2035,7 @@ Total Power Dynamic: 24.6726
    Total memory accesses (validated): 85248
    Cache hits (0 latency):          85248
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -2014,12 +2059,12 @@ Total Power Static: 692.817
 
 Total Power Dynamic: 16913.1
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 761us
-   Simulation Time (Total):         0h 2m 7s 307ms
-   Simulation Time (Active):        0h 0m 8s 212ms
-        Queue Processing Time:      0h 0m 8s 207ms
-             Scheduling Time:       0h 0m 4s 525ms
-             Computation Time:      0h 0m 0s 114ms
+   Setup Time:                      0h 0m 0s 0ms 754us
+   Simulation Time (Total):         0h 2m 2s 558ms
+   Simulation Time (Active):        0h 0m 7s 155ms
+        Queue Processing Time:      0h 0m 7s 152ms
+             Scheduling Time:       0h 0m 4s 79ms
+             Computation Time:      0h 0m 0s 105ms
    System Clock:                    0.1GHz
    Runtime:                         20507 cycles
    Runtime:                         205.07 us
@@ -2034,6 +2079,7 @@ Total Power Dynamic: 16913.1
    Total memory accesses (validated): 2044224
    Cache hits (0 latency):          2044224
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -2057,12 +2103,12 @@ Total Power Static: 10000
 
 Total Power Dynamic: 113736
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 9ms 147us
-   Simulation Time (Total):         0h 2m 33s 718ms
-   Simulation Time (Active):        0h 1m 0s 685ms
-        Queue Processing Time:      0h 1m 0s 679ms
-             Scheduling Time:       0h 0m 55s 897ms
-             Computation Time:      0h 0m 0s 629ms
+   Setup Time:                      0h 0m 0s 8ms 405us
+   Simulation Time (Total):         0h 2m 28s 155ms
+   Simulation Time (Active):        0h 0m 59s 274ms
+        Queue Processing Time:      0h 0m 59s 270ms
+             Scheduling Time:       0h 0m 54s 858ms
+             Computation Time:      0h 0m 0s 591ms
    System Clock:                    0.1GHz
    Runtime:                         25239 cycles
    Runtime:                         252.39 us
@@ -2075,18 +2121,19 @@ Total Power Dynamic: 113736
 
    --- Access Breakdown ---
    Total memory accesses (validated): 10242144
-   Cache hits (0 latency):          10242135
+   Cache hits (0 latency):          10242137
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -2100,12 +2147,12 @@ Total Power Static: 34660
 
 Total Power Dynamic: 342746
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 147ms 884us
-   Simulation Time (Total):         0h 2m 33s 599ms
-   Simulation Time (Active):        0h 1m 19s 398ms
-        Queue Processing Time:      0h 1m 19s 393ms
-             Scheduling Time:       0h 1m 10s 899ms
-             Computation Time:      0h 0m 2s 60ms
+   Setup Time:                      0h 0m 0s 131ms 937us
+   Simulation Time (Total):         0h 2m 28s 54ms
+   Simulation Time (Active):        0h 1m 16s 496ms
+        Queue Processing Time:      0h 1m 16s 491ms
+             Scheduling Time:       0h 1m 8s 583ms
+             Computation Time:      0h 0m 1s 946ms
    System Clock:                    0.1GHz
    Runtime:                         27517 cycles
    Runtime:                         275.17 us
@@ -2118,18 +2165,19 @@ Total Power Dynamic: 342746
 
    --- Access Breakdown ---
    Total memory accesses (validated): 10246464
-   Cache hits (0 latency):          10246216
+   Cache hits (0 latency):          10246217
    Validation requests (full lat):  3
-   Coalesced waits (partial lat):   245
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   244
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      25.101 us
-   Coalesced wait latency:          2043.53 us
-   TOTAL SECURITY OVERHEAD:         2068.64 us
+   Coalesced wait latency:          2041.55 us
+   TOTAL SECURITY OVERHEAD:         2066.65 us
    Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.34096 us
-   Avg overhead per blocked access: 8.34127 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 8.367 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -2139,45 +2187,46 @@ Total Power Dynamic: 342746
 ********************************************************************************
 system.body.body_top.llvm_interface
 Total Area: 33744.7
-Total Power Static: 0.979348
+Total Power Static: 0.976904
 
-Total Power Dynamic: 4.85136
+Total Power Dynamic: 4.83935
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 7ms 469us
-   Simulation Time (Total):         0h 2m 34s 205ms
-   Simulation Time (Active):        0h 0m 0s 24ms
+   Setup Time:                      0h 0m 0s 7ms 275us
+   Simulation Time (Total):         0h 2m 29s 394ms
+   Simulation Time (Active):        0h 0m 0s 28ms
         Queue Processing Time:      0h 0m 0s 20ms
-             Scheduling Time:       0h 0m 0s 8ms
-             Computation Time:      0h 0m 0s 2ms
+             Scheduling Time:       0h 0m 0s 7ms
+             Computation Time:      0h 0m 0s 1ms
    System Clock:                    0.1GHz
-   Runtime:                         46076 cycles
-   Runtime:                         460.76 us
+   Runtime:                         98741 cycles
+   Runtime:                         987.41 us
    Stalls:                          0 cycles
-   Executed Nodes:                  46075 cycles
+   Executed Nodes:                  98740 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
    Configured latency per check:    8.367 us
 
    --- Access Breakdown ---
-   Total memory accesses (validated): 114212
-   Cache hits (0 latency):          114171
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
+   Total memory accesses (validated): 113591
+   Cache hits (0 latency):          113190
+   Validation requests (full lat):  381
+     of which DMA-ctrl writes:      378
+   Coalesced waits (partial lat):   20
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.367 us
-   Avg overhead per blocked access: 8.367 us
+   Validation request latency:      4844.49 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         5170.81 us
+   Avg latency per validation:      12.7152 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 12.8948 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  10
-   Cache hit rate:                  99.9641%
+   Cache hit rate:                  99.647%
 
 ********************************************************************************
 system.body.body_residual.llvm_interface
@@ -2186,17 +2235,17 @@ Total Power Static: 6.16866
 
 Total Power Dynamic: 24.6726
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 391us
-   Simulation Time (Total):         0h 2m 1s 573ms
-   Simulation Time (Active):        0h 0m 0s 19ms
-        Queue Processing Time:      0h 0m 0s 17ms
-             Scheduling Time:       0h 0m 0s 10ms
+   Setup Time:                      0h 0m 0s 0ms 384us
+   Simulation Time (Total):         0h 1m 56s 12ms
+   Simulation Time (Active):        0h 0m 0s 17ms
+        Queue Processing Time:      0h 0m 0s 16ms
+             Scheduling Time:       0h 0m 0s 9ms
              Computation Time:      0h 0m 0s 1ms
    System Clock:                    0.1GHz
-   Runtime:                         13429 cycles
-   Runtime:                         134.29 us
+   Runtime:                         17641 cycles
+   Runtime:                         176.41 us
    Stalls:                          0 cycles
-   Executed Nodes:                  13428 cycles
+   Executed Nodes:                  17640 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -2206,6 +2255,7 @@ Total Power Dynamic: 24.6726
    Total memory accesses (validated): 87840
    Cache hits (0 latency):          87840
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -2229,17 +2279,17 @@ Total Power Static: 692.817
 
 Total Power Dynamic: 16913.1
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 778us
-   Simulation Time (Total):         0h 2m 29s 287ms
-   Simulation Time (Active):        0h 0m 8s 408ms
-        Queue Processing Time:      0h 0m 8s 403ms
-             Scheduling Time:       0h 0m 4s 567ms
-             Computation Time:      0h 0m 0s 116ms
+   Setup Time:                      0h 0m 0s 0ms 750us
+   Simulation Time (Total):         0h 2m 22s 690ms
+   Simulation Time (Active):        0h 0m 7s 555ms
+        Queue Processing Time:      0h 0m 7s 551ms
+             Scheduling Time:       0h 0m 4s 203ms
+             Computation Time:      0h 0m 0s 108ms
    System Clock:                    0.1GHz
-   Runtime:                         15851 cycles
-   Runtime:                         158.51 us
+   Runtime:                         21343 cycles
+   Runtime:                         213.43 us
    Stalls:                          0 cycles
-   Executed Nodes:                  15850 cycles
+   Executed Nodes:                  21342 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -2249,6 +2299,7 @@ Total Power Dynamic: 16913.1
    Total memory accesses (validated): 2088576
    Cache hits (0 latency):          2088576
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -2272,17 +2323,17 @@ Total Power Static: 10000
 
 Total Power Dynamic: 113736
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 9ms 119us
-   Simulation Time (Total):         0h 2m 59s 839ms
-   Simulation Time (Active):        0h 1m 1s 591ms
-        Queue Processing Time:      0h 1m 1s 585ms
-             Scheduling Time:       0h 0m 56s 197ms
-             Computation Time:      0h 0m 0s 648ms
+   Setup Time:                      0h 0m 0s 8ms 450us
+   Simulation Time (Total):         0h 2m 52s 282ms
+   Simulation Time (Active):        0h 1m 0s 186ms
+        Queue Processing Time:      0h 1m 0s 181ms
+             Scheduling Time:       0h 0m 55s 19ms
+             Computation Time:      0h 0m 0s 611ms
    System Clock:                    0.1GHz
-   Runtime:                         19303 cycles
-   Runtime:                         193.03 us
+   Runtime:                         26075 cycles
+   Runtime:                         260.75 us
    Stalls:                          0 cycles
-   Executed Nodes:                  19302 cycles
+   Executed Nodes:                  26074 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -2290,18 +2341,19 @@ Total Power Dynamic: 113736
 
    --- Access Breakdown ---
    Total memory accesses (validated): 10473696
-   Cache hits (0 latency):          10473687
+   Cache hits (0 latency):          10473689
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -2315,17 +2367,17 @@ Total Power Static: 46184.6
 
 Total Power Dynamic: 456743
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 140ms 112us
-   Simulation Time (Total):         0h 2m 59s 713ms
-   Simulation Time (Active):        0h 1m 43s 474ms
-        Queue Processing Time:      0h 1m 43s 467ms
-             Scheduling Time:       0h 1m 31s 936ms
-             Computation Time:      0h 0m 2s 698ms
+   Setup Time:                      0h 0m 0s 134ms 89us
+   Simulation Time (Total):         0h 2m 52s 179ms
+   Simulation Time (Active):        0h 1m 38s 235ms
+        Queue Processing Time:      0h 1m 38s 231ms
+             Scheduling Time:       0h 1m 27s 879ms
+             Computation Time:      0h 0m 2s 576ms
    System Clock:                    0.1GHz
-   Runtime:                         20301 cycles
-   Runtime:                         203.01 us
+   Runtime:                         28354 cycles
+   Runtime:                         283.54 us
    Stalls:                          0 cycles
-   Executed Nodes:                  20300 cycles
+   Executed Nodes:                  28353 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -2333,58 +2385,16 @@ Total Power Dynamic: 456743
 
    --- Access Breakdown ---
    Total memory accesses (validated): 10825920
-   Cache hits (0 latency):          10825552
+   Cache hits (0 latency):          10825617
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   364
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   299
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      33.468 us
-   Coalesced wait latency:          3038.57 us
-   TOTAL SECURITY OVERHEAD:         3072.04 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.34771 us
-   Avg overhead per blocked access: 8.34792 us
-
-   --- Cache Statistics ---
-   Processes with cached pages:     1
-   Unique pages validated (total):  11
-   Cache hit rate:                  99.9966%
-
-********************************************************************************
-system.body.body_top.llvm_interface
-Total Area: 37494.1
-Total Power Static: 0.978737
-
-Total Power Dynamic: 4.84836
-   ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 7ms 384us
-   Simulation Time (Total):         0h 3m 0s 312ms
-   Simulation Time (Active):        0h 0m 0s 23ms
-        Queue Processing Time:      0h 0m 0s 19ms
-             Scheduling Time:       0h 0m 0s 7ms
-             Computation Time:      0h 0m 0s 1ms
-   System Clock:                    0.1GHz
-   Runtime:                         38852 cycles
-   Runtime:                         388.52 us
-   Stalls:                          0 cycles
-   Executed Nodes:                  38851 cycles
-
-   ========= Kernel Validation Stats ==========
-   Kernel validation enabled:       YES
-   Configured latency per check:    8.367 us
-
-   --- Access Breakdown ---
-   Total memory accesses (validated): 117694
-   Cache hits (0 latency):          117653
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
-   Validations denied:              0
-
-   --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
+   Coalesced wait latency:          2501.73 us
+   TOTAL SECURITY OVERHEAD:         2535.2 us
    Avg latency per validation:      8.367 us
    Avg latency per coalesced wait:  8.367 us
    Avg overhead per blocked access: 8.367 us
@@ -2392,7 +2402,51 @@ Total Power Dynamic: 4.84836
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  11
-   Cache hit rate:                  99.9652%
+   Cache hit rate:                  99.9972%
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 37494.1
+Total Power Static: 0.976904
+
+Total Power Dynamic: 4.83935
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 231us
+   Simulation Time (Total):         0h 2m 53s 518ms
+   Simulation Time (Active):        0h 0m 0s 31ms
+        Queue Processing Time:      0h 0m 0s 23ms
+             Scheduling Time:       0h 0m 0s 7ms
+             Computation Time:      0h 0m 0s 1ms
+   System Clock:                    0.1GHz
+   Runtime:                         99581 cycles
+   Runtime:                         995.81 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  99580 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       YES
+   Configured latency per check:    8.367 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 116193
+   Cache hits (0 latency):          115750
+   Validation requests (full lat):  423
+     of which DMA-ctrl writes:      420
+   Coalesced waits (partial lat):   20
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      5371.61 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         5697.93 us
+   Avg latency per validation:      12.6989 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 12.8621 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     1
+   Unique pages validated (total):  11
+   Cache hit rate:                  99.6187%
 
 ********************************************************************************
 system.body.body_residual.llvm_interface
@@ -2401,11 +2455,11 @@ Total Power Static: 5.48299
 
 Total Power Dynamic: 16.4484
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 395us
-   Simulation Time (Total):         0h 2m 18s 0ms
-   Simulation Time (Active):        0h 0m 0s 20ms
-        Queue Processing Time:      0h 0m 0s 17ms
-             Scheduling Time:       0h 0m 0s 10ms
+   Setup Time:                      0h 0m 0s 0ms 392us
+   Simulation Time (Total):         0h 2m 13s 266ms
+   Simulation Time (Active):        0h 0m 0s 18ms
+        Queue Processing Time:      0h 0m 0s 16ms
+             Scheduling Time:       0h 0m 0s 9ms
              Computation Time:      0h 0m 0s 0ms
    System Clock:                    0.1GHz
    Runtime:                         18707 cycles
@@ -2421,6 +2475,7 @@ Total Power Dynamic: 16.4484
    Total memory accesses (validated): 90144
    Cache hits (0 latency):          90144
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -2444,12 +2499,12 @@ Total Power Static: 918.962
 
 Total Power Dynamic: 22508.7
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 761us
-   Simulation Time (Total):         0h 2m 47s 751ms
-   Simulation Time (Active):        0h 0m 11s 29ms
-        Queue Processing Time:      0h 0m 11s 23ms
-             Scheduling Time:       0h 0m 5s 848ms
-             Computation Time:      0h 0m 0s 152ms
+   Setup Time:                      0h 0m 0s 0ms 758us
+   Simulation Time (Total):         0h 2m 42s 429ms
+   Simulation Time (Active):        0h 0m 9s 886ms
+        Queue Processing Time:      0h 0m 9s 881ms
+             Scheduling Time:       0h 0m 5s 563ms
+             Computation Time:      0h 0m 0s 142ms
    System Clock:                    0.1GHz
    Runtime:                         22089 cycles
    Runtime:                         220.89 us
@@ -2464,6 +2519,7 @@ Total Power Dynamic: 22508.7
    Total memory accesses (validated): 2147040
    Cache hits (0 latency):          2147040
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -2487,12 +2543,12 @@ Total Power Static: 13333.2
 
 Total Power Dynamic: 151645
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 9ms 519us
-   Simulation Time (Total):         0h 3m 22s 28ms
-   Simulation Time (Active):        0h 1m 21s 288ms
-        Queue Processing Time:      0h 1m 21s 280ms
-             Scheduling Time:       0h 1m 14s 831ms
-             Computation Time:      0h 0m 0s 833ms
+   Setup Time:                      0h 0m 0s 8ms 693us
+   Simulation Time (Total):         0h 3m 15s 915ms
+   Simulation Time (Active):        0h 1m 19s 674ms
+        Queue Processing Time:      0h 1m 19s 668ms
+             Scheduling Time:       0h 1m 13s 717ms
+             Computation Time:      0h 0m 0s 799ms
    System Clock:                    0.1GHz
    Runtime:                         27011 cycles
    Runtime:                         270.11 us
@@ -2505,18 +2561,19 @@ Total Power Dynamic: 151645
 
    --- Access Breakdown ---
    Total memory accesses (validated): 10782432
-   Cache hits (0 latency):          10782423
+   Cache hits (0 latency):          10782425
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -2530,12 +2587,12 @@ Total Power Static: 46184.6
 
 Total Power Dynamic: 456743
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 137ms 277us
-   Simulation Time (Total):         0h 3m 21s 904ms
-   Simulation Time (Active):        0h 1m 42s 468ms
-        Queue Processing Time:      0h 1m 42s 463ms
-             Scheduling Time:       0h 1m 31s 228ms
-             Computation Time:      0h 0m 2s 728ms
+   Setup Time:                      0h 0m 0s 130ms 939us
+   Simulation Time (Total):         0h 3m 15s 799ms
+   Simulation Time (Active):        0h 1m 39s 309ms
+        Queue Processing Time:      0h 1m 39s 304ms
+             Scheduling Time:       0h 1m 28s 758ms
+             Computation Time:      0h 0m 2s 592ms
    System Clock:                    0.1GHz
    Runtime:                         28617 cycles
    Runtime:                         286.17 us
@@ -2548,58 +2605,16 @@ Total Power Dynamic: 456743
 
    --- Access Breakdown ---
    Total memory accesses (validated): 11407104
-   Cache hits (0 latency):          11406736
+   Cache hits (0 latency):          11406801
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   364
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   299
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      33.468 us
-   Coalesced wait latency:          3038.57 us
-   TOTAL SECURITY OVERHEAD:         3072.04 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.34771 us
-   Avg overhead per blocked access: 8.34792 us
-
-   --- Cache Statistics ---
-   Processes with cached pages:     1
-   Unique pages validated (total):  11
-   Cache hit rate:                  99.9968%
-
-********************************************************************************
-system.body.body_top.llvm_interface
-Total Area: 41243.6
-Total Power Static: 0.977515
-
-Total Power Dynamic: 4.84235
-   ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 7ms 278us
-   Simulation Time (Total):         0h 3m 22s 476ms
-   Simulation Time (Active):        0h 0m 0s 34ms
-        Queue Processing Time:      0h 0m 0s 29ms
-             Scheduling Time:       0h 0m 0s 8ms
-             Computation Time:      0h 0m 0s 2ms
-   System Clock:                    0.1GHz
-   Runtime:                         47139 cycles
-   Runtime:                         471.39 us
-   Stalls:                          0 cycles
-   Executed Nodes:                  47138 cycles
-
-   ========= Kernel Validation Stats ==========
-   Kernel validation enabled:       YES
-   Configured latency per check:    8.367 us
-
-   --- Access Breakdown ---
-   Total memory accesses (validated): 121915
-   Cache hits (0 latency):          121874
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
-   Validations denied:              0
-
-   --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
+   Coalesced wait latency:          2501.73 us
+   TOTAL SECURITY OVERHEAD:         2535.2 us
    Avg latency per validation:      8.367 us
    Avg latency per coalesced wait:  8.367 us
    Avg overhead per blocked access: 8.367 us
@@ -2607,7 +2622,51 @@ Total Power Dynamic: 4.84235
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  11
-   Cache hit rate:                  99.9664%
+   Cache hit rate:                  99.9973%
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 41243.6
+Total Power Static: 0.973237
+
+Total Power Dynamic: 4.82133
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 246us
+   Simulation Time (Total):         0h 3m 17s 120ms
+   Simulation Time (Active):        0h 0m 0s 30ms
+        Queue Processing Time:      0h 0m 0s 23ms
+             Scheduling Time:       0h 0m 0s 8ms
+             Computation Time:      0h 0m 0s 2ms
+   System Clock:                    0.1GHz
+   Runtime:                         99771 cycles
+   Runtime:                         997.71 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  99770 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       YES
+   Configured latency per check:    8.367 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 118818
+   Cache hits (0 latency):          118333
+   Validation requests (full lat):  465
+     of which DMA-ctrl writes:      462
+   Coalesced waits (partial lat):   20
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      5898.73 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         6225.05 us
+   Avg latency per validation:      12.6855 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 12.8352 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     1
+   Unique pages validated (total):  11
+   Cache hit rate:                  99.5918%
 
 ********************************************************************************
 system.body.body_residual.llvm_interface
@@ -2616,11 +2675,11 @@ Total Power Static: 8.22567
 
 Total Power Dynamic: 32.8969
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 401us
-   Simulation Time (Total):         0h 2m 19s 31ms
-   Simulation Time (Active):        0h 0m 0s 25ms
-        Queue Processing Time:      0h 0m 0s 23ms
-             Scheduling Time:       0h 0m 0s 13ms
+   Setup Time:                      0h 0m 0s 0ms 395us
+   Simulation Time (Total):         0h 2m 13s 827ms
+   Simulation Time (Active):        0h 0m 0s 23ms
+        Queue Processing Time:      0h 0m 0s 21ms
+             Scheduling Time:       0h 0m 0s 12ms
              Computation Time:      0h 0m 0s 1ms
    System Clock:                    0.1GHz
    Runtime:                         18707 cycles
@@ -2636,6 +2695,7 @@ Total Power Dynamic: 32.8969
    Total memory accesses (validated): 93600
    Cache hits (0 latency):          93600
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -2659,12 +2719,12 @@ Total Power Static: 918.962
 
 Total Power Dynamic: 22508.7
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 746us
-   Simulation Time (Total):         0h 2m 49s 283ms
-   Simulation Time (Active):        0h 0m 11s 447ms
-        Queue Processing Time:      0h 0m 11s 441ms
-             Scheduling Time:       0h 0m 6s 193ms
-             Computation Time:      0h 0m 0s 153ms
+   Setup Time:                      0h 0m 0s 0ms 770us
+   Simulation Time (Total):         0h 2m 43s 454ms
+   Simulation Time (Active):        0h 0m 9s 914ms
+        Queue Processing Time:      0h 0m 9s 910ms
+             Scheduling Time:       0h 0m 5s 516ms
+             Computation Time:      0h 0m 0s 142ms
    System Clock:                    0.1GHz
    Runtime:                         22089 cycles
    Runtime:                         220.89 us
@@ -2679,6 +2739,7 @@ Total Power Dynamic: 22508.7
    Total memory accesses (validated): 2205504
    Cache hits (0 latency):          2205504
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -2702,12 +2763,12 @@ Total Power Static: 13333.2
 
 Total Power Dynamic: 151645
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 8ms 849us
-   Simulation Time (Total):         0h 3m 23s 759ms
-   Simulation Time (Active):        0h 1m 21s 534ms
-        Queue Processing Time:      0h 1m 21s 527ms
-             Scheduling Time:       0h 1m 15s 47ms
-             Computation Time:      0h 0m 0s 845ms
+   Setup Time:                      0h 0m 0s 8ms 580us
+   Simulation Time (Total):         0h 3m 17s 323ms
+   Simulation Time (Active):        0h 1m 19s 931ms
+        Queue Processing Time:      0h 1m 19s 925ms
+             Scheduling Time:       0h 1m 13s 938ms
+             Computation Time:      0h 0m 0s 805ms
    System Clock:                    0.1GHz
    Runtime:                         27011 cycles
    Runtime:                         270.11 us
@@ -2720,18 +2781,19 @@ Total Power Dynamic: 151645
 
    --- Access Breakdown ---
    Total memory accesses (validated): 11091168
-   Cache hits (0 latency):          11091159
+   Cache hits (0 latency):          11091161
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -2745,12 +2807,12 @@ Total Power Static: 46184.6
 
 Total Power Dynamic: 456743
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 132ms 938us
-   Simulation Time (Total):         0h 3m 23s 641ms
-   Simulation Time (Active):        0h 1m 43s 501ms
-        Queue Processing Time:      0h 1m 43s 494ms
-             Scheduling Time:       0h 1m 32s 169ms
-             Computation Time:      0h 0m 2s 742ms
+   Setup Time:                      0h 0m 0s 135ms 920us
+   Simulation Time (Total):         0h 3m 17s 202ms
+   Simulation Time (Active):        0h 1m 40s 429ms
+        Queue Processing Time:      0h 1m 40s 425ms
+             Scheduling Time:       0h 1m 29s 732ms
+             Computation Time:      0h 0m 2s 617ms
    System Clock:                    0.1GHz
    Runtime:                         28617 cycles
    Runtime:                         286.17 us
@@ -2763,58 +2825,16 @@ Total Power Dynamic: 456743
 
    --- Access Breakdown ---
    Total memory accesses (validated): 11988288
-   Cache hits (0 latency):          11987920
+   Cache hits (0 latency):          11987985
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   364
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   299
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      33.468 us
-   Coalesced wait latency:          3038.57 us
-   TOTAL SECURITY OVERHEAD:         3072.04 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.34771 us
-   Avg overhead per blocked access: 8.34792 us
-
-   --- Cache Statistics ---
-   Processes with cached pages:     1
-   Unique pages validated (total):  11
-   Cache hit rate:                  99.9969%
-
-********************************************************************************
-system.body.body_top.llvm_interface
-Total Area: 44993
-Total Power Static: 0.979959
-
-Total Power Dynamic: 4.85437
-   ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 7ms 332us
-   Simulation Time (Total):         0h 3m 24s 227ms
-   Simulation Time (Active):        0h 0m 0s 27ms
-        Queue Processing Time:      0h 0m 0s 22ms
-             Scheduling Time:       0h 0m 0s 8ms
-             Computation Time:      0h 0m 0s 2ms
-   System Clock:                    0.1GHz
-   Runtime:                         47185 cycles
-   Runtime:                         471.85 us
-   Stalls:                          0 cycles
-   Executed Nodes:                  47184 cycles
-
-   ========= Kernel Validation Stats ==========
-   Kernel validation enabled:       YES
-   Configured latency per check:    8.367 us
-
-   --- Access Breakdown ---
-   Total memory accesses (validated): 126141
-   Cache hits (0 latency):          126100
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
-   Validations denied:              0
-
-   --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
+   Coalesced wait latency:          2501.73 us
+   TOTAL SECURITY OVERHEAD:         2535.2 us
    Avg latency per validation:      8.367 us
    Avg latency per coalesced wait:  8.367 us
    Avg overhead per blocked access: 8.367 us
@@ -2822,7 +2842,51 @@ Total Power Dynamic: 4.85437
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  11
-   Cache hit rate:                  99.9675%
+   Cache hit rate:                  99.9975%
+
+********************************************************************************
+system.body.body_top.llvm_interface
+Total Area: 44993
+Total Power Static: 0.976904
+
+Total Power Dynamic: 4.83935
+   ========= Performance Analysis =============
+   Setup Time:                      0h 0m 0s 7ms 276us
+   Simulation Time (Total):         0h 3m 18s 605ms
+   Simulation Time (Active):        0h 0m 0s 30ms
+        Queue Processing Time:      0h 0m 0s 22ms
+             Scheduling Time:       0h 0m 0s 7ms
+             Computation Time:      0h 0m 0s 2ms
+   System Clock:                    0.1GHz
+   Runtime:                         99839 cycles
+   Runtime:                         998.39 us
+   Stalls:                          0 cycles
+   Executed Nodes:                  99838 cycles
+
+   ========= Kernel Validation Stats ==========
+   Kernel validation enabled:       YES
+   Configured latency per check:    8.367 us
+
+   --- Access Breakdown ---
+   Total memory accesses (validated): 121443
+   Cache hits (0 latency):          120916
+   Validation requests (full lat):  507
+     of which DMA-ctrl writes:      504
+   Coalesced waits (partial lat):   20
+   Validations denied:              0
+
+   --- Latency Breakdown ---
+   Validation request latency:      6425.86 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         6752.17 us
+   Avg latency per validation:      12.6743 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 12.8125 us
+
+   --- Cache Statistics ---
+   Processes with cached pages:     1
+   Unique pages validated (total):  11
+   Cache hit rate:                  99.5661%
 
 ********************************************************************************
 system.body.body_residual.llvm_interface
@@ -2831,17 +2895,17 @@ Total Power Static: 8.22567
 
 Total Power Dynamic: 32.8969
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 388us
-   Simulation Time (Total):         0h 1m 36s 334ms
-   Simulation Time (Active):        0h 0m 0s 24ms
-        Queue Processing Time:      0h 0m 0s 22ms
-             Scheduling Time:       0h 0m 0s 14ms
+   Setup Time:                      0h 0m 0s 0ms 392us
+   Simulation Time (Total):         0h 1m 33s 731ms
+   Simulation Time (Active):        0h 0m 0s 23ms
+        Queue Processing Time:      0h 0m 0s 21ms
+             Scheduling Time:       0h 0m 0s 13ms
              Computation Time:      0h 0m 0s 1ms
    System Clock:                    0.1GHz
-   Runtime:                         14697 cycles
-   Runtime:                         146.97 us
+   Runtime:                         15225 cycles
+   Runtime:                         152.25 us
    Stalls:                          0 cycles
-   Executed Nodes:                  14696 cycles
+   Executed Nodes:                  15224 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -2851,6 +2915,7 @@ Total Power Dynamic: 32.8969
    Total memory accesses (validated): 97056
    Cache hits (0 latency):          97056
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -2874,17 +2939,17 @@ Total Power Static: 918.962
 
 Total Power Dynamic: 22508.7
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 752us
-   Simulation Time (Total):         0h 2m 3s 271ms
-   Simulation Time (Active):        0h 0m 10s 865ms
-        Queue Processing Time:      0h 0m 10s 859ms
-             Scheduling Time:       0h 0m 5s 977ms
-             Computation Time:      0h 0m 0s 155ms
+   Setup Time:                      0h 0m 0s 0ms 748us
+   Simulation Time (Total):         0h 1m 59s 889ms
+   Simulation Time (Active):        0h 0m 9s 600ms
+        Queue Processing Time:      0h 0m 9s 595ms
+             Scheduling Time:       0h 0m 5s 609ms
+             Computation Time:      0h 0m 0s 146ms
    System Clock:                    0.1GHz
-   Runtime:                         16367 cycles
-   Runtime:                         163.67 us
+   Runtime:                         16895 cycles
+   Runtime:                         168.95 us
    Stalls:                          0 cycles
-   Executed Nodes:                  16366 cycles
+   Executed Nodes:                  16894 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -2894,6 +2959,7 @@ Total Power Dynamic: 22508.7
    Total memory accesses (validated): 2263968
    Cache hits (0 latency):          2263968
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -2917,17 +2983,17 @@ Total Power Static: 20189.6
 
 Total Power Dynamic: 199684
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 135ms 984us
-   Simulation Time (Total):         0h 2m 6s 672ms
-   Simulation Time (Active):        0h 0m 44s 41ms
-        Queue Processing Time:      0h 0m 44s 37ms
-             Scheduling Time:       0h 0m 38s 651ms
-             Computation Time:      0h 0m 1s 144ms
+   Setup Time:                      0h 0m 0s 134ms 184us
+   Simulation Time (Total):         0h 2m 5s 576ms
+   Simulation Time (Active):        0h 0m 43s 219ms
+        Queue Processing Time:      0h 0m 43s 216ms
+             Scheduling Time:       0h 0m 38s 776ms
+             Computation Time:      0h 0m 1s 145ms
    System Clock:                    0.1GHz
-   Runtime:                         16983 cycles
-   Runtime:                         169.83 us
+   Runtime:                         17943 cycles
+   Runtime:                         179.43 us
    Stalls:                          0 cycles
-   Executed Nodes:                  16982 cycles
+   Executed Nodes:                  17942 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -2935,23 +3001,24 @@ Total Power Dynamic: 199684
 
    --- Access Breakdown ---
    Total memory accesses (validated): 12238992
-   Cache hits (0 latency):          12238384
+   Cache hits (0 latency):          12238529
    Validation requests (full lat):  6
-   Coalesced waits (partial lat):   602
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   457
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      50.202 us
-   Coalesced wait latency:          5028.39 us
-   TOTAL SECURITY OVERHEAD:         5078.6 us
+   Coalesced wait latency:          3823.72 us
+   TOTAL SECURITY OVERHEAD:         3873.92 us
    Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.35281 us
-   Avg overhead per blocked access: 8.35295 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 8.367 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  13
-   Cache hit rate:                  99.995%
+   Cache hit rate:                  99.9962%
 
 ********************************************************************************
 system.body.body_dwconv.llvm_interface
@@ -2960,17 +3027,17 @@ Total Power Static: 13321
 
 Total Power Dynamic: 151645
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 8ms 871us
-   Simulation Time (Total):         0h 2m 19s 62ms
-   Simulation Time (Active):        0h 1m 19s 771ms
-        Queue Processing Time:      0h 1m 19s 763ms
-             Scheduling Time:       0h 1m 13s 722ms
-             Computation Time:      0h 0m 0s 860ms
+   Setup Time:                      0h 0m 0s 8ms 704us
+   Simulation Time (Total):         0h 2m 15s 375ms
+   Simulation Time (Active):        0h 1m 18s 244ms
+        Queue Processing Time:      0h 1m 18s 239ms
+             Scheduling Time:       0h 1m 12s 856ms
+             Computation Time:      0h 0m 0s 812ms
    System Clock:                    0.1GHz
-   Runtime:                         19515 cycles
-   Runtime:                         195.15 us
+   Runtime:                         20043 cycles
+   Runtime:                         200.43 us
    Stalls:                          0 cycles
-   Executed Nodes:                  19514 cycles
+   Executed Nodes:                  20042 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -2978,18 +3045,19 @@ Total Power Dynamic: 151645
 
    --- Access Breakdown ---
    Total memory accesses (validated): 11389536
-   Cache hits (0 latency):          11389527
+   Cache hits (0 latency):          11389529
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -2999,45 +3067,46 @@ Total Power Dynamic: 151645
 ********************************************************************************
 system.body.body_top.llvm_interface
 Total Area: 48742.4
-Total Power Static: 0.979959
+Total Power Static: 0.975681
 
-Total Power Dynamic: 4.85437
+Total Power Dynamic: 4.83334
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 7ms 385us
-   Simulation Time (Total):         0h 2m 19s 484ms
-   Simulation Time (Active):        0h 0m 0s 23ms
-        Queue Processing Time:      0h 0m 0s 19ms
+   Setup Time:                      0h 0m 0s 7ms 228us
+   Simulation Time (Total):         0h 2m 16s 608ms
+   Simulation Time (Active):        0h 0m 0s 27ms
+        Queue Processing Time:      0h 0m 0s 20ms
              Scheduling Time:       0h 0m 0s 7ms
-             Computation Time:      0h 0m 0s 2ms
+             Computation Time:      0h 0m 0s 1ms
    System Clock:                    0.1GHz
-   Runtime:                         38091 cycles
-   Runtime:                         380.91 us
+   Runtime:                         91249 cycles
+   Runtime:                         912.49 us
    Stalls:                          0 cycles
-   Executed Nodes:                  38090 cycles
+   Executed Nodes:                  91248 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
    Configured latency per check:    8.367 us
 
    --- Access Breakdown ---
-   Total memory accesses (validated): 129555
-   Cache hits (0 latency):          129514
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
+   Total memory accesses (validated): 123303
+   Cache hits (0 latency):          122734
+   Validation requests (full lat):  549
+     of which DMA-ctrl writes:      546
+   Coalesced waits (partial lat):   20
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.367 us
-   Avg overhead per blocked access: 8.367 us
+   Validation request latency:      6952.98 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         7279.29 us
+   Avg latency per validation:      12.6648 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 12.7931 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  13
-   Cache hit rate:                  99.9684%
+   Cache hit rate:                  99.5385%
 
 ********************************************************************************
 system.body.body_residual.llvm_interface
@@ -3046,11 +3115,11 @@ Total Power Static: 2.39747
 
 Total Power Dynamic: 7.19619
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 406us
-   Simulation Time (Total):         0h 0m 23s 671ms
+   Setup Time:                      0h 0m 0s 0ms 388us
+   Simulation Time (Total):         0h 0m 22s 992ms
    Simulation Time (Active):        0h 0m 0s 5ms
         Queue Processing Time:      0h 0m 0s 5ms
-             Scheduling Time:       0h 0m 0s 3ms
+             Scheduling Time:       0h 0m 0s 2ms
              Computation Time:      0h 0m 0s 0ms
    System Clock:                    0.1GHz
    Runtime:                         7031 cycles
@@ -3066,6 +3135,7 @@ Total Power Dynamic: 7.19619
    Total memory accesses (validated): 98064
    Cache hits (0 latency):          98064
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -3089,12 +3159,12 @@ Total Power Static: 399.351
 
 Total Power Dynamic: 9823.92
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 780us
-   Simulation Time (Total):         0h 0m 49s 67ms
-   Simulation Time (Active):        0h 0m 3s 114ms
-        Queue Processing Time:      0h 0m 3s 113ms
-             Scheduling Time:       0h 0m 1s 723ms
-             Computation Time:      0h 0m 0s 55ms
+   Setup Time:                      0h 0m 0s 0ms 777us
+   Simulation Time (Total):         0h 0m 48s 349ms
+   Simulation Time (Active):        0h 0m 2s 923ms
+        Queue Processing Time:      0h 0m 2s 922ms
+             Scheduling Time:       0h 0m 1s 696ms
+             Computation Time:      0h 0m 0s 53ms
    System Clock:                    0.1GHz
    Runtime:                         9049 cycles
    Runtime:                         90.49 us
@@ -3109,6 +3179,7 @@ Total Power Dynamic: 9823.92
    Total memory accesses (validated): 2289168
    Cache hits (0 latency):          2289168
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -3132,12 +3203,12 @@ Total Power Static: 20189.6
 
 Total Power Dynamic: 199684
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 135ms 875us
-   Simulation Time (Total):         0h 1m 21s 361ms
-   Simulation Time (Active):        0h 0m 40s 911ms
-        Queue Processing Time:      0h 0m 40s 908ms
-             Scheduling Time:       0h 0m 36s 332ms
-             Computation Time:      0h 0m 1s 145ms
+   Setup Time:                      0h 0m 0s 132ms 511us
+   Simulation Time (Total):         0h 1m 19s 604ms
+   Simulation Time (Active):        0h 0m 39s 880ms
+        Queue Processing Time:      0h 0m 39s 878ms
+             Scheduling Time:       0h 0m 35s 542ms
+             Computation Time:      0h 0m 1s 97ms
    System Clock:                    0.1GHz
    Runtime:                         12793 cycles
    Runtime:                         127.93 us
@@ -3150,23 +3221,24 @@ Total Power Dynamic: 199684
 
    --- Access Breakdown ---
    Total memory accesses (validated): 12490992
-   Cache hits (0 latency):          12490384
+   Cache hits (0 latency):          12490529
    Validation requests (full lat):  6
-   Coalesced waits (partial lat):   602
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   457
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      50.202 us
-   Coalesced wait latency:          5028.39 us
-   TOTAL SECURITY OVERHEAD:         5078.6 us
+   Coalesced wait latency:          3823.72 us
+   TOTAL SECURITY OVERHEAD:         3873.92 us
    Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.35281 us
-   Avg overhead per blocked access: 8.35295 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 8.367 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  13
-   Cache hit rate:                  99.9951%
+   Cache hit rate:                  99.9963%
 
 ********************************************************************************
 system.body.body_dwconv.llvm_interface
@@ -3175,12 +3247,12 @@ Total Power Static: 5467.5
 
 Total Power Dynamic: 63163.1
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 8ms 856us
-   Simulation Time (Total):         0h 1m 21s 662ms
-   Simulation Time (Active):        0h 0m 34s 590ms
-        Queue Processing Time:      0h 0m 34s 586ms
-             Scheduling Time:       0h 0m 31s 518ms
-             Computation Time:      0h 0m 0s 342ms
+   Setup Time:                      0h 0m 0s 8ms 975us
+   Simulation Time (Total):         0h 1m 19s 914ms
+   Simulation Time (Active):        0h 0m 34s 139ms
+        Queue Processing Time:      0h 0m 34s 135ms
+             Scheduling Time:       0h 0m 31s 267ms
+             Computation Time:      0h 0m 0s 331ms
    System Clock:                    0.1GHz
    Runtime:                         13237 cycles
    Runtime:                         132.37 us
@@ -3193,18 +3265,19 @@ Total Power Dynamic: 63163.1
 
    --- Access Breakdown ---
    Total memory accesses (validated): 11517552
-   Cache hits (0 latency):          11517543
+   Cache hits (0 latency):          11517545
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -3214,45 +3287,46 @@ Total Power Dynamic: 63163.1
 ********************************************************************************
 system.body.body_top.llvm_interface
 Total Area: 52491.8
-Total Power Static: 0.978737
+Total Power Static: 0.97507
 
-Total Power Dynamic: 4.84836
+Total Power Dynamic: 4.83034
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 19ms 495us
-   Simulation Time (Total):         0h 1m 22s 50ms
-   Simulation Time (Active):        0h 0m 0s 17ms
-        Queue Processing Time:      0h 0m 0s 14ms
-             Scheduling Time:       0h 0m 0s 6ms
+   Setup Time:                      0h 0m 0s 17ms 443us
+   Simulation Time (Total):         0h 1m 21s 57ms
+   Simulation Time (Active):        0h 0m 0s 21ms
+        Queue Processing Time:      0h 0m 0s 15ms
+             Scheduling Time:       0h 0m 0s 5ms
              Computation Time:      0h 0m 0s 1ms
    System Clock:                    0.1GHz
-   Runtime:                         31784 cycles
-   Runtime:                         317.84 us
+   Runtime:                         84427 cycles
+   Runtime:                         844.27 us
    Stalls:                          0 cycles
-   Executed Nodes:                  31783 cycles
+   Executed Nodes:                  84426 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
    Configured latency per check:    8.367 us
 
    --- Access Breakdown ---
-   Total memory accesses (validated): 132405
-   Cache hits (0 latency):          132364
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
+   Total memory accesses (validated): 124555
+   Cache hits (0 latency):          123944
+   Validation requests (full lat):  591
+     of which DMA-ctrl writes:      588
+   Coalesced waits (partial lat):   20
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.367 us
-   Avg overhead per blocked access: 8.367 us
+   Validation request latency:      7480.1 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         7806.41 us
+   Avg latency per validation:      12.6567 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 12.7765 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  13
-   Cache hit rate:                  99.969%
+   Cache hit rate:                  99.5095%
 
 ********************************************************************************
 system.body.body_residual.llvm_interface
@@ -3261,9 +3335,9 @@ Total Power Static: 3.59739
 
 Total Power Dynamic: 14.3924
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 395us
-   Simulation Time (Total):         0h 0m 24s 47ms
-   Simulation Time (Active):        0h 0m 0s 7ms
+   Setup Time:                      0h 0m 0s 0ms 397us
+   Simulation Time (Total):         0h 0m 23s 46ms
+   Simulation Time (Active):        0h 0m 0s 6ms
         Queue Processing Time:      0h 0m 0s 6ms
              Scheduling Time:       0h 0m 0s 3ms
              Computation Time:      0h 0m 0s 0ms
@@ -3281,6 +3355,7 @@ Total Power Dynamic: 14.3924
    Total memory accesses (validated): 99576
    Cache hits (0 latency):          99576
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -3304,12 +3379,12 @@ Total Power Static: 399.351
 
 Total Power Dynamic: 9823.92
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 769us
-   Simulation Time (Total):         0h 0m 50s 130ms
-   Simulation Time (Active):        0h 0m 3s 317ms
-        Queue Processing Time:      0h 0m 3s 315ms
-             Scheduling Time:       0h 0m 1s 874ms
-             Computation Time:      0h 0m 0s 56ms
+   Setup Time:                      0h 0m 0s 0ms 776us
+   Simulation Time (Total):         0h 0m 47s 839ms
+   Simulation Time (Active):        0h 0m 2s 820ms
+        Queue Processing Time:      0h 0m 2s 818ms
+             Scheduling Time:       0h 0m 1s 645ms
+             Computation Time:      0h 0m 0s 51ms
    System Clock:                    0.1GHz
    Runtime:                         9049 cycles
    Runtime:                         90.49 us
@@ -3324,6 +3399,7 @@ Total Power Dynamic: 9823.92
    Total memory accesses (validated): 2314368
    Cache hits (0 latency):          2314368
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -3347,12 +3423,12 @@ Total Power Static: 20189.6
 
 Total Power Dynamic: 199684
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 131ms 279us
-   Simulation Time (Total):         0h 1m 22s 641ms
-   Simulation Time (Active):        0h 0m 41s 554ms
-        Queue Processing Time:      0h 0m 41s 551ms
-             Scheduling Time:       0h 0m 36s 945ms
-             Computation Time:      0h 0m 1s 156ms
+   Setup Time:                      0h 0m 0s 142ms 32us
+   Simulation Time (Total):         0h 1m 19s 585ms
+   Simulation Time (Active):        0h 0m 39s 926ms
+        Queue Processing Time:      0h 0m 39s 923ms
+             Scheduling Time:       0h 0m 35s 668ms
+             Computation Time:      0h 0m 1s 88ms
    System Clock:                    0.1GHz
    Runtime:                         12793 cycles
    Runtime:                         127.93 us
@@ -3365,23 +3441,24 @@ Total Power Dynamic: 199684
 
    --- Access Breakdown ---
    Total memory accesses (validated): 12742992
-   Cache hits (0 latency):          12742384
+   Cache hits (0 latency):          12742529
    Validation requests (full lat):  6
-   Coalesced waits (partial lat):   602
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   457
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      50.202 us
-   Coalesced wait latency:          5028.39 us
-   TOTAL SECURITY OVERHEAD:         5078.6 us
+   Coalesced wait latency:          3823.72 us
+   TOTAL SECURITY OVERHEAD:         3873.92 us
    Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.35281 us
-   Avg overhead per blocked access: 8.35295 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 8.367 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  13
-   Cache hit rate:                  99.9952%
+   Cache hit rate:                  99.9964%
 
 ********************************************************************************
 system.body.body_dwconv.llvm_interface
@@ -3390,12 +3467,12 @@ Total Power Static: 5467.5
 
 Total Power Dynamic: 63163.1
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 8ms 966us
-   Simulation Time (Total):         0h 1m 22s 956ms
-   Simulation Time (Active):        0h 0m 35s 4ms
-        Queue Processing Time:      0h 0m 35s 0ms
-             Scheduling Time:       0h 0m 31s 928ms
-             Computation Time:      0h 0m 0s 344ms
+   Setup Time:                      0h 0m 0s 8ms 832us
+   Simulation Time (Total):         0h 1m 19s 906ms
+   Simulation Time (Active):        0h 0m 34s 153ms
+        Queue Processing Time:      0h 0m 34s 150ms
+             Scheduling Time:       0h 0m 31s 326ms
+             Computation Time:      0h 0m 0s 325ms
    System Clock:                    0.1GHz
    Runtime:                         13237 cycles
    Runtime:                         132.37 us
@@ -3408,18 +3485,19 @@ Total Power Dynamic: 63163.1
 
    --- Access Breakdown ---
    Total memory accesses (validated): 11645568
-   Cache hits (0 latency):          11645559
+   Cache hits (0 latency):          11645561
    Validation requests (full lat):  4
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   3
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      33.468 us
-   Coalesced wait latency:          41.735 us
-   TOTAL SECURITY OVERHEAD:         75.203 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.347 us
-   Avg overhead per blocked access: 8.35589 us
+   Validation request latency:      41.785 us
+   Coalesced wait latency:          25.101 us
+   TOTAL SECURITY OVERHEAD:         66.886 us
+   Avg latency per validation:      10.4462 us
+   Avg latency per coalesced wait:  8.367 us
+   Avg overhead per blocked access: 9.55514 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
@@ -3429,45 +3507,46 @@ Total Power Dynamic: 63163.1
 ********************************************************************************
 system.body.body_top.llvm_interface
 Total Area: 56241.2
-Total Power Static: 0.979959
+Total Power Static: 0.978737
 
-Total Power Dynamic: 4.85437
+Total Power Dynamic: 4.84836
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 19ms 34us
-   Simulation Time (Total):         0h 1m 23s 341ms
-   Simulation Time (Active):        0h 0m 0s 16ms
-        Queue Processing Time:      0h 0m 0s 13ms
+   Setup Time:                      0h 0m 0s 16ms 839us
+   Simulation Time (Total):         0h 1m 21s 50ms
+   Simulation Time (Active):        0h 0m 0s 20ms
+        Queue Processing Time:      0h 0m 0s 14ms
              Scheduling Time:       0h 0m 0s 5ms
              Computation Time:      0h 0m 0s 1ms
    System Clock:                    0.1GHz
-   Runtime:                         31807 cycles
-   Runtime:                         318.07 us
+   Runtime:                         84495 cycles
+   Runtime:                         844.95 us
    Stalls:                          0 cycles
-   Executed Nodes:                  31806 cycles
+   Executed Nodes:                  84494 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
    Configured latency per check:    8.367 us
 
    --- Access Breakdown ---
-   Total memory accesses (validated): 135258
-   Cache hits (0 latency):          135217
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   38
+   Total memory accesses (validated): 125807
+   Cache hits (0 latency):          125154
+   Validation requests (full lat):  633
+     of which DMA-ctrl writes:      630
+   Coalesced waits (partial lat):   20
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          317.946 us
-   TOTAL SECURITY OVERHEAD:         343.047 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.367 us
-   Avg overhead per blocked access: 8.367 us
+   Validation request latency:      8007.22 us
+   Coalesced wait latency:          326.313 us
+   TOTAL SECURITY OVERHEAD:         8333.53 us
+   Avg latency per validation:      12.6496 us
+   Avg latency per coalesced wait:  16.3156 us
+   Avg overhead per blocked access: 12.7619 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  13
-   Cache hit rate:                  99.9697%
+   Cache hit rate:                  99.481%
 
 ********************************************************************************
 system.tail.tail_pwconv.llvm_interface
@@ -3476,17 +3555,17 @@ Total Power Static: 1439.58
 
 Total Power Dynamic: 37038.2
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 704us
-   Simulation Time (Total):         0h 0m 15s 928ms
-   Simulation Time (Active):        0h 0m 7s 118ms
-        Queue Processing Time:      0h 0m 7s 113ms
-             Scheduling Time:       0h 0m 2s 704ms
-             Computation Time:      0h 0m 0s 167ms
+   Setup Time:                      0h 0m 0s 0ms 709us
+   Simulation Time (Total):         0h 0m 15s 388ms
+   Simulation Time (Active):        0h 0m 6s 492ms
+        Queue Processing Time:      0h 0m 6s 486ms
+             Scheduling Time:       0h 0m 2s 621ms
+             Computation Time:      0h 0m 0s 158ms
    System Clock:                    0.1GHz
-   Runtime:                         23886 cycles
-   Runtime:                         238.86 us
+   Runtime:                         33662 cycles
+   Runtime:                         336.62 us
    Stalls:                          0 cycles
-   Executed Nodes:                  23885 cycles
+   Executed Nodes:                  33661 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -3494,23 +3573,24 @@ Total Power Dynamic: 37038.2
 
    --- Access Breakdown ---
    Total memory accesses (validated): 94176
-   Cache hits (0 latency):          94169
+   Cache hits (0 latency):          94168
    Validation requests (full lat):  2
-   Coalesced waits (partial lat):   5
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   6
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      16.734 us
-   Coalesced wait latency:          41.832 us
-   TOTAL SECURITY OVERHEAD:         58.566 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.3664 us
-   Avg overhead per blocked access: 8.36657 us
+   Validation request latency:      75.295 us
+   Coalesced wait latency:          184.05 us
+   TOTAL SECURITY OVERHEAD:         259.345 us
+   Avg latency per validation:      37.6475 us
+   Avg latency per coalesced wait:  30.675 us
+   Avg overhead per blocked access: 32.4181 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  7
-   Cache hit rate:                  99.9926%
+   Cache hit rate:                  99.9915%
 
 ********************************************************************************
 system.tail.tail_reshape.llvm_interface
@@ -3519,17 +3599,17 @@ Total Power Static: 692.426
 
 Total Power Dynamic: 17462.9
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 408us
-   Simulation Time (Total):         0h 0m 16s 199ms
-   Simulation Time (Active):        0h 0m 7s 372ms
-        Queue Processing Time:      0h 0m 7s 368ms
-             Scheduling Time:       0h 0m 3s 994ms
+   Setup Time:                      0h 0m 0s 0ms 387us
+   Simulation Time (Total):         0h 0m 15s 379ms
+   Simulation Time (Active):        0h 0m 6s 876ms
+        Queue Processing Time:      0h 0m 6s 871ms
+             Scheduling Time:       0h 0m 3s 878ms
              Computation Time:      0h 0m 0s 29ms
    System Clock:                    0.1GHz
-   Runtime:                         24730 cycles
-   Runtime:                         247.3 us
+   Runtime:                         32945 cycles
+   Runtime:                         329.45 us
    Stalls:                          0 cycles
-   Executed Nodes:                  24729 cycles
+   Executed Nodes:                  32944 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -3537,23 +3617,24 @@ Total Power Dynamic: 17462.9
 
    --- Access Breakdown ---
    Total memory accesses (validated): 23040
-   Cache hits (0 latency):          23038
+   Cache hits (0 latency):          23037
    Validation requests (full lat):  2
-   Coalesced waits (partial lat):   0
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   1
    Validations denied:              0
 
    --- Latency Breakdown ---
    Validation request latency:      16.734 us
-   Coalesced wait latency:          0 us
-   TOTAL SECURITY OVERHEAD:         16.734 us
+   Coalesced wait latency:          8.26 us
+   TOTAL SECURITY OVERHEAD:         24.994 us
    Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  0 us
-   Avg overhead per blocked access: 8.367 us
+   Avg latency per coalesced wait:  8.26 us
+   Avg overhead per blocked access: 8.33133 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  7
-   Cache hit rate:                  99.9913%
+   Cache hit rate:                  99.987%
 
 ********************************************************************************
 system.tail.tail_avgpool.llvm_interface
@@ -3562,17 +3643,17 @@ Total Power Static: 178.864
 
 Total Power Dynamic: 2910.95
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 353us
-   Simulation Time (Total):         0h 0m 20s 769ms
-   Simulation Time (Active):        0h 0m 5s 462ms
-        Queue Processing Time:      0h 0m 5s 457ms
-             Scheduling Time:       0h 0m 3s 473ms
-             Computation Time:      0h 0m 0s 33ms
+   Setup Time:                      0h 0m 0s 0ms 366us
+   Simulation Time (Total):         0h 0m 20s 172ms
+   Simulation Time (Active):        0h 0m 5s 699ms
+        Queue Processing Time:      0h 0m 5s 693ms
+             Scheduling Time:       0h 0m 3s 650ms
+             Computation Time:      0h 0m 0s 37ms
    System Clock:                    0.1GHz
-   Runtime:                         45188 cycles
-   Runtime:                         451.88 us
+   Runtime:                         51730 cycles
+   Runtime:                         517.3 us
    Stalls:                          0 cycles
-   Executed Nodes:                  45187 cycles
+   Executed Nodes:                  51729 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -3582,6 +3663,7 @@ Total Power Dynamic: 2910.95
    Total memory accesses (validated): 12800
    Cache hits (0 latency):          12800
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -3601,45 +3683,46 @@ Total Power Dynamic: 2910.95
 ********************************************************************************
 system.tail.tail_top.llvm_interface
 Total Area: 1300.17
-Total Power Static: 16.4919
+Total Power Static: 32.2538
 
-Total Power Dynamic: 81.057
+Total Power Dynamic: 158.514
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 11ms 52us
-   Simulation Time (Total):         0h 0m 21s 610ms
-   Simulation Time (Active):        0h 0m 0s 130ms
-        Queue Processing Time:      0h 0m 0s 124ms
-             Scheduling Time:       0h 0m 0s 50ms
-             Computation Time:      0h 0m 0s 15ms
+   Setup Time:                      0h 0m 0s 11ms 637us
+   Simulation Time (Total):         0h 0m 21s 15ms
+   Simulation Time (Active):        0h 0m 0s 175ms
+        Queue Processing Time:      0h 0m 0s 166ms
+             Scheduling Time:       0h 0m 0s 84ms
+             Computation Time:      0h 0m 0s 23ms
    System Clock:                    0.1GHz
-   Runtime:                         86926 cycles
-   Runtime:                         869.26 us
+   Runtime:                         111815 cycles
+   Runtime:                         1118.15 us
    Stalls:                          0 cycles
-   Executed Nodes:                  86925 cycles
+   Executed Nodes:                  111814 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
    Configured latency per check:    8.367 us
 
    --- Access Breakdown ---
-   Total memory accesses (validated): 27005
-   Cache hits (0 latency):          26989
-   Validation requests (full lat):  3
-   Coalesced waits (partial lat):   13
+   Total memory accesses (validated): 17
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  17
+     of which DMA-ctrl writes:      14
+   Coalesced waits (partial lat):   0
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      25.101 us
-   Coalesced wait latency:          108.771 us
-   TOTAL SECURITY OVERHEAD:         133.872 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.367 us
-   Avg overhead per blocked access: 8.367 us
+   Validation request latency:      225.909 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         225.909 us
+   Avg latency per validation:      13.2888 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 13.2888 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  7
-   Cache hit rate:                  99.9408%
+   Cache hit rate:                  0%
 
 ********************************************************************************
 system.classifier.classifier_linear.llvm_interface
@@ -3648,17 +3731,17 @@ Total Power Static: 149974
 
 Total Power Dynamic: 2.0398e+06
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 572ms 620us
-   Simulation Time (Total):         0h 21m 28s 590ms
-   Simulation Time (Active):        0h 18m 39s 136ms
-        Queue Processing Time:      0h 18m 37s 919ms
-             Scheduling Time:       0h 16m 50s 293ms
-             Computation Time:      0h 0m 6s 928ms
+   Setup Time:                      0h 0m 0s 527ms 403us
+   Simulation Time (Total):         0h 20m 24s 643ms
+   Simulation Time (Active):        0h 17m 26s 78ms
+        Queue Processing Time:      0h 17m 26s 65ms
+             Scheduling Time:       0h 16m 58s 515ms
+             Computation Time:      0h 0m 7s 397ms
    System Clock:                    0.1GHz
-   Runtime:                         267425 cycles
-   Runtime:                         2674.25 us
+   Runtime:                         274221 cycles
+   Runtime:                         2742.21 us
    Stalls:                          0 cycles
-   Executed Nodes:                  267424 cycles
+   Executed Nodes:                  274220 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
@@ -3666,65 +3749,67 @@ Total Power Dynamic: 2.0398e+06
 
    --- Access Breakdown ---
    Total memory accesses (validated): 5130000
-   Cache hits (0 latency):          5029197
+   Cache hits (0 latency):          5069773
    Validation requests (full lat):  315
-   Coalesced waits (partial lat):   100488
+     of which DMA-ctrl writes:      0
+   Coalesced waits (partial lat):   59912
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      2635.61 us
-   Coalesced wait latency:          839659 us
-   TOTAL SECURITY OVERHEAD:         842294 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.35581 us
-   Avg overhead per blocked access: 8.35584 us
+   Validation request latency:      2643.96 us
+   Coalesced wait latency:          501289 us
+   TOTAL SECURITY OVERHEAD:         503933 us
+   Avg latency per validation:      8.39353 us
+   Avg latency per coalesced wait:  8.36708 us
+   Avg overhead per blocked access: 8.36722 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  316
-   Cache hit rate:                  98.035%
+   Cache hit rate:                  98.826%
 
 ********************************************************************************
 system.classifier.classifier_top.llvm_interface
 Total Area: 1350.54
-Total Power Static: 100.135
+Total Power Static: 101.959
 
-Total Power Dynamic: 492.091
+Total Power Dynamic: 501.056
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 1ms 256us
-   Simulation Time (Total):         0h 21m 34s 314ms
-   Simulation Time (Active):        0h 0m 0s 806ms
-        Queue Processing Time:      0h 0m 0s 759ms
-             Scheduling Time:       0h 0m 0s 360ms
-             Computation Time:      0h 0m 0s 130ms
+   Setup Time:                      0h 0m 0s 1ms 257us
+   Simulation Time (Total):         0h 20m 30s 602ms
+   Simulation Time (Active):        0h 0m 0s 527ms
+        Queue Processing Time:      0h 0m 0s 485ms
+             Scheduling Time:       0h 0m 0s 251ms
+             Computation Time:      0h 0m 0s 64ms
    System Clock:                    0.1GHz
-   Runtime:                         605893 cycles
-   Runtime:                         6058.93 us
+   Runtime:                         631988 cycles
+   Runtime:                         6319.88 us
    Stalls:                          0 cycles
-   Executed Nodes:                  605892 cycles
+   Executed Nodes:                  631987 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       YES
    Configured latency per check:    8.367 us
 
    --- Access Breakdown ---
-   Total memory accesses (validated): 163861
-   Cache hits (0 latency):          163851
-   Validation requests (full lat):  1
-   Coalesced waits (partial lat):   9
+   Total memory accesses (validated): 17
+   Cache hits (0 latency):          0
+   Validation requests (full lat):  17
+     of which DMA-ctrl writes:      16
+   Coalesced waits (partial lat):   0
    Validations denied:              0
 
    --- Latency Breakdown ---
-   Validation request latency:      8.367 us
-   Coalesced wait latency:          75.303 us
-   TOTAL SECURITY OVERHEAD:         83.67 us
-   Avg latency per validation:      8.367 us
-   Avg latency per coalesced wait:  8.367 us
-   Avg overhead per blocked access: 8.367 us
+   Validation request latency:      209.175 us
+   Coalesced wait latency:          0 us
+   TOTAL SECURITY OVERHEAD:         209.175 us
+   Avg latency per validation:      12.3044 us
+   Avg latency per coalesced wait:  0 us
+   Avg overhead per blocked access: 12.3044 us
 
    --- Cache Statistics ---
    Processes with cached pages:     1
    Unique pages validated (total):  316
-   Cache hit rate:                  99.9939%
+   Cache hit rate:                  0%
 
-Exiting @ tick 26582572000 because m5_exit instruction encountered
+Exiting @ tick 37570250000 because m5_exit instruction encountered

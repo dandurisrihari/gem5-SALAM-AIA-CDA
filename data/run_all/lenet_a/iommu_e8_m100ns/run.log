@@ -12,9 +12,9 @@ gem5 Simulator System.  http://gem5.org
 gem5 is copyrighted software; use the --copyright option for details.
 
 gem5 version 21.1.0.1
-gem5 compiled May  2 2026 19:55:51
-gem5 started May  3 2026 00:10:51
-gem5 executing on 3b7fb6fd27b8, pid 1113671
+gem5 compiled May  6 2026 03:05:39
+gem5 started May  6 2026 03:06:26
+gem5 executing on 3b7fb6fd27b8, pid 3650879
 command line: /gem5-SALAM/build/ARM/gem5.opt --listener-mode=off --outdir=/gem5-SALAM/BM_ARM_OUT/run_all/lenet_a/iommu_e8_m100ns /gem5-SALAM/configs/SALAM/fs_lenet_a.py --mem-size=4GB --mem-type=DDR4_2400_8x8 --machine-type=VExpress_GEM5_V1 --dtb-file=none --bare-metal --cpu-type=DerivO3CPU --caches --l2cache --kernel=/gem5-SALAM/benchmarks/lenet/design_a/sw/main.elf --disk-image=/gem5-SALAM/benchmarks/common/fake.iso --accpath=/gem5-SALAM/benchmarks/lenet/design_a --accbench=lenet_a --enable-iommu --iotlb-entries 8 --iotlb-hit-latency 2000 --iotlb-miss-latency 100000
 
 [HWAccConfig] IOMMU ENABLED: entries=8, hit_lat=2000, miss_lat=100000
@@ -47,12 +47,12 @@ Total Power Static: 7702.37
 
 Total Power Dynamic: 186527
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 957us
-   Simulation Time (Total):         0h 0m 46s 669ms
-   Simulation Time (Active):        0h 0m 6s 884ms
-        Queue Processing Time:      0h 0m 6s 777ms
-             Scheduling Time:       0h 0m 4s 72ms
-             Computation Time:      0h 0m 0s 836ms
+   Setup Time:                      0h 0m 0s 6ms 956us
+   Simulation Time (Total):         0h 0m 49s 442ms
+   Simulation Time (Active):        0h 0m 7s 165ms
+        Queue Processing Time:      0h 0m 7s 28ms
+             Scheduling Time:       0h 0m 4s 230ms
+             Computation Time:      0h 0m 0s 878ms
    System Clock:                    0.1GHz
    Runtime:                         533218 cycles
    Runtime:                         5332.18 us
@@ -67,6 +67,7 @@ Total Power Dynamic: 186527
    Total memory accesses (validated): 0
    Cache hits (0 latency):          0
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -88,14 +89,14 @@ Total Power Dynamic: 186527
    IOMMU SimObject:                 system.lenet5_clstr.iommu
 
    --- Access Breakdown ---
-   Total IOMMU checks:              278070
-   IOTLB hits:                      278064
-   IOTLB misses (page walks):       6
-   IOTLB hit rate:                  99.9978%
+   Total IOMMU checks:              278657
+   IOTLB hits:                      278649
+   IOTLB misses (page walks):       8
+   IOTLB hit rate:                  99.9971%
 
    --- Latency Breakdown ---
-   TOTAL IOMMU OVERHEAD:            556.728 us
-   Avg latency per access:          0.00200211 us
+   TOTAL IOMMU OVERHEAD:            558.098 us
+   Avg latency per access:          0.00200281 us
 
 ********************************************************************************
 system.lenet5_clstr.pool0.llvm_interface
@@ -104,17 +105,17 @@ Total Power Static: 119.603
 
 Total Power Dynamic: 2263.76
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 919us
-   Simulation Time (Total):         0h 0m 0s 894ms
-   Simulation Time (Active):        0h 0m 0s 190ms
-        Queue Processing Time:      0h 0m 0s 185ms
-             Scheduling Time:       0h 0m 0s 109ms
+   Setup Time:                      0h 0m 0s 0ms 930us
+   Simulation Time (Total):         0h 0m 0s 752ms
+   Simulation Time (Active):        0h 0m 0s 142ms
+        Queue Processing Time:      0h 0m 0s 140ms
+             Scheduling Time:       0h 0m 0s 86ms
              Computation Time:      0h 0m 0s 13ms
    System Clock:                    0.1GHz
-   Runtime:                         15554 cycles
-   Runtime:                         155.54 us
+   Runtime:                         15563 cycles
+   Runtime:                         155.63 us
    Stalls:                          0 cycles
-   Executed Nodes:                  15553 cycles
+   Executed Nodes:                  15562 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       NO
@@ -124,6 +125,7 @@ Total Power Dynamic: 2263.76
    Total memory accesses (validated): 0
    Cache hits (0 latency):          0
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -145,14 +147,14 @@ Total Power Dynamic: 2263.76
    IOMMU SimObject:                 system.lenet5_clstr.iommu
 
    --- Access Breakdown ---
-   Total IOMMU checks:              285596
-   IOTLB hits:                      285584
-   IOTLB misses (page walks):       12
-   IOTLB hit rate:                  99.9958%
+   Total IOMMU checks:              290891
+   IOTLB hits:                      290867
+   IOTLB misses (page walks):       24
+   IOTLB hit rate:                  99.9917%
 
    --- Latency Breakdown ---
-   TOTAL IOMMU OVERHEAD:            572.368 us
-   Avg latency per access:          0.00200412 us
+   TOTAL IOMMU OVERHEAD:            584.134 us
+   Avg latency per access:          0.00200809 us
 
 ********************************************************************************
 system.lenet5_clstr.conv1.llvm_interface
@@ -161,12 +163,12 @@ Total Power Static: 15677.5
 
 Total Power Dynamic: 376721
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 956us
-   Simulation Time (Total):         0h 1m 37s 16ms
-   Simulation Time (Active):        0h 0m 8s 456ms
-        Queue Processing Time:      0h 0m 8s 348ms
-             Scheduling Time:       0h 0m 5s 230ms
-             Computation Time:      0h 0m 1s 39ms
+   Setup Time:                      0h 0m 0s 1ms 114us
+   Simulation Time (Total):         0h 1m 33s 232ms
+   Simulation Time (Active):        0h 0m 8s 580ms
+        Queue Processing Time:      0h 0m 8s 456ms
+             Scheduling Time:       0h 0m 5s 245ms
+             Computation Time:      0h 0m 1s 108ms
    System Clock:                    0.1GHz
    Runtime:                         861067 cycles
    Runtime:                         8610.67 us
@@ -181,6 +183,7 @@ Total Power Dynamic: 376721
    Total memory accesses (validated): 0
    Cache hits (0 latency):          0
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -202,14 +205,14 @@ Total Power Dynamic: 376721
    IOMMU SimObject:                 system.lenet5_clstr.iommu
 
    --- Access Breakdown ---
-   Total IOMMU checks:              829095
-   IOTLB hits:                      829078
-   IOTLB misses (page walks):       17
-   IOTLB hit rate:                  99.9979%
+   Total IOMMU checks:              836768
+   IOTLB hits:                      836736
+   IOTLB misses (page walks):       32
+   IOTLB hit rate:                  99.9962%
 
    --- Latency Breakdown ---
-   TOTAL IOMMU OVERHEAD:            1659.86 us
-   Avg latency per access:          0.00200201 us
+   TOTAL IOMMU OVERHEAD:            1676.67 us
+   Avg latency per access:          0.00200375 us
 
 ********************************************************************************
 system.lenet5_clstr.pool1.llvm_interface
@@ -218,11 +221,11 @@ Total Power Static: 40.6797
 
 Total Power Dynamic: 769.272
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 971us
-   Simulation Time (Total):         0h 0m 0s 201ms
-   Simulation Time (Active):        0h 0m 0s 40ms
-        Queue Processing Time:      0h 0m 0s 39ms
-             Scheduling Time:       0h 0m 0s 23ms
+   Setup Time:                      0h 0m 0s 0ms 861us
+   Simulation Time (Total):         0h 0m 0s 185ms
+   Simulation Time (Active):        0h 0m 0s 38ms
+        Queue Processing Time:      0h 0m 0s 37ms
+             Scheduling Time:       0h 0m 0s 21ms
              Computation Time:      0h 0m 0s 4ms
    System Clock:                    0.1GHz
    Runtime:                         5250 cycles
@@ -238,6 +241,7 @@ Total Power Dynamic: 769.272
    Total memory accesses (validated): 0
    Cache hits (0 latency):          0
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -259,14 +263,14 @@ Total Power Dynamic: 769.272
    IOMMU SimObject:                 system.lenet5_clstr.iommu
 
    --- Access Breakdown ---
-   Total IOMMU checks:              831696
-   IOTLB hits:                      831677
-   IOTLB misses (page walks):       19
-   IOTLB hit rate:                  99.9977%
+   Total IOMMU checks:              840970
+   IOTLB hits:                      840934
+   IOTLB misses (page walks):       36
+   IOTLB hit rate:                  99.9957%
 
    --- Latency Breakdown ---
-   TOTAL IOMMU OVERHEAD:            1665.25 us
-   Avg latency per access:          0.00200224 us
+   TOTAL IOMMU OVERHEAD:            1685.47 us
+   Avg latency per access:          0.0020042 us
 
 ********************************************************************************
 system.lenet5_clstr.fc0.llvm_interface
@@ -275,12 +279,12 @@ Total Power Static: 2891.65
 
 Total Power Dynamic: 75108.6
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 920us
-   Simulation Time (Total):         0h 0m 12s 237ms
-   Simulation Time (Active):        0h 0m 1s 294ms
-        Queue Processing Time:      0h 0m 1s 272ms
-             Scheduling Time:       0h 0m 0s 800ms
-             Computation Time:      0h 0m 0s 167ms
+   Setup Time:                      0h 0m 0s 0ms 822us
+   Simulation Time (Total):         0h 0m 12s 700ms
+   Simulation Time (Active):        0h 0m 1s 342ms
+        Queue Processing Time:      0h 0m 1s 319ms
+             Scheduling Time:       0h 0m 0s 828ms
+             Computation Time:      0h 0m 0s 177ms
    System Clock:                    0.1GHz
    Runtime:                         209171 cycles
    Runtime:                         2091.71 us
@@ -295,6 +299,7 @@ Total Power Dynamic: 75108.6
    Total memory accesses (validated): 0
    Cache hits (0 latency):          0
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -316,14 +321,14 @@ Total Power Dynamic: 75108.6
    IOMMU SimObject:                 system.lenet5_clstr.iommu
 
    --- Access Breakdown ---
-   Total IOMMU checks:              941018
-   IOTLB hits:                      935238
-   IOTLB misses (page walks):       5780
-   IOTLB hit rate:                  99.3858%
+   Total IOMMU checks:              950691
+   IOTLB hits:                      944894
+   IOTLB misses (page walks):       5797
+   IOTLB hit rate:                  99.3902%
 
    --- Latency Breakdown ---
-   TOTAL IOMMU OVERHEAD:            2448.48 us
-   Avg latency per access:          0.00260194 us
+   TOTAL IOMMU OVERHEAD:            2469.49 us
+   Avg latency per access:          0.00259757 us
 
 ********************************************************************************
 system.lenet5_clstr.fc1.llvm_interface
@@ -332,12 +337,12 @@ Total Power Static: 605.723
 
 Total Power Dynamic: 15765.7
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 0ms 488us
-   Simulation Time (Total):         0h 0m 0s 810ms
-   Simulation Time (Active):        0h 0m 0s 123ms
-        Queue Processing Time:      0h 0m 0s 120ms
-             Scheduling Time:       0h 0m 0s 72ms
-             Computation Time:      0h 0m 0s 16ms
+   Setup Time:                      0h 0m 0s 0ms 695us
+   Simulation Time (Total):         0h 0m 1s 491ms
+   Simulation Time (Active):        0h 0m 0s 229ms
+        Queue Processing Time:      0h 0m 0s 225ms
+             Scheduling Time:       0h 0m 0s 135ms
+             Computation Time:      0h 0m 0s 31ms
    System Clock:                    0.1GHz
    Runtime:                         38893 cycles
    Runtime:                         388.93 us
@@ -352,6 +357,7 @@ Total Power Dynamic: 15765.7
    Total memory accesses (validated): 0
    Cache hits (0 latency):          0
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -373,33 +379,33 @@ Total Power Dynamic: 15765.7
    IOMMU SimObject:                 system.lenet5_clstr.iommu
 
    --- Access Breakdown ---
-   Total IOMMU checks:              963810
-   IOTLB hits:                      957189
-   IOTLB misses (page walks):       6621
-   IOTLB hit rate:                  99.313%
+   Total IOMMU checks:              973603
+   IOTLB hits:                      966964
+   IOTLB misses (page walks):       6639
+   IOTLB hit rate:                  99.3181%
 
    --- Latency Breakdown ---
-   TOTAL IOMMU OVERHEAD:            2576.48 us
-   Avg latency per access:          0.00267322 us
+   TOTAL IOMMU OVERHEAD:            2597.83 us
+   Avg latency per access:          0.00266826 us
 
 ********************************************************************************
 system.lenet5_clstr.top.llvm_interface
 Total Area: 1007.4
-Total Power Static: 72.1234
+Total Power Static: 72.127
 
-Total Power Dynamic: 354.427
+Total Power Dynamic: 354.445
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 17ms 326us
-   Simulation Time (Total):         0h 2m 38s 718ms
-   Simulation Time (Active):        0h 0m 1s 750ms
-        Queue Processing Time:      0h 0m 1s 484ms
-             Scheduling Time:       0h 0m 0s 676ms
-             Computation Time:      0h 0m 0s 91ms
+   Setup Time:                      0h 0m 0s 11ms 164us
+   Simulation Time (Total):         0h 2m 38s 597ms
+   Simulation Time (Active):        0h 0m 1s 734ms
+        Queue Processing Time:      0h 0m 1s 475ms
+             Scheduling Time:       0h 0m 0s 652ms
+             Computation Time:      0h 0m 0s 99ms
    System Clock:                    0.1GHz
-   Runtime:                         1681768 cycles
-   Runtime:                         16817.7 us
+   Runtime:                         1681929 cycles
+   Runtime:                         16819.3 us
    Stalls:                          0 cycles
-   Executed Nodes:                  1681767 cycles
+   Executed Nodes:                  1681928 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       NO
@@ -409,6 +415,7 @@ Total Power Dynamic: 354.427
    Total memory accesses (validated): 0
    Cache hits (0 latency):          0
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -430,13 +437,13 @@ Total Power Dynamic: 354.427
    IOMMU SimObject:                 system.lenet5_clstr.iommu
 
    --- Access Breakdown ---
-   Total IOMMU checks:              963820
-   IOTLB hits:                      957198
-   IOTLB misses (page walks):       6622
-   IOTLB hit rate:                  99.3129%
+   Total IOMMU checks:              973655
+   IOTLB hits:                      967014
+   IOTLB misses (page walks):       6641
+   IOTLB hit rate:                  99.3179%
 
    --- Latency Breakdown ---
-   TOTAL IOMMU OVERHEAD:            2576.6 us
-   Avg latency per access:          0.00267332 us
+   TOTAL IOMMU OVERHEAD:            2598.13 us
+   Avg latency per access:          0.00266843 us
 
-Exiting @ tick 16896690000 because m5_exit instruction encountered
+Exiting @ tick 16897753000 because m5_exit instruction encountered

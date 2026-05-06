@@ -12,9 +12,9 @@ gem5 Simulator System.  http://gem5.org
 gem5 is copyrighted software; use the --copyright option for details.
 
 gem5 version 21.1.0.1
-gem5 compiled May  2 2026 19:55:51
-gem5 started May  3 2026 00:10:49
-gem5 executing on 3b7fb6fd27b8, pid 1113548
+gem5 compiled May  6 2026 03:05:39
+gem5 started May  6 2026 03:06:31
+gem5 executing on 3b7fb6fd27b8, pid 3651077
 command line: /gem5-SALAM/build/ARM/gem5.opt --listener-mode=off --outdir=/gem5-SALAM/BM_ARM_OUT/run_all/md_knn/iommu_e8_m500ns /gem5-SALAM/configs/SALAM/fs_md_knn.py --mem-size=4GB --mem-type=DDR4_2400_8x8 --machine-type=VExpress_GEM5_V1 --dtb-file=none --bare-metal --cpu-type=DerivO3CPU --caches --l2cache --kernel=/gem5-SALAM/benchmarks/sys_validation/md_knn/sw/main.elf --disk-image=/gem5-SALAM/benchmarks/common/fake.iso --accpath=/gem5-SALAM/benchmarks/sys_validation/md_knn --accbench=md_knn --enable-iommu --iotlb-entries 8 --iotlb-hit-latency 2000 --iotlb-miss-latency 500000
 
 [HWAccConfig] IOMMU ENABLED: entries=8, hit_lat=2000, miss_lat=500000
@@ -42,12 +42,12 @@ Total Power Static: 74.7734
 
 Total Power Dynamic: 982.59
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 7ms 250us
-   Simulation Time (Total):         0h 0m 35s 10ms
-   Simulation Time (Active):        0h 0m 28s 158ms
-        Queue Processing Time:      0h 0m 28s 139ms
-             Scheduling Time:       0h 0m 18s 462ms
-             Computation Time:      0h 0m 0s 223ms
+   Setup Time:                      0h 0m 0s 1ms 244us
+   Simulation Time (Total):         0h 0m 30s 916ms
+   Simulation Time (Active):        0h 0m 25s 347ms
+        Queue Processing Time:      0h 0m 25s 316ms
+             Scheduling Time:       0h 0m 15s 331ms
+             Computation Time:      0h 0m 0s 206ms
    System Clock:                    0.1GHz
    Runtime:                         65899 cycles
    Runtime:                         658.99 us
@@ -62,6 +62,7 @@ Total Power Dynamic: 982.59
    Total memory accesses (validated): 0
    Cache hits (0 latency):          0
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -83,33 +84,33 @@ Total Power Dynamic: 982.59
    IOMMU SimObject:                 system.mdknn_clstr.iommu
 
    --- Access Breakdown ---
-   Total IOMMU checks:              22794
-   IOTLB hits:                      22786
-   IOTLB misses (page walks):       8
-   IOTLB hit rate:                  99.9649%
+   Total IOMMU checks:              23149
+   IOTLB hits:                      23135
+   IOTLB misses (page walks):       14
+   IOTLB hit rate:                  99.9395%
 
    --- Latency Breakdown ---
-   TOTAL IOMMU OVERHEAD:            49.572 us
-   Avg latency per access:          0.00217478 us
+   TOTAL IOMMU OVERHEAD:            53.27 us
+   Avg latency per access:          0.00230118 us
 
 ********************************************************************************
 system.mdknn_clstr.top.llvm_interface
 Total Area: 402.96
-Total Power Static: 2.99103
+Total Power Static: 2.9947
 
-Total Power Dynamic: 14.6985
+Total Power Dynamic: 14.7165
    ========= Performance Analysis =============
-   Setup Time:                      0h 0m 0s 8ms 327us
-   Simulation Time (Total):         0h 0m 35s 301ms
-   Simulation Time (Active):        0h 0m 0s 240ms
-        Queue Processing Time:      0h 0m 0s 216ms
-             Scheduling Time:       0h 0m 0s 97ms
-             Computation Time:      0h 0m 0s 4ms
+   Setup Time:                      0h 0m 0s 5ms 137us
+   Simulation Time (Total):         0h 0m 31s 185ms
+   Simulation Time (Active):        0h 0m 0s 153ms
+        Queue Processing Time:      0h 0m 0s 142ms
+             Scheduling Time:       0h 0m 0s 64ms
+             Computation Time:      0h 0m 0s 8ms
    System Clock:                    0.1GHz
-   Runtime:                         69259 cycles
-   Runtime:                         692.59 us
+   Runtime:                         69711 cycles
+   Runtime:                         697.11 us
    Stalls:                          0 cycles
-   Executed Nodes:                  69258 cycles
+   Executed Nodes:                  69710 cycles
 
    ========= Kernel Validation Stats ==========
    Kernel validation enabled:       NO
@@ -119,6 +120,7 @@ Total Power Dynamic: 14.6985
    Total memory accesses (validated): 0
    Cache hits (0 latency):          0
    Validation requests (full lat):  0
+     of which DMA-ctrl writes:      0
    Coalesced waits (partial lat):   0
    Validations denied:              0
 
@@ -140,13 +142,13 @@ Total Power Dynamic: 14.6985
    IOMMU SimObject:                 system.mdknn_clstr.iommu
 
    --- Access Breakdown ---
-   Total IOMMU checks:              22850
-   IOTLB hits:                      22842
-   IOTLB misses (page walks):       8
-   IOTLB hit rate:                  99.965%
+   Total IOMMU checks:              23304
+   IOTLB hits:                      23288
+   IOTLB misses (page walks):       16
+   IOTLB hit rate:                  99.9313%
 
    --- Latency Breakdown ---
-   TOTAL IOMMU OVERHEAD:            49.684 us
-   Avg latency per access:          0.00217435 us
+   TOTAL IOMMU OVERHEAD:            54.576 us
+   Avg latency per access:          0.00234192 us
 
-Exiting @ tick 4461243000 because m5_exit instruction encountered
+Exiting @ tick 4464643000 because m5_exit instruction encountered
