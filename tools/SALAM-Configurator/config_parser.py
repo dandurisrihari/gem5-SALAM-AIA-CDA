@@ -500,13 +500,16 @@ class StreamDMA:
         # DMA bursts to DRAM are translated by the same chip-wide
         # AcceleratorIommu used by CommInterface global egress.
         lines.append("clstr." + self.name + ".iommu = clstr.iommu")
-        # Register this DMA's PIO control-reg range with the chip-wide
-        # AIA-KD validator. Writes to a control-reg page bypass the
-        # validated-page cache and pay full validation latency on
-        # every store -- one IRQ per DMA program. See
+        # Stream DMA register file is entirely AIA-KD-passthrough:
+        # the engine endpoints are wired at config time, not
+        # programmed per-transfer, so no register write here grants
+        # the engine new memory authority. Emit the full PIO window
+        # as a passthrough range so checkAndCharge() short-circuits
+        # ALL accesses (read or write) to these regs at zero cost
+        # without polluting the per-PID validated-page cache. See
         # .github/prompts/01-aia-kd-design.md for the threat model.
-        lines.append("clstr.validator.dma_pio_ranges.append("
-                     "AddrRange(" + hex(self.address) +
+        lines.append("clstr.validator.dma_pio_passthrough_ranges"
+                     ".append(AddrRange(" + hex(self.address) +
                      ", size=" + str(self.pio) + "))")
         if self.pio_masters is not None:
             for master in self.pio_masters:
@@ -561,11 +564,30 @@ class DMA:
                      ".dma = clstr.coherency_bus.cpu_side_ports")
         # Wire cluster-shared SMMU onto the off-cluster `dma` port.
         lines.append("clstr." + self.name + ".iommu = clstr.iommu")
-        # Register this DMA's PIO control-reg range with the chip-wide
-        # AIA-KD validator (see StreamDMA.genConfig for rationale).
-        lines.append("clstr.validator.dma_pio_ranges.append("
-                     "AddrRange(" + hex(self.address) +
-                     ", size=" + str(self.pio) + "))")
+        # Partition this NonCoherent DMA's 21-byte PIO window into
+        # security-critical descriptor regs (SRC, DST) vs. benign
+        # passthrough regs (FLAGS, LEN). The layout matches the C
+        # macros in benchmarks/common/queue_dma.h:
+        #   +0  (1B)  FLAGS  : start/status bits      -> passthrough
+        #   +1  (8B)  SRC    : source descriptor      -> descriptor
+        #   +9  (8B)  DST    : destination descriptor -> descriptor
+        #   +17 (4B)  LEN    : transfer length        -> passthrough
+        # A WRITE into the descriptor sub-range grants the engine new
+        # memory authority (re-targeting source/destination) and pays
+        # full per-cold-miss validation latency. Every other access --
+        # FLAGS/LEN writes, or any READ inside the PIO window -- is
+        # AIA-KD-free. See .github/prompts/01-aia-kd-design.md.
+        base = self.address
+        lines.append("clstr.validator.dma_descriptor_ranges.append("
+                     "AddrRange(" + hex(base + 1) + ", size=8))")
+        lines.append("clstr.validator.dma_descriptor_ranges.append("
+                     "AddrRange(" + hex(base + 9) + ", size=8))")
+        lines.append("clstr.validator.dma_pio_passthrough_ranges"
+                     ".append(AddrRange(" + hex(base + 0) +
+                     ", size=1))")
+        lines.append("clstr.validator.dma_pio_passthrough_ranges"
+                     ".append(AddrRange(" + hex(base + 17) +
+                     ", size=" + str(self.pio - 17) + "))")
         if self.pio_masters is not None:
             for master in self.pio_masters:
                 lines.append("clstr." + master.lower() +

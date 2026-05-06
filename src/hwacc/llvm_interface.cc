@@ -1344,13 +1344,20 @@ LLVMInterface::chargeValidation(uint64_t addr, bool isWrite)
         totalKernelValidationLatency += defer;
         break;
       case AiaKdValidator::Outcome::DmaCtrl:
-        // DMA-ctrl writes are still "full validation requests" for
-        // accounting purposes; the dmaCtrlValidations counter is the
-        // subset broken out for the harvested
+        // DMA descriptor (SRC/DST) writes are still "full validation
+        // requests" for accounting purposes; the dmaCtrlValidations
+        // counter is the subset broken out for the harvested
         // "of which DMA-ctrl writes:" line.
         totalKernelValidations++;
         dmaCtrlValidations++;
         totalKernelValidationLatency += defer;
+        break;
+      case AiaKdValidator::Outcome::PioPassthrough:
+        // Non-descriptor DMA PIO access (FLAGS go-bit, LEN write,
+        // Stream-DMA reg, or any read inside a PIO window). Costs
+        // nothing in the AIA-KD model -- no capability is granted --
+        // and intentionally does NOT bump any per-CU counter to
+        // preserve the harvested stat strings unchanged.
         break;
     }
 

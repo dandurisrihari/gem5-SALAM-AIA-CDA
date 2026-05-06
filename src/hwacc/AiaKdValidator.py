@@ -36,13 +36,44 @@ class AiaKdValidator(SimObject):
     # cross-checked against this value at startup.
     latency = Param.Tick(0, "Per-cold-miss kernel validation latency")
 
-    # Address ranges of DMA-engine PIO control reg banks. Writes to a
-    # page that intersects any of these ranges are NEVER cached: each
-    # store re-fires a full validation, modeling the threat that any
-    # write to a DMA control reg can re-target the engine at a new
-    # source/destination. Reads are unaffected (status polling is
-    # benign). Populated by the SALAM-Configurator for every DMA in
-    # the cluster.
-    dma_pio_ranges = VectorParam.AddrRange([],
-        "DMA control reg PIO ranges -- writes here always pay full "
-        "validation latency (no cache, no coalescing)")
+    # ------------------------------------------------------------------
+    # DMA control-register classification.
+    #
+    # The kernel-driver / capability monitor only needs to inspect the
+    # SUBSET of DMA register writes that actually grant the engine new
+    # memory authority -- i.e. SOURCE and DESTINATION descriptor regs.
+    # Writes to other DMA registers (FLAGS go-bit, LEN, status resets,
+    # the entire Stream-DMA register file) reveal no new address
+    # capability and so cost nothing in the AIA-KD model.
+    #
+    # We split the ranges into two disjoint vectors so checkAndCharge()
+    # can cheaply distinguish "security-critical write" (full latency,
+    # no cache) from "PIO passthrough" (free, no state change). Both
+    # vectors are populated by the SALAM-Configurator from each DMA's
+    # register layout.
+    #
+    # IMPORTANT: every byte that lies inside SOME DMA's PIO window must
+    # appear in EXACTLY ONE of these two vectors. checkAndCharge()
+    # treats any address in either vector as "PIO" and short-circuits
+    # the page-cache path so PIO addresses never pollute the per-PID
+    # validated-page set.
+    # ------------------------------------------------------------------
+
+    # Descriptor registers: SRC and DST of NonCoherent DMAs.  A WRITE
+    # here re-arms the engine at a new (source, destination) pair and
+    # therefore demands a fresh capability check by the kernel
+    # driver -- we charge full per-cold-miss latency, never cache, and
+    # serialize on the chip-wide kernel-driver deadline. READS to
+    # these addresses are still passthrough (benign).
+    dma_descriptor_ranges = VectorParam.AddrRange([],
+        "DMA descriptor reg ranges (SRC/DST). Writes here pay full "
+        "validation latency (no cache, no coalescing). Reads are "
+        "passthrough.")
+
+    # Passthrough PIO bytes: every other DMA control reg
+    # (NonCoherent FLAGS + LEN, plus the entire Stream DMA register
+    # window). Reads AND writes here cost nothing -- they carry no new
+    # security-relevant authority.
+    dma_pio_passthrough_ranges = VectorParam.AddrRange([],
+        "DMA non-descriptor PIO ranges. Reads and writes here are "
+        "AIA-KD-free and bypass the page cache entirely.")

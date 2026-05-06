@@ -101,10 +101,15 @@ generator contract, why some things stay per-CU), see
   │   * pendingValidationPages[page]  : {readyTick, pid}    │
   │   * nextReadyTick                 : chip-wide deadline  │
   │                                                         │
-  │  CacheHit  ──► defer = 0                                │
-  │  Coalesced ──► defer = readyTick - now (tail of wait)   │
-  │  ColdMiss  ──► defer = latency, bump nextReadyTick      │
-  │  DmaCtrl   ──► defer = latency, no caching, bump deadline│
+  │  CacheHit       ──► defer = 0                          │
+  │  Coalesced      ──► defer = readyTick - now (tail wait)│
+  │  ColdMiss       ──► defer = latency, bump nextReadyTick│
+  │  DmaCtrl        ──► defer = latency on writes to a DMA │
+  │                     descriptor reg (SRC/DST only); no  │
+  │                     caching, bumps deadline.           │
+  │  PioPassthrough ──► defer = 0 for FLAGS/LEN writes,    │
+  │                     all Stream-DMA reg accesses, and   │
+  │                     any read of any DMA PIO reg.       │
   └─────────────────────────────────────────────────────────┘
        │
        ▼  Then the request flows through the CommInterface ports

@@ -20,10 +20,14 @@ AiaKdValidator::AiaKdValidator(const Params &p)
       nextReadyTick(0),
       enabledFlag(p.enabled),
       latencyTicks(p.latency),
-      dmaCtrlRanges(p.dma_pio_ranges.begin(), p.dma_pio_ranges.end()),
+      dmaDescriptorRanges(p.dma_descriptor_ranges.begin(),
+                          p.dma_descriptor_ranges.end()),
+      dmaPioPassthroughRanges(p.dma_pio_passthrough_ranges.begin(),
+                              p.dma_pio_passthrough_ranges.end()),
       totalColdMisses(0),
       totalCoalesced(0),
       totalDmaCtrl(0),
+      totalDmaPioPassthrough(0),
       totalLatencyTicks(0)
 {
 }
@@ -60,25 +64,40 @@ AiaKdValidator::checkAndCharge(uint64_t pid, Addr addr, bool isWrite,
     Tick now = curTick();
     promoteReadyPages(now);
 
-    uint64_t pageAddr = addr & ~0xFFFULL;
-    bool dmaCtrl = isWrite && isDmaCtrl(addr);
-
     // -----------------------------------------------------------------
-    // DMA-ctrl write: bypass cache + coalescing entirely. Every store
-    // re-fires a cold-miss tax and serializes on nextReadyTick.
-    // Reads to DMA pages (status polls) are NOT bypassed -- they
-    // follow the normal cache/coalesce path.
+    // DMA PIO short-circuit. Any access whose target lies in a DMA's
+    // PIO window is handled here and NEVER reaches the page-cache
+    // path -- this prevents PIO addresses from polluting the per-PID
+    // validated-page set.
+    //
+    // Within the PIO window we distinguish two cases:
+    //   (a) WRITE to a descriptor reg (SRC/DST): the kernel driver
+    //       must inspect the new (source, destination) capability,
+    //       so we charge the full per-cold-miss latency and advance
+    //       the chip-wide kernel-driver deadline.
+    //   (b) Anything else (write to FLAGS/LEN/Stream-DMA regs, or any
+    //       READ inside the PIO window): no new authority granted ->
+    //       free passthrough. Status polls and DMA "go" pulses fall
+    //       in this bucket.
     // -----------------------------------------------------------------
-    if (dmaCtrl) {
-        Tick start  = std::max(now, nextReadyTick);
-        Tick ready  = start + latencyTicks;
-        nextReadyTick = ready;
-        Tick defer  = ready - now;
-        totalDmaCtrl++;
-        totalLatencyTicks += defer;
-        outcome = Outcome::DmaCtrl;
-        return defer;
+    if (isAnyDmaPio(addr)) {
+        if (isWrite && isDmaDescriptorReg(addr)) {
+            Tick start  = std::max(now, nextReadyTick);
+            Tick ready  = start + latencyTicks;
+            nextReadyTick = ready;
+            Tick defer  = ready - now;
+            totalDmaCtrl++;
+            totalLatencyTicks += defer;
+            outcome = Outcome::DmaCtrl;
+            return defer;
+        }
+        // Passthrough: non-descriptor PIO reg, or read of any PIO reg.
+        totalDmaPioPassthrough++;
+        outcome = Outcome::PioPassthrough;
+        return 0;
     }
+
+    uint64_t pageAddr = addr & ~0xFFFULL;
 
     // -----------------------------------------------------------------
     // Cache hit: this PID already paid for this page chip-wide.

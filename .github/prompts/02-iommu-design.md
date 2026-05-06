@@ -196,7 +196,9 @@ every CommInterface response port (`MemSidePort` all three roles,
 responses. Under strict per-transaction enforcement across all
 memory ports, `iommu_checks` typically exceeds the AIA-KD
 `Validation requests (full lat)` count: AIA-KD only charges at
-launch time and only when the outcome is `ColdMiss` or `DmaCtrl`,
+launch time and only when the outcome is `ColdMiss` or `DmaCtrl`
+(`CacheHit`, `Coalesced`, and `PioPassthrough` outcomes contribute
+zero to the harvested "full lat" count),
 whereas the IOMMU charges every response packet on every port.
 
 ## Things to be careful about

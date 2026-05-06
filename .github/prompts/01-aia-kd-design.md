@@ -37,14 +37,27 @@ comparable with the IOMMU mechanism (which already taxes responses).
     kernel-driver deadline (`nextReadyTick`) is bumped by `latency`
     so concurrent cold misses serialize behind one another (one
     driver thread).
-  - `DmaCtrl`   — write whose target lies in any DMA engine's PIO
-    range; defer is full `latency`, **does NOT enter the page
-    cache** (every reprogram pays again), and bumps
-    `nextReadyTick` like a cold miss.
-- **DMA control-reg policy**: stores into a DMA's PIO range
-  reprogram the engine with a (potentially adversarial) (src, dst,
-  len) triple, so each one must be inspected by the kernel. Reads
-  to those same pages are unaffected (status polling is benign).
+  - `DmaCtrl`   — write to a **DMA descriptor register** (SRC or
+    DST of a NonCoherent DMA). Defer is full `latency`, **does NOT
+    enter the page cache** (every reprogram pays again), and bumps
+    `nextReadyTick` like a cold miss. This is the only DMA-PIO
+    access class that pays a tax.
+  - `PioPassthrough` — any DMA-PIO access that is NOT a descriptor
+    write: FLAGS go-bit, LEN, the entire Stream-DMA register file,
+    or **any read** of any DMA PIO reg. Defer = 0, no state
+    change, does NOT pollute the per-PID page cache.
+- **DMA control-reg policy** (security-critical writes only):
+  the kernel-driver / capability monitor only inspects DMA register
+  writes that grant the engine new memory authority -- i.e. SOURCE
+  and DESTINATION descriptor registers of a NonCoherent DMA. Stores
+  to FLAGS / LEN reveal no new authority and are passthrough.
+  Stream DMA register writes are also entirely passthrough because
+  the engine endpoints are wired at config time, not programmed
+  per-transfer. Reads of DMA PIO regs (status polling) are always
+  benign. The configurator partitions every DMA's PIO window into
+  two disjoint vectors (`dma_descriptor_ranges` and
+  `dma_pio_passthrough_ranges`) so this distinction is exact, not
+  page-approximate.
 - **Coalescing** is "lazy promotion": a follower access pays only
   the *tail* of the existing wait. There is no per-CU wake-up;
   whichever access arrives next pays the remaining ticks. See
@@ -96,15 +109,15 @@ per-CU response event, and no scheduler-side stall.
 | `validatedPagesPerProcess[pid]`            | `totalKernelValidations`           |
 | `pendingValidationPages[page] = {readyTick, originatorPid}` | `validationCacheHits` |
 | `nextReadyTick` (chip-wide deadline)       | `validationCoalescedWaits`         |
-| `latency()`, `enabled()`, `isDmaCtrl()`    | `dmaCtrlValidations`               |
-| chip-wide stats: `totalColdMisses`, `totalCoalesced`, `totalDmaCtrl`, `totalLatencyTicks` | `totalKernelValidationLatency`, `totalCoalescedWaitLatency` |
+| `latency()`, `enabled()`, `isDmaDescriptorReg()`, `isDmaPioPassthrough()`, `isAnyDmaPio()` | `dmaCtrlValidations` (mirrors `Outcome::DmaCtrl` only) |
+| chip-wide stats: `totalColdMisses`, `totalCoalesced`, `totalDmaCtrl`, `totalDmaPioPassthrough`, `totalLatencyTicks` | `totalKernelValidationLatency`, `totalCoalescedWaitLatency` |
 | `uniquePages()`, `numCachedProcesses()`    | `kernelValidationDenied` (always 0)|
 
 ## Key files
 
 - Header: [src/hwacc/aia_kd_validator.hh](../../src/hwacc/aia_kd_validator.hh)
 - Impl  : [src/hwacc/aia_kd_validator.cc](../../src/hwacc/aia_kd_validator.cc) — `checkAndCharge()` + `promoteReadyPages()`
-- Param : [src/hwacc/AiaKdValidator.py](../../src/hwacc/AiaKdValidator.py) (`enabled`, `latency`, `dma_pio_ranges`)
+- Param : [src/hwacc/AiaKdValidator.py](../../src/hwacc/AiaKdValidator.py) (`enabled`, `latency`, `dma_descriptor_ranges`, `dma_pio_passthrough_ranges`)
 - Per-access stamp: [src/hwacc/LLVMRead/src/mem_request.hh](../../src/hwacc/LLVMRead/src/mem_request.hh) — `Tick aiaKdDefer`
 - Launch decision: [src/hwacc/llvm_interface.cc](../../src/hwacc/llvm_interface.cc) — `chargeValidation()`, `ActiveFunction::launchRead/launchWrite` stamp the request
 - Response defer: [src/hwacc/comm_interface.cc](../../src/hwacc/comm_interface.cc) — `tryAiaKdDelay()`, `processAiaKdRespQueue()`, called from MemSidePort, SPMPort, RegPort `recvTimingResp` lambdas
@@ -153,11 +166,14 @@ The harvester (`tools/speedkills/harvest.py`) binds to the **exact
 text** of the lines below. Do not rename:
 
 - `Validation requests (full lat):` — full-latency requests
-  (cold misses + DMA-ctrl writes)
+  (cold misses + DMA descriptor writes only).
 - `of which DMA-ctrl writes:` — subset attributable to writes
-  into any DMA control-reg page. For benchmarks that reprogram
-  DMAs many times (`bfs`, `mobilenetv2/body`), expect this to
-  dominate the full-latency request count.
+  into a DMA's SRC or DST descriptor register. Despite the legacy
+  string, this is now the **descriptor-write** count, not the
+  whole-PIO-page count. For benchmarks that reprogram DMAs many
+  times (`bfs`, `mobilenetv2/body`) it is roughly `2 × N_dma_xfers`
+  (one count each for SRC and DST). FLAGS/LEN writes and stream
+  reg writes are now free and contribute zero.
 - `Cache hits (zero lat):` — page already validated this PID
 - `Coalesced waits (partial lat):` — accesses that paid only
   the tail of an in-flight cold miss
@@ -185,10 +201,20 @@ text** of the lines below. Do not rename:
 - `process_id` (`--process-id`): 17. Cache key for
   `validatedPagesPerProcess`. Different PIDs across CUs in the
   same cluster simply key separate cache entries.
-- `dma_pio_ranges` (`AiaKdValidator.dma_pio_ranges`): the union
-  of every DMA engine's `(pio_addr, pio_addr + pio_size)`
-  interval, emitted by the SALAM-Configurator. `isDmaCtrl(addr)`
-  returns true iff `addr` falls in any of these.
+- `dma_descriptor_ranges` (`AiaKdValidator.dma_descriptor_ranges`):
+  the union of every NonCoherent DMA's SRC `[base+1 .. +9)` and
+  DST `[base+9 .. +17)` sub-ranges. A WRITE inside any of these
+  pays full latency (Outcome::DmaCtrl). Layout matches the C
+  macros in `benchmarks/common/queue_dma.h`.
+- `dma_pio_passthrough_ranges`
+  (`AiaKdValidator.dma_pio_passthrough_ranges`): every other DMA
+  PIO byte -- NonCoherent FLAGS `[base+0 .. +1)` and LEN
+  `[base+17 .. +21)`, plus the full Stream-DMA register window.
+  Reads and writes here are AIA-KD-free (Outcome::PioPassthrough).
+- Both vectors are populated by `DMA.genConfig()` /
+  `StreamDMA.genConfig()` in the SALAM-Configurator. The two
+  vectors must be disjoint and together cover every byte of every
+  DMA PIO window so PIO addresses never reach the page-cache path.
 
 ## Things to be careful about
 

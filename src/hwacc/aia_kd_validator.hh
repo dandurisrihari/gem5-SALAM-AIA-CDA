@@ -42,11 +42,22 @@
  *     serializes cold misses (one IRQ at a time per cluster --
  *     single kernel-driver thread).
  *
- * DMA-ctrl exception
- *   Writes whose target lies in any DMA's PIO range NEVER cache and
- *   NEVER coalesce -- every store charges a fresh cold-miss tax and
- *   advances nextReadyTick. Reads are unaffected (status polling is
- *   benign).
+ * DMA-ctrl exception (security-critical writes only)
+ *   The kernel-driver / capability monitor only inspects DMA register
+ *   writes that grant the engine new memory authority -- i.e. SOURCE
+ *   and DESTINATION descriptor registers. Writes to other DMA regs
+ *   (FLAGS go-bit, LEN, status resets, the full Stream-DMA register
+ *   file) reveal no new address capability and cost nothing in this
+ *   model. The configurator partitions every DMA's PIO window into
+ *   two disjoint sets -- `dmaDescriptorRanges` (SRC/DST) and
+ *   `dmaPioPassthroughRanges` (everything else):
+ *     * write into `dmaDescriptorRanges`  -> full per-cold-miss tax
+ *       (no cache, no coalescing); chip-wide nextReadyTick advances.
+ *     * any other access into ANY DMA PIO byte -> 0 ticks, no state
+ *       change (passthrough). Reads of descriptor regs are also
+ *       passthrough (benign, no new authority granted).
+ *   PIO bytes are never folded into the per-PID page cache, so PIO
+ *   addresses cannot pollute or shadow ordinary code/data pages.
  *
  * Lat=0 invariant
  *   When `latency` is 0 (or `enabled` is false) `checkAndCharge`
@@ -82,24 +93,49 @@ class AiaKdValidator : public SimObject
     Tick latency() const { return latencyTicks; }
 
     /**
-     * True if `addr` falls inside the PIO range of any DMA engine in
-     * the cluster. Used by the DMA-ctrl bypass in checkAndCharge().
+     * True if `addr` lies in a DMA descriptor register (SRC or DST of
+     * any NonCoherent DMA in the cluster). Writes to such addresses
+     * grant the engine new memory authority and are the only DMA-PIO
+     * accesses that pay validation cost in the current model.
      */
-    bool isDmaCtrl(Addr addr) const {
-        for (const auto &r : dmaCtrlRanges) {
+    bool isDmaDescriptorReg(Addr addr) const {
+        for (const auto &r : dmaDescriptorRanges) {
             if (r.contains(addr)) return true;
         }
         return false;
     }
 
+    /**
+     * True if `addr` lies in a DMA control reg that is NOT a
+     * descriptor (FLAGS go-bit, LEN, Stream-DMA regs, status). These
+     * accesses are AIA-KD-free.
+     */
+    bool isDmaPioPassthrough(Addr addr) const {
+        for (const auto &r : dmaPioPassthroughRanges) {
+            if (r.contains(addr)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Convenience: true if `addr` lies in ANY DMA PIO byte (descriptor
+     * or passthrough). Used by checkAndCharge() to short-circuit the
+     * page-cache path for PIO addresses, which prevents PIO bytes from
+     * polluting the per-PID validated-page set.
+     */
+    bool isAnyDmaPio(Addr addr) const {
+        return isDmaDescriptorReg(addr) || isDmaPioPassthrough(addr);
+    }
+
     /** Diagnostic outcome class returned by checkAndCharge(). */
     enum class Outcome : uint8_t
     {
-        Disabled,     // validator off / lat==0; defer == 0
-        CacheHit,     // page already validated this PID; defer == 0
-        ColdMiss,     // first chip-wide touch; full latency charged
-        Coalesced,    // followed an in-flight cold miss; partial wait
-        DmaCtrl       // DMA-ctrl write; full latency, no caching
+        Disabled,         // validator off / lat==0; defer == 0
+        CacheHit,         // page already validated this PID; defer == 0
+        ColdMiss,         // first chip-wide touch; full latency charged
+        Coalesced,        // followed an in-flight cold miss; partial wait
+        DmaCtrl,          // DMA descriptor (SRC/DST) write; full latency
+        PioPassthrough    // non-descriptor DMA PIO access; defer == 0
     };
 
     /**
@@ -158,8 +194,17 @@ class AiaKdValidator : public SimObject
 
     const bool enabledFlag;
     const Tick latencyTicks;
-    /** PIO ranges of DMA engines; writes here bypass the cache. */
-    const AddrRangeList dmaCtrlRanges;
+    /**
+     * Security-critical DMA register ranges (SRC and DST of every
+     * NonCoherent DMA in the cluster). Writes here grant the engine
+     * new memory authority and pay full validation latency.
+     */
+    const AddrRangeList dmaDescriptorRanges;
+    /**
+     * Non-descriptor DMA PIO ranges (FLAGS, LEN, Stream-DMA regs,
+     * status). Reads and writes here are AIA-KD-free.
+     */
+    const AddrRangeList dmaPioPassthroughRanges;
 
   public:
     // -----------------------------------------------------------------
@@ -171,8 +216,14 @@ class AiaKdValidator : public SimObject
     uint64_t totalColdMisses;
     /** Coalesced followers (cross-CU and same-CU combined). */
     uint64_t totalCoalesced;
-    /** DMA-ctrl writes that paid full latency. */
+    /** DMA descriptor (SRC/DST) writes that paid full latency. */
     uint64_t totalDmaCtrl;
+    /**
+     * DMA PIO accesses that were short-circuited as passthrough
+     * (non-descriptor regs, or reads to descriptor regs). Diagnostic
+     * only -- these contribute zero ticks.
+     */
+    uint64_t totalDmaPioPassthrough;
     /** Cumulative delay ticks injected (sum of returned values). */
     Tick totalLatencyTicks;
 

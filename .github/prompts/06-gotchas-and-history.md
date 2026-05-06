@@ -38,7 +38,9 @@ paths will break together.
 `tools/speedkills/harvest.py` matches **exact** strings printed
 by `printKernelValidationStats` and `printIommuStats`:
 - `Validation requests (full lat):`
-- `of which DMA-ctrl writes:`
+- `of which DMA-ctrl writes:` (now means: writes to a NonCoherent
+  DMA's SRC or DST descriptor reg only; FLAGS/LEN and Stream-DMA
+  reg writes are passthrough and NOT counted here)
 - `TOTAL SECURITY OVERHEAD: ... us`
 - `========= IOMMU Stats =====================`
 
