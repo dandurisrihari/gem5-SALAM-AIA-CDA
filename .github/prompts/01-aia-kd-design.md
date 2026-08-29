@@ -46,6 +46,20 @@ comparable with the IOMMU mechanism (which already taxes responses).
     write: FLAGS go-bit, LEN, the entire Stream-DMA register file,
     or **any read** of any DMA PIO reg. Defer = 0, no state
     change, does NOT pollute the per-PID page cache.
+  - `Denied` — *effectiveness mode only.* The access overlaps a
+    `forbidden_ranges` entry **and** reached the kernel driver (cold
+    page, or a DMA descriptor write). Full `latency` is charged and
+    `nextReadyTick` bumped — the driver is genuinely occupied — but
+    the page is left out of both the in-flight set and the validated
+    cache, so a retry pays again.
+  - `Missed` — *effectiveness mode only.* The access overlaps a
+    `forbidden_ranges` entry but the driver was never consulted:
+    the `(pid, page)` was already validated (or is in flight) on
+    behalf of a legitimate address in the same 4 KiB page, or the
+    address sat in a PIO passthrough window. Defer is whatever the
+    non-illegal path would have returned. **This is AIA-KD's
+    structural blind spot and the headline result of the
+    effectiveness experiment.**
 - **DMA control-reg policy** (security-critical writes only):
   the kernel-driver / capability monitor only inspects DMA register
   writes that grant the engine new memory authority -- i.e. SOURCE
@@ -111,28 +125,89 @@ per-CU response event, and no scheduler-side stall.
 | `nextReadyTick` (chip-wide deadline)       | `validationCoalescedWaits`         |
 | `latency()`, `enabled()`, `isDmaDescriptorReg()`, `isDmaPioPassthrough()`, `isAnyDmaPio()` | `dmaCtrlValidations` (mirrors `Outcome::DmaCtrl` only) |
 | chip-wide stats: `totalColdMisses`, `totalCoalesced`, `totalDmaCtrl`, `totalDmaPioPassthrough`, `totalLatencyTicks` | `totalKernelValidationLatency`, `totalCoalescedWaitLatency` |
-| `uniquePages()`, `numCachedProcesses()`    | `kernelValidationDenied` (always 0)|
+| `uniquePages()`, `numCachedProcesses()`    | `kernelValidationDenied` (mirrors `Outcome::Denied`) |
+| effectiveness: `violationCheckEnabled()`, `isForbidden()`, `totalDenied`, `totalMissed`, `leakedBytes`, `firstViolationTick`, `firstDetectionTick` | `validationMissedViolations` |
+
+## Effectiveness mode (security analysis)
+
+A second, **orthogonal** experiment axis, off by default and never
+enabled by any `profiles.py` mode. Instead of "what does AIA-KD
+cost?" it asks "what does AIA-KD actually catch?".
+
+Declare address ranges the accelerator holds no capability for
+(`AiaKdValidator.forbidden_ranges`, populated from repeatable
+`--forbidden-range LO:HI` / `LO+SIZE` CLI flags) and turn the axis on
+with `violation_check` (`--enable-violation-check`). An access is
+illegal when `[addr, addr+size)` **overlaps** any forbidden range —
+overlap, not containment, so a straddling access is still caught.
+
+The forbidden test models the **kernel driver's verdict**, not an
+omniscient monitor. In the unmodified model every driver consult
+returns "granted", which is why the "this address is bad" condition
+has to be injected at all. Charging full latency *is* the act of
+consulting the driver, so:
+
+> **Invariant:** `Outcome::Denied` only on a path that charged full
+> latency; `Outcome::Missed` only on a path that did not.
+
+The result worth reporting is the split, not the total:
+
+- **Denied** — the illegal access hit a path where the driver is
+  actually consulted (cold page, or a DMA SRC/DST reprogram) and
+  was refused after the full round-trip.
+- **Missed** — the illegal address shared a 4 KiB page with data the
+  accelerator legitimately validated earlier, so the per-page
+  first-touch cache answered without consulting the driver. A
+  per-access checker (the IOMMU) would have caught this; AIA-KD
+  cannot, because its grant granularity is a page.
+
+`stop_on_violation` (default True, disable with
+`--no-stop-on-violation`) ends the run via `exitSimLoop` scheduled at
+**detection time** — issue tick + charged latency — so the exit
+timestamp is a meaningful detection latency. Only the first denial
+schedules the exit. Set it False to let a whole workload run and
+count every attempt.
+
+`firstDeniedIssueTick` / `firstDetectionTick` are latched as a pair
+from the same denied access. Do **not** compute detection latency
+against `firstViolationTick` — that one may belong to a *missed*
+access the driver never saw, which yields a meaningless interval.
+
+Reported by `printViolationStats()` under the
+`========= AIA-KD Effectiveness =========` banner; the block is
+suppressed entirely when `violation_check` is false, so the harvested
+text of every timing run is byte-for-byte unchanged.
+
+**Do not fold effectiveness runs into overhead runs.** A denial
+truncates the timeline, so `abs_overhead_us` from such a run is
+meaningless.
+
+Not implemented for the IOMMU — `AcceleratorIommu` has no deny
+policy. If you add one, mirror this structure so the two mechanisms
+stay comparable.
 
 ## Key files
 
 - Header: [src/hwacc/aia_kd_validator.hh](../../src/hwacc/aia_kd_validator.hh)
 - Impl  : [src/hwacc/aia_kd_validator.cc](../../src/hwacc/aia_kd_validator.cc) — `checkAndCharge()` + `promoteReadyPages()`
-- Param : [src/hwacc/AiaKdValidator.py](../../src/hwacc/AiaKdValidator.py) (`enabled`, `latency`, `dma_descriptor_ranges`, `dma_pio_passthrough_ranges`)
+- Param : [src/hwacc/AiaKdValidator.py](../../src/hwacc/AiaKdValidator.py) (`enabled`, `latency`, `dma_descriptor_ranges`, `dma_pio_passthrough_ranges`, `violation_check`, `forbidden_ranges`, `stop_on_violation`)
 - Per-access stamp: [src/hwacc/LLVMRead/src/mem_request.hh](../../src/hwacc/LLVMRead/src/mem_request.hh) — `Tick aiaKdDefer`
 - Launch decision: [src/hwacc/llvm_interface.cc](../../src/hwacc/llvm_interface.cc) — `chargeValidation()`, `ActiveFunction::launchRead/launchWrite` stamp the request
 - Response defer: [src/hwacc/comm_interface.cc](../../src/hwacc/comm_interface.cc) — `tryAiaKdDelay()`, `processAiaKdRespQueue()`, called from MemSidePort, SPMPort, RegPort `recvTimingResp` lambdas
 - Wiring  : [tools/SALAM-Configurator/config_parser.py](../../tools/SALAM-Configurator/config_parser.py) — emits `clstr.<acc>.validator = clstr.validator`
-- Stats reporter: [src/hwacc/llvm_interface.cc](../../src/hwacc/llvm_interface.cc) — `printKernelValidationStats()`
+- Stats reporter: [src/hwacc/llvm_interface.cc](../../src/hwacc/llvm_interface.cc) — `printKernelValidationStats()`, `printViolationStats()`
 
 ## Runtime path (per LLVM-IR memory access)
 
 1. `ActiveFunction::launchRead` / `launchWrite` builds the
    `MemoryRequest` for the access.
 2. If AIA-KD is enabled it calls `owner->chargeValidation(addr,
-   isWrite)`, which delegates to `validator->checkAndCharge(...)`
+   size, isWrite)`, which delegates to
+   `validator->checkAndCharge(...)`
    and updates the per-CU mirror counters based on the returned
    `Outcome`. The returned tick delta is stamped onto
-   `memReq->aiaKdDefer`.
+   `memReq->aiaKdDefer`. (`size` is consulted only by the
+   effectiveness path.)
 3. The request is enqueued normally (`comm->enqueueRead/Write`) —
    no scheduler stall, no replay, no pending-UID set.
 4. The cache-line packets fire as in plain mode. Each response
@@ -239,11 +314,11 @@ text** of the lines below. Do not rename:
   request is enqueued, so a panic mid-launch leaves the validator
   and the per-CU counters consistent. Do not split the
   call/stamp/enqueue trio across event boundaries.
-- `kernelValidationDenied` is always 0 (no policy implemented).
-  If you add a real deny policy, you also need a way for
-  `tryAiaKdDelay` to abort the response (Option C has no
-  scheduler re-queue path) — likely via a fault packet on the
-  response port.
+- `kernelValidationDenied` is 0 in every timing run; it only moves
+  in effectiveness mode. A denial is modelled as "charge the
+  latency, then exit" — Option C has no scheduler re-queue path, so
+  there is no way to let the CU observe a fault and unwind. If you
+  ever need that, it means a fault packet on the response port.
 - Enabling validation with `kernel_validation_latency=0` is
   bit-identical to plain (sanity test asserts this). Useful as a
   control to exercise bookkeeping without timing impact.

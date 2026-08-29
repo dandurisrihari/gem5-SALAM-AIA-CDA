@@ -51,6 +51,7 @@ LLVMInterface::LLVMInterface(const LLVMInterfaceParams &p):
     validationCoalescedWaits(0),
     totalCoalescedWaitLatency(0),
     dmaCtrlValidations(0),
+    validationMissedViolations(0),
     // ----- IOMMU model init -----
     // The actual IOTLB / port deadline / stats live in the
     // AcceleratorIommu SimObject; we just hold a (possibly null)
@@ -728,7 +729,7 @@ LLVMInterface::ActiveFunction::launchRead(
         // ====================================================
         Tick aiaKdDefer = 0;
         if (owner->isKernelValidationEnabled()) {
-            aiaKdDefer = owner->chargeValidation(ptrAddr,
+            aiaKdDefer = owner->chargeValidation(ptrAddr, reqSize,
                                                  /*isWrite=*/false);
             if (dbg)
                 DPRINTFS(RuntimeCompute, owner,
@@ -777,7 +778,8 @@ LLVMInterface::ActiveFunction::launchWrite(
     // ====================================================
     Tick aiaKdDefer = 0;
     if (owner->isKernelValidationEnabled()) {
-        aiaKdDefer = owner->chargeValidation(ptrAddr, /*isWrite=*/true);
+        aiaKdDefer = owner->chargeValidation(ptrAddr, reqSize,
+                                             /*isWrite=*/true);
         if (dbg)
             DPRINTFS(RuntimeCompute, owner,
                 "|| AIA-KD WRITE defer=%llu addr=0x%016lx size=%lu\n",
@@ -1317,12 +1319,12 @@ LLVMInterface::createInstruction(llvm::Instruction * inst, uint64_t id) {
 // 06-gotchas-and-history.md.
 
 Tick
-LLVMInterface::chargeValidation(uint64_t addr, bool isWrite)
+LLVMInterface::chargeValidation(uint64_t addr, unsigned size, bool isWrite)
 {
     if (!validator || !validator->enabled()) return 0;
 
     AiaKdValidator::Outcome outcome;
-    Tick defer = validator->checkAndCharge(processId, addr, isWrite,
+    Tick defer = validator->checkAndCharge(processId, addr, size, isWrite,
                                            outcome);
 
     // Update the per-CU mirror counters that the printer below
@@ -1358,6 +1360,19 @@ LLVMInterface::chargeValidation(uint64_t addr, bool isWrite)
         // nothing in the AIA-KD model -- no capability is granted --
         // and intentionally does NOT bump any per-CU counter to
         // preserve the harvested stat strings unchanged.
+        break;
+      case AiaKdValidator::Outcome::Denied:
+        // Effectiveness mode only. The driver was consulted, paid the
+        // full round-trip, and refused. Counted as a validation
+        // request so the latency accounting stays whole.
+        totalKernelValidations++;
+        kernelValidationDenied++;
+        totalKernelValidationLatency += defer;
+        break;
+      case AiaKdValidator::Outcome::Missed:
+        // Effectiveness mode only. An illegal access the per-page
+        // cache let through without consulting the driver.
+        validationMissedViolations++;
         break;
     }
 
@@ -1442,6 +1457,66 @@ LLVMInterface::printKernelValidationStats()
               << totalUniquePages << std::endl;
     std::cout << "   Cache hit rate:                  "
               << cacheHitRate << "%" << std::endl;
+    std::cout << std::endl;
+
+    printViolationStats();
+}
+
+// ----- AIA-KD effectiveness reporter -----
+//
+// Prints nothing outside effectiveness mode so the harvested text of
+// every existing timing run is byte-for-byte unchanged.
+//
+// The headline number is not "violations denied" (a per-page checker
+// denies every cold illegal touch by construction) but the DETECTION
+// RATE: how many illegal accesses AIA-KD's 4 KiB first-touch cache
+// silently admitted because they shared a page with data the
+// accelerator had already been granted.
+void
+LLVMInterface::printViolationStats()
+{
+    if (!validator || !validator->violationCheckEnabled()) return;
+
+    uint64_t denied = validator->totalDenied;
+    uint64_t missed = validator->totalMissed;
+    uint64_t attempts = denied + missed;
+    double detectRate = attempts > 0 ?
+        (100.0 * denied / attempts) : 0.0;
+
+    std::cout << "   ========= AIA-KD Effectiveness ============="
+              << std::endl;
+    std::cout << "   Violation check enabled:         YES" << std::endl;
+    std::cout << "   Illegal accesses attempted:      "
+              << attempts << std::endl;
+    std::cout << "   Violations denied:               "
+              << denied << std::endl;
+    std::cout << "   Violations missed (page cache):  "
+              << missed << std::endl;
+    std::cout << "   Detection rate:                  "
+              << detectRate << "%" << std::endl;
+    std::cout << "   Bytes leaked via missed:         "
+              << validator->leakedBytes << std::endl;
+
+    if (validator->firstViolationTick != MaxTick) {
+        std::cout << "   First violation issued at:       "
+                  << validator->firstViolationTick << " ticks"
+                  << std::endl;
+    }
+    // Latency must span a single access. firstViolationTick may belong
+    // to a MISSED access (one the driver never saw), so the denial's
+    // own issue tick is the only valid left-hand side.
+    if (validator->firstDetectionTick != MaxTick) {
+        std::cout << "   First denial issued at:          "
+                  << validator->firstDeniedIssueTick << " ticks"
+                  << std::endl;
+        std::cout << "   First denial detected at:        "
+                  << validator->firstDetectionTick << " ticks"
+                  << std::endl;
+        std::cout << "   Detection latency:               "
+                  << (double)(validator->firstDetectionTick -
+                              validator->firstDeniedIssueTick) * (1e-6)
+                  << " us" << std::endl;
+    }
     std::cout << std::endl;
 }
 

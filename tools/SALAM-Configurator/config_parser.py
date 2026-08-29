@@ -298,7 +298,15 @@ class AccCluster:
         lines.append("	    enabled=getattr(options, "
                      "'enable_kernel_validation', False),")
         lines.append("	    latency=getattr(options, "
-                     "'kernel_validation_latency', 0))")
+                     "'kernel_validation_latency', 0),")
+        # Effectiveness axis. `forbidden_ranges` is pre-parsed into
+        # AddrRange objects by fs_*.py; empty list = pure timing run.
+        lines.append("	    violation_check=getattr(options, "
+                     "'enable_violation_check', False),")
+        lines.append("	    stop_on_violation=not getattr(options, "
+                     "'no_stop_on_violation', False),")
+        lines.append("	    forbidden_ranges=getattr(options, "
+                     "'forbidden_ranges', []))")
         lines.append("")
 
         return lines

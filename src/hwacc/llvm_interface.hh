@@ -119,6 +119,10 @@ class LLVMInterface : public ComputeUnit
     // ActiveFunction::launchWrite for the bypass logic and
     // .github/prompts/01-aia-kd-design.md for the threat-model split.
     uint64_t dmaCtrlValidations;
+    // Effectiveness mode only: illegal accesses that the per-page
+    // first-touch cache let through without consulting the driver.
+    // Mirrors AiaKdValidator::totalMissed for this CU.
+    uint64_t validationMissedViolations;
 
     // Per-CU response event removed: the chip-wide validator owns
     // the single EventFunctionWrapper and drives completion via
@@ -342,9 +346,15 @@ class LLVMInterface : public ComputeUnit
      * report ("Validation requests (full lat): ...", "of which
      * DMA-ctrl writes: ...") that tools/speedkills/harvest.py
      * binds to.
+     *
+     * `size` is the access width in bytes; it is only consulted by
+     * the effectiveness path (forbidden-range overlap and leaked-byte
+     * accounting) and is ignored in pure timing runs.
      */
-    Tick chargeValidation(uint64_t addr, bool isWrite);
+    Tick chargeValidation(uint64_t addr, unsigned size, bool isWrite);
     void printKernelValidationStats();
+    /** No-op unless AiaKdValidator::violation_check is set. */
+    void printViolationStats();
 
     // ----- IOMMU helpers -----
     bool isIommuEnabled() { return enableIommu; }

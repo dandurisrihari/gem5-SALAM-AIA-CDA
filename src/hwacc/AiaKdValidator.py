@@ -77,3 +77,50 @@ class AiaKdValidator(SimObject):
     dma_pio_passthrough_ranges = VectorParam.AddrRange([],
         "DMA non-descriptor PIO ranges. Reads and writes here are "
         "AIA-KD-free and bypass the page cache entirely.")
+
+    # ------------------------------------------------------------------
+    # Effectiveness (security-analysis) mode.
+    #
+    # Orthogonal to the timing model above: instead of asking "what does
+    # AIA-KD cost?", this asks "what does AIA-KD actually catch?". We
+    # declare a set of address ranges for which the accelerator holds NO
+    # capability (kernel memory, a sibling process's buffer, a region
+    # outside the granted descriptor) and observe how the mechanism
+    # responds when the accelerator touches them.
+    #
+    # The interesting result is NOT "it gets denied" -- of course it
+    # does. It is the split between:
+    #   * Denied -- the illegal access reached the kernel driver (cold
+    #     page, or a DMA SRC/DST reprogram) and was refused after the
+    #     full validation round-trip.
+    #   * Missed -- the illegal address shares a 4 KiB page with data
+    #     the accelerator legitimately validated earlier, so AIA-KD's
+    #     per-page first-touch cache never re-consults the driver and
+    #     the access completes. This is AIA-KD's structural blind spot
+    #     and it is what a per-access checker would catch instead.
+    #
+    # Off by default: every existing profile and the sanity suite must
+    # be unaffected.
+    # ------------------------------------------------------------------
+
+    violation_check = Param.Bool(False,
+        "Enable AIA-KD effectiveness analysis. When False the "
+        "forbidden_ranges vector is ignored entirely and "
+        "checkAndCharge() behaves exactly as in a pure timing run.")
+
+    # Regions the accelerator was never granted. An access is illegal
+    # when [addr, addr+size) OVERLAPS any of these (not merely when
+    # `addr` is contained), so a straddling access is still caught.
+    forbidden_ranges = VectorParam.AddrRange([],
+        "Address ranges the accelerator holds no capability for. Only "
+        "consulted when violation_check is True.")
+
+    # When True the run ends via exitSimLoop() scheduled at the tick the
+    # driver actually answers (issue tick + charged validation latency),
+    # so the exit timestamp is a meaningful detection latency rather
+    # than the moment of issue. When False the violation is counted and
+    # logged but the run continues -- useful for measuring how many
+    # illegal accesses a whole workload would attempt.
+    stop_on_violation = Param.Bool(True,
+        "End the simulation when AIA-KD denies an access. The exit is "
+        "scheduled at detection time, not issue time.")

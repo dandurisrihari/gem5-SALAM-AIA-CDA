@@ -16,6 +16,11 @@ through `addHWAccOptions` and surfaced by every generated
 --validation-int-num=<irq>
 --process-id=<pid>
 
+# AIA-KD effectiveness analysis (requires --enable-kernel-validation)
+--enable-violation-check
+--forbidden-range=<LO:HI|LO+SIZE>   # repeatable, hex or decimal
+--no-stop-on-violation
+
 # IOMMU baseline (mutually exclusive with the above)
 --enable-iommu
 --iotlb-entries=<N>
@@ -49,6 +54,52 @@ branch — see [tools/speedkills/README.md](../../tools/speedkills/README.md).
   edge-IoT peripheral IOMMU (Cortex-M / Cortex-A5-class, ~400 MHz,
   DDR3 walk): 8-entry LRU IOTLB, 2 ns hit, 500 ns miss-walk. Charges
   every LLVM-IR load/store (including SPM-resident accesses).
+
+## AIA-KD effectiveness runs
+
+A separate experiment axis from the three timing modes. There is
+deliberately **no `profiles.py` mode** for it: the forbidden region is
+benchmark-specific (it depends where that benchmark's buffers live),
+so a fixed profile would be misleading. Pass the flags through
+`--extra` instead.
+
+**Never mix effectiveness runs into an overhead comparison** — a
+denial truncates the timeline, so `abs_overhead_us` from such a run
+is meaningless. Use a separate `--outdir`.
+
+Denial path (whole forbidden page → driver refuses → run exits at
+detection time):
+
+```bash
+python3 -m tools.speedkills run --bench gemm --outdir /tmp/eff_denied \
+  --extra "--enable-kernel-validation --kernel-validation-latency 8367000 \
+           --enable-violation-check --forbidden-range 0x10030000+0x1000"
+# warn: ... AIA-KD DENIED WRITE pid=17 addr=0x0000000010030140
+#            issued@5515476000 detected@5523843000
+# Exiting @ tick 5523843000 because AIA-KD violation: ...
+# detected - issued == kernel_validation_latency
+```
+
+Blind-spot path (sub-page slice inside a page the accelerator
+legitimately validated → never re-checked):
+
+```bash
+python3 -m tools.speedkills run --bench gemm --outdir /tmp/eff_missed \
+  --extra "--enable-kernel-validation --kernel-validation-latency 8367000 \
+           --enable-violation-check --no-stop-on-violation \
+           --forbidden-range 0x10030800+0x40"
+# ========= AIA-KD Effectiveness =============
+#   Illegal accesses attempted:      9
+#   Violations denied:               0
+#   Violations missed (page cache):  9
+#   Detection rate:                  0%
+#   Bytes leaked via missed:         72
+```
+
+The `Denied` vs `Missed` split is the result to report, not the raw
+denial count. See
+[01-aia-kd-design.md](01-aia-kd-design.md) § *Effectiveness mode*.
+Not implemented for the IOMMU.
 
 ## Recipes
 

@@ -83,6 +83,22 @@ def addHWAccOptions(parser):
                       default=172, help="""Interrupt number for validation""")
     parser.add_argument("--process-id", action="store", type=int, default=17,
                       help="""Process ID for SMID validation""")
+    # AIA-KD effectiveness analysis (requires --enable-kernel-validation).
+    # Declares regions the accelerator holds no capability for, then
+    # reports how many illegal accesses the driver caught vs. how many
+    # the 4 KiB first-touch page cache silently admitted.
+    parser.add_argument("--enable-violation-check", action="store_true",
+                      default=False,
+                      help="""Enable AIA-KD effectiveness analysis""")
+    parser.add_argument("--forbidden-range", action="append", default=[],
+                      metavar="LO:HI|LO+SIZE",
+                      help="""Address range the accelerator has no """
+                           """capability for. Repeatable. Hex or """
+                           """decimal, e.g. 0x80000000+0x1000""")
+    parser.add_argument("--no-stop-on-violation", action="store_true",
+                      default=False,
+                      help="""Keep running after a denial instead of """
+                           """exiting at detection time""")
     # IOMMU latency model (mutually exclusive with --enable-kernel-validation)
     parser.add_argument("--enable-iommu", action="store_true",
                       default=False,
@@ -360,6 +376,34 @@ if len(_active) > 1:
     print("Error: protection-model flags are mutually exclusive: "
           + ", ".join(_active))
     sys.exit(1)
+
+# Effectiveness mode: turn --forbidden-range specs into the AddrRange
+# list that AiaKdValidator.forbidden_ranges expects. Done here rather
+# than in the generated cluster config so the parsing lives in one
+# place for every benchmark.
+args.forbidden_ranges = []
+for _spec in getattr(args, 'forbidden_range', []):
+    if '+' in _spec:
+        _lo, _sz = _spec.split('+', 1)
+        args.forbidden_ranges.append(
+            AddrRange(int(_lo, 0), size=int(_sz, 0)))
+    elif ':' in _spec:
+        _lo, _hi = _spec.split(':', 1)
+        args.forbidden_ranges.append(AddrRange(int(_lo, 0), int(_hi, 0)))
+    else:
+        print("Error: --forbidden-range expects LO:HI or LO+SIZE, got "
+              + _spec)
+        sys.exit(1)
+
+if getattr(args, 'enable_violation_check', False):
+    if not getattr(args, 'enable_kernel_validation', False):
+        print("Error: --enable-violation-check requires "
+              "--enable-kernel-validation")
+        sys.exit(1)
+    if not args.forbidden_ranges:
+        print("Error: --enable-violation-check requires at least one "
+              "--forbidden-range")
+        sys.exit(1)
 
 # system under test can be any CPU
 (TestCPUClass, test_mem_mode, FutureClass) = Simulation.setCPUClass(args)

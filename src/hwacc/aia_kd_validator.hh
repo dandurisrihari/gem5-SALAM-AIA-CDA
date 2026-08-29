@@ -64,6 +64,28 @@
  *   returns 0 immediately without touching any state. Behavior is
  *   then bit-identical to plain mode. Verified by
  *   tests/aia_cda_tests/run_sanity.py.
+ *
+ * Effectiveness mode (`violation_check` + `forbidden_ranges`)
+ *   A second, orthogonal experiment axis: declare ranges the
+ *   accelerator holds no capability for and observe what AIA-KD does
+ *   when they are touched. The forbidden test models the KERNEL
+ *   DRIVER'S VERDICT, so it only carries authority where the driver
+ *   is consulted -- and charging full latency IS that consult. Hence
+ *   the invariant: Denied only on a full-latency path, Missed only
+ *   on a path that skipped the driver. Two outcomes matter, and the
+ *   SPLIT between them is the result worth reporting:
+ *     * Denied -- the illegal access reached the kernel driver (cold
+ *       page, or a DMA SRC/DST reprogram). Full latency is charged and
+ *       the page is NOT admitted to the cache; with stop_on_violation
+ *       the run exits at issue_tick + latency, so the exit timestamp
+ *       is the detection latency.
+ *     * Missed -- the illegal address shares a 4 KiB page with data
+ *       validated earlier, so the per-page first-touch cache answers
+ *       without consulting the driver and the access completes. This
+ *       is AIA-KD's structural blind spot; a per-access checker would
+ *       have caught it. Counted, never denied, costs nothing.
+ *   When `violation_check` is false the whole path is compiled out of
+ *   the hot loop by a single bool test and behaviour is unchanged.
  */
 #ifndef __HWACC_AIA_KD_VALIDATOR_HH__
 #define __HWACC_AIA_KD_VALIDATOR_HH__
@@ -127,6 +149,23 @@ class AiaKdValidator : public SimObject
         return isDmaDescriptorReg(addr) || isDmaPioPassthrough(addr);
     }
 
+    /** Effectiveness-mode toggle accessor. */
+    bool violationCheckEnabled() const { return violationCheck; }
+
+    /**
+     * True if [addr, addr+size) overlaps any range the accelerator
+     * holds no capability for. Overlap rather than containment so an
+     * access straddling into a forbidden region is still caught.
+     */
+    bool isForbidden(Addr addr, unsigned size) const {
+        if (!violationCheck) return false;
+        Addr last = addr + (size ? size - 1 : 0);
+        for (const auto &r : forbiddenRanges) {
+            if (addr <= r.end() && last >= r.start()) return true;
+        }
+        return false;
+    }
+
     /** Diagnostic outcome class returned by checkAndCharge(). */
     enum class Outcome : uint8_t
     {
@@ -135,7 +174,9 @@ class AiaKdValidator : public SimObject
         ColdMiss,         // first chip-wide touch; full latency charged
         Coalesced,        // followed an in-flight cold miss; partial wait
         DmaCtrl,          // DMA descriptor (SRC/DST) write; full latency
-        PioPassthrough    // non-descriptor DMA PIO access; defer == 0
+        PioPassthrough,   // non-descriptor DMA PIO access; defer == 0
+        Denied,           // illegal access refused by the driver
+        Missed            // illegal access hidden by the page cache
     };
 
     /**
@@ -144,6 +185,9 @@ class AiaKdValidator : public SimObject
      *
      * @param pid     Process id of the issuing CU (per-PID cache key).
      * @param addr    Byte address of the access (page-rounded inside).
+     * @param size    Access width in bytes; used only by the
+     *                effectiveness path to test forbidden-range
+     *                overlap and to accumulate leaked bytes.
      * @param isWrite True for stores, false for loads. Drives the
      *                DMA-ctrl bypass (writes only).
      * @param[out] outcome Diagnostic outcome class (for stats).
@@ -153,8 +197,8 @@ class AiaKdValidator : public SimObject
      *         caller; CommInterface::tryAiaKdDelay then realizes the
      *         stall on the response port.
      */
-    Tick checkAndCharge(uint64_t pid, Addr addr, bool isWrite,
-                        Outcome &outcome);
+    Tick checkAndCharge(uint64_t pid, Addr addr, unsigned size,
+                        bool isWrite, Outcome &outcome);
 
   private:
     /**
@@ -163,6 +207,23 @@ class AiaKdValidator : public SimObject
      * cache. Called at the top of every checkAndCharge().
      */
     void promoteReadyPages(Tick now);
+
+    /**
+     * Record a denial: bump counters, latch the detection timestamps,
+     * and (when stopOnViolation) schedule the exit for `detectTick` so
+     * the reported time is when the driver answered, not when the
+     * access was issued. Only ever called from a path that charged
+     * full latency -- see the invariant in checkAndCharge().
+     */
+    void recordDenial(uint64_t pid, Addr addr, bool isWrite,
+                      Tick detectTick);
+
+    /**
+     * Record an illegal access on a path where the driver was never
+     * consulted. Experiment ground truth only -- the mechanism itself
+     * has no way to observe this access.
+     */
+    void recordMiss(unsigned size, Outcome &outcome);
 
     // -----------------------------------------------------------------
     // Owned state.
@@ -206,6 +267,11 @@ class AiaKdValidator : public SimObject
      */
     const AddrRangeList dmaPioPassthroughRanges;
 
+    const bool violationCheck;
+    const bool stopOnViolation;
+    /** Ranges the accelerator holds no capability for. */
+    const AddrRangeList forbiddenRanges;
+
   public:
     // -----------------------------------------------------------------
     // Stats. Aggregated chip-wide; LLVMInterface keeps per-CU mirror
@@ -226,6 +292,28 @@ class AiaKdValidator : public SimObject
     uint64_t totalDmaPioPassthrough;
     /** Cumulative delay ticks injected (sum of returned values). */
     Tick totalLatencyTicks;
+
+    // ----- Effectiveness counters (all 0 unless violationCheck) -----
+    /** Illegal accesses the driver actually refused. */
+    uint64_t totalDenied;
+    /** Illegal accesses the per-page cache let through unchecked. */
+    uint64_t totalMissed;
+    /** Bytes reachable through missed accesses. */
+    uint64_t leakedBytes;
+    /**
+     * Tick the first illegal access of ANY kind was issued (MaxTick
+     * if none). May belong to a missed access, so it must not be
+     * paired with firstDetectionTick to compute a latency.
+     */
+    Tick firstViolationTick;
+    /** Tick the first DENIED access was issued (MaxTick if none). */
+    Tick firstDeniedIssueTick;
+    /**
+     * Tick the driver answered that same first denial (MaxTick if
+     * none). firstDetectionTick - firstDeniedIssueTick is the
+     * detection latency, and equals latencyTicks by construction.
+     */
+    Tick firstDetectionTick;
 
     /**
      * Total distinct (PID, page) pairs ever validated chip-wide.
